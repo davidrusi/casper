@@ -1,0 +1,552 @@
+\documentclass[a4paper,12pt]{article}
+%\VignetteIndexEntry{Manual for the casper library}
+%\VignettePackage{casper}
+\usepackage{amsmath}    % need for subequations
+\usepackage{amssymb}    %useful mathematical symbols
+\usepackage{bm}         %needed for bold greek letters and math symbols
+\usepackage{graphicx}   % need for PS figures
+%\usepackage{verbatim}   % useful for program listings
+%\usepackage{color}      % use if color is used in text
+\usepackage{hyperref}   % use for hypertext links, including those to external documents and URLs
+\usepackage{natbib}    %number and author-year style referencing
+%\usepackage{epsf} 
+%\usepackage{lscape} 
+%\bibpunct{(}{)}{;}{a}{,}{,}
+
+
+
+\pagestyle{empty} % use if page numbers not wanted
+
+\begin{document}
+
+\title{Manual for the R \texttt{casper} package}
+\date{}  %comment to include current date
+
+\maketitle
+
+
+\section{Introduction}
+\label{sec:intro}
+
+The package \texttt{casper} implements statistical methodology to infer
+gene alternative splicing from paired-end
+RNA-seq data \citep{rossell:2012}.
+In this section we overview the methodology
+and highlight its advantages.
+For further details, please see the paper.
+In subsequent sections we illustrate how to use the package with a worked example.
+
+\texttt{casper} uses a probability model to estimate expression at the variant level.
+Key advantages are that \texttt{casper} summarizes RNA-seq data in a manner that is more informative
+than the current standard, and that is determines the read non-uniformity
+and fragment length (insert size) distribution from the observed data.
+More specifically, the current standard is to record the number of reads overlapping with each exon
+and connecting each pair of exons.
+The fact that only pairwise connections between exons are considered disregards important information,
+namely that numerous read pairs visit more than 2 exons.
+While this was not a big issue with older sequencing technologies,
+it has become relevant with current protocols which produce longer sequences.
+For instance, in a 2012 ENCODE Illumina Hi-Seq dataset \cite{rossell:2012} found that roughly 2 out of 3 read pairs visited $\geq 3$ exons.
+
+\texttt{casper} summarizes the data by recording the {\it exon path} followed by each pair,
+and subsequently counts the number of exons following each path.
+For instance, suppose that the left end visits exons 1 and 2, while the right end visits exon 3.
+In this case we would record the path \texttt{1.2-3},
+and count the number of reads which also visit the same sequence of exons.
+Table \ref{tab:sampledata} illustrates how these summaries might look like for a gene with 3 exons
+(examples in subsequent sections show counts for experimental data).
+The first row indicates there are 210 sequences for which both ends only overlap with exon 1.
+The second and third rows contain counts for exons 2 and 3.
+The fourth row indicates that for 90 sequences the left end visited exon 1 and the right end exon 2.
+The fifth row illustrates the gain of information associated to considering exon paths:
+we have 205 pairs where the left end visits exons 1-2 and the right end visits exon 3.
+These reads can only have originated from a variant that contains the three exons in the gene,
+and hence are highly informative.
+If we only counted pairwise connections, this information would be lost
+(and incidentally, the usual assumption that counts are independent would be violated).
+The sixth row indicates that 106 additional pairs visited exons 1-2-3, but they did so in a different manner
+(now it's the right end the one that visits two exons).
+In this simplified example rows 5 and 6 give essentially the same information and could be combined,
+but for longer genes they do provide different information.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|c|r|r|r|} \hline
+ Path & Number of read pairs & $P(\mbox{path} \mid v_1)$ & $P(\mbox{path} \mid v_2)$ \\ \hline
+ 1-1 &   210    & 0.2  & 0.35 \\
+ 2-2 &   95     & 0.1  & 0.25 \\
+ 3-3 &   145    & 0.15 & 0    \\
+ 1-2 &   90    & 0.1  & 0.4  \\
+ 1.2-3 & 205    & 0.2  & 0    \\
+ 1-2.3 & 106    & 0.1  & 0    \\
+ 2-3 &   149    & 0.15 & 0    \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Exon path counts is the basic data fed into \texttt{casper}. Counts are compared to the probability of observing each path under each considered variant.}
+\label{tab:sampledata}
+\end{table}
+
+Now suppose that the gene has two known variants: the full variant $v_1$ (i.e. using the 3 exons) and the variant $v_2$ which only contains exons 1 and 2.
+The third column in Table \ref{tab:sampledata} shows the probability that a read pair generated from $v_1$ follows each path,
+and similarly the fourth column for $v_2$.
+These probabilities are simply meant as an example, in practice \texttt{casper} estimates these probabilities precisely
+by considering the fragment length distribution and possible read non-uniformity.
+Notice that read pairs generated under $v_2$ have zero probability of following any path that visits exon 3,
+as $v_2$ does not contain this exon.
+Further, the proportion of observed counts following each path is very close to what one would expect if all reads came from $v_1$,
+hence intuitively one would estimate that the expression of $v_1$ must be close to 1.
+From a statistical point of view, estimating the proportion of pairs generated by each variant can be viewed
+as a mixture model where the aim is to estimate the weight of each component (i.e. variant) in the mixture.
+
+A key point is that, in order to determine the probability of each path, one would need to know the
+distribution of fragment lengths (i.e. outer distance between pairs)
+and read starts (e.g. read non-uniformity due to 3' biases).
+These quantities are in general not known, and in our experience reports from sequencing facilities are oftentimes inaccurate.
+Further, these distributions may differ substantially from simple parametric forms that are usually assumed
+({\it e.g.} the fragment length distribution is not well approximated by a Normal or Poisson distribution).
+Instead, \cite{rossell:2012} proposed estimating these distributions non-parametrically from the observed data.
+In short, these distributions are estimated by selecting reads mapping to long exons (fragment size) 
+or to genes with a single known transcript (read start).
+There are typically millions of such reads, therefore the estimates can be obtained at a very high precision.
+Examples are shown in subsequent sections (note: the illustration uses a small subset of reads, in real applications the
+estimates are much more precise). 
+
+Finally we highlight a more technical issue. 
+By default \texttt{casper} uses a prior distribution which,
+while being essentially non-informative, it pushes the estimates away from the boundaries (e.g. variants with 0 expression)
+and thus helps reduce the estimation error.
+The theoretical justification lies in the typical arguments in favor of pooling that stem from Stein's paradox and related work.
+Empirical results in \cite{rossell:2012} show that, by combining all the features described above, \texttt{casper} may reduce the estimation error by a factor of 4
+when compared to another popular method.
+Currently, \texttt{casper} implements methods to estimate the expression for a set of known variants.
+We are in the process of incorporating methodology for de novo variant searches,
+and also for sample size calculations, i.e. determining the sequencing depth, read length or the number of patients needed for a given study.
+
+
+
+\section{Aligning reads and importing data}
+\label{sec:import}
+
+The input for \texttt{casper} are BAM files containing aligned reads.
+There are several software options to produce BAM files.
+TopHat \citep{trapnell:2009} is a convenient option, as it is specifically designed to map
+reads spanning exon junctions accurately.
+As an illustration, suppose paired end reads
+produced with the Illumina platform
+are stored
+in the FASTQ files \texttt{sampleR1.fastq} and \texttt{sampleR2.fastq}.
+The TopHat command to align these reads into a BAM file is:
+
+\footnotesize
+\begin{verbatim}
+> tophat --solexa1.3-quals -p 4 -r 200 /pathToBowtieIndexes/hg19 
+sampleR1.fastq sampleR2.fastq
+\end{verbatim}
+\normalsize
+
+The option \texttt{--solexa1.3-quals} indicates the version of quality scores
+produced by the Illumina pipeline and \texttt{-p 4} to use 4 processors.
+The option \texttt{-r} is required by TopHat for paired-end reads and indicates the average fragment size.
+The fragment size is around 200-300 for many experiments,
+so any value of \texttt{-r} in this range should be reasonable.
+After importing the data into R,
+one can use the \texttt{casper} function \texttt{getDistrs}
+to estimate the fragment size distribution (see below).
+This can be used as a check that the specified \texttt{-r} was reasonable.
+In our experience, results are usually robust to moderate miss-specifications of \texttt{-r}.
+
+BAM files can be read into R using the \texttt{Rsamtools} package \citep{rpkg:Rsamtools}.
+For the sake of computational speed,
+in this vignette we will use data that has already been imported in a previous session.
+The data was obtained from the RGASP1 project at \\
+ftp://ftp.sanger.ac.uk/pub/gencode/rgasp/RGASP1/inputdata/human\_fastq.
+
+We used reads from replicate 1 and lane 1 in sample K562\_2x75.
+In order for the vignette to compile quickly here we illustrate
+the usage of the package by selecting the reads mapping
+to 6 genes in chromosome 1 (see Section \ref{sec:preprocess}).
+The code required to import the data into Bioconductor is provided below.
+It is important to add the option \texttt{tag='XS'},
+so that information on whether the experiment was stranded or not is imported.
+
+\footnotesize
+\begin{verbatim}
+> library(Rsamtools)
+> what <- scanBamWhat(); what <- what[!(what %in% c('seq','qual'))]
+> flag <- scanBamFlag(isPaired=TRUE,hasUnmappedMate=FALSE)
+> param <- ScanBamParam(flag=flag,what=what,tag='XS')
+> bam0 <- scanBam(file='accepted_hits.bam',param=param)[[1]]
+\end{verbatim}
+\normalsize
+
+
+\section{Pre-processing the data for analysis}
+\label{sec:preprocess}
+
+We start by obtaining and processing genome annotation data.
+Here we illustrate our package with a few selected genes obtained
+from the human genome version hg19.
+The command that one would use to store the full annotated genome into \texttt{hg19DB} is
+
+\begin{verbatim}
+> hg19DB <- procGenome('hg19',mc.cores=6)
+\end{verbatim}
+
+We load the imported BAM file and processed human genome annotation.
+\texttt{K562.r1l1} was imported using \texttt{scanBam}
+and is a list containing read-level information such as read identifier,
+chromosome and alignment position, position of the matched paired end etc.
+\texttt{hg19DB} is an object of class \texttt{annotatedGenome}
+and contains information regarding genes, transcripts, exons etc.
+It also indicates the genome version that was used to create the genome
+and the creation date.
+
+\footnotesize
+<<process1>>=
+library(casper)
+data(K562.r1l1)
+names(K562.r1l1)
+data(hg19DB)
+hg19DB
+head(sapply(hg19DB@transcripts,length))
+@ 
+\normalsize
+
+The lengths displayed above indicate the number of transcripts per island.
+
+RNA-seq experiments typically contain some very short RNA sequences,
+which can be due to RNA degradation.
+The function \texttt{rmShortInserts} removes all sequences with insert size
+({\it i.e.} distance between start of left-end and start of right-end)
+below a user-specified level. We remove reads with insert sizes below 100bp.
+We then use \texttt{getDistrs} to estimate the fragment length distribution
+and the read start distribution.
+
+\footnotesize
+<<process2>>=
+bam0 <- rmShortInserts(K562.r1l1, isizeMin=100)
+distrs <- getDistrs(hg19DB,bam=bam0)
+@ 
+\normalsize
+
+We visualize the fragment length distribution.
+The resulting plot is shown in Figure \ref{fig:plotprocess1}, left panel.
+Notice there few fragments shorter than 140bp.
+Given the reduced number of reads in our toy data the estimate is not accurate,
+and hence we overlay a smoother estimate (blue line).
+
+\footnotesize
+<<plotprocess1>>=
+plot(distrs, "fragLength")
+@ 
+\normalsize
+
+We produce a histogram to inspect the read start distribution.
+The histogram reveals that reads are non-uniformly distributed
+along transcripts (Figure \ref{fig:plotprocess1}, right panel).
+Rather, there is a bias towards the 3' end.
+
+\footnotesize
+<<plotprocess2>>=
+plot(distrs, "readSt")
+@ 
+\normalsize
+
+\setkeys{Gin}{width=0.45\textwidth} 
+\begin{figure}
+\begin{center}
+\begin{tabular}{cc}
+<<label=plotprocess1,fig=TRUE,echo=FALSE>>=
+<<plotprocess1>>
+@ &
+<<label=plotprocess2,fig=TRUE,echo=FALSE>>=
+<<plotprocess2>>
+@ 
+\end{tabular}
+\end{center}
+\caption{Left: fragment length distribution; Right: read start distribution}
+\label{fig:plotprocess1}
+\end{figure}
+
+As a final pre-processing step, we use the function \texttt{procBam}
+to divide each read pair into a series of disjoint intervals.
+The intervals indicate genomic regions that the read
+aligned to 
+consecutively, {\it i.e.} with no gaps.
+
+\footnotesize
+<<procBam>>=
+pbam0 <- procBam(bam0)
+pbam0
+head(getReads(pbam0))
+@ 
+\normalsize
+
+The resulting object \texttt{pbam0} is a list
+with element \texttt{pbam} of type \texttt{RangedData}
+and \texttt{stranded} indicating whether the RNA-seq experiment was stranded or not.
+
+
+\section{Estimating expression for a set of known variants}
+\label{sec:knownvar}
+ 
+In order to obtain expression estimates,
+we first determine the exons visited by each read,
+which we denominate the {\it exon path},
+and count the number of reads following 
+the same exon path.
+
+\footnotesize
+<<pathCounts>>=
+pc <- pathCounts(pbam0, DB=hg19DB)
+pc
+head(pc@counts[[1]])
+@ 
+\normalsize
+
+The output of \texttt{pathCounts} is a 
+named integer vector counting exon paths. 
+The names follow the format ".exon1.exon2-exon3.exon4.", with
+dashes making the split between exons visited by left and
+right-end reads correspondingly.
+For instance, an element in \texttt{pc} named
+\texttt{.1314.1315-1315.1316.}
+indicates the number of reads for which the left end
+visited exons 1314 and 1315 
+and the right end visited exons 1315 and 1316.
+The precise genomic coordinates of each exon are stored in
+the annotated genome.
+ 
+The function \texttt{calcExp} uses the exon path counts,
+read start and  fragment length distributions and genome annotation
+to obtain RPKM expression estimates.
+Expression estimates are returned in an \texttt{ExpressionSet} object,
+with RefSeq transcript identifiers as \texttt{featureNames}
+and the internal gene ids used by \texttt{hg19DB} stored as feature data.
+
+\footnotesize
+<<calcExp>>=
+eset <- calcExp(distrs=distrs, genomeDB=hg19DB, pc=pc, readLength=75, rpkm=FALSE)
+eset
+head(exprs(eset))
+head(fData(eset))
+@ 
+\normalsize
+
+When setting \texttt{rpkm} to \texttt{FALSE}, \texttt{calExp} returns relative
+expression estimates for each isoform.
+That is, the proportion of transcripts originating from each variant,
+so that the estimated expressions add up to 1 for each gene.
+When setting \texttt{rpkm} to \texttt{TRUE},
+expression estimates in reads per kilobase per million (RPKM)
+are returned instead.
+
+\footnotesize
+<<relIsoformExpr>>=
+eset <- calcExp(distrs=distrs, genomeDB=hg19DB, pc=pc, readLength=75, rpkm=TRUE)
+head(exprs(eset))
+@ 
+\normalsize
+
+Let $\hat{\pi}_{gi}$ be the estimated relative expression for transcript $i$ within gene $g$,
+$w_{gi}$ the transcript width in base pairs,
+$n_g$ the number of reads overlapping with gene $g$
+and $\sum_{}^{} n_g$ the total number of reads in the experiment.
+The RPKM for transcript $i$ within gene $i$ is computed as
+\begin{align}
+  r_{gi}= 10^9 \frac{ \hat{\pi}_{gi} n_g}{w_{gi} \sum_{}^{} n_g}
+\label{eq:rpkm}
+\end{align}
+
+
+
+\section{Plots and querying an annotatedGenome}
+\label{sec:plots}
+
+\texttt{casper} incorporates some functionality to plot splicing variants and estimated expression levels.
+While in general we recommend using dedicated visualization software such as IGV \citep{robinson:2011},
+we found useful to have some plotting capabilities within the package.
+
+We start by showing how to extract information from an \texttt{annotatedGenome} object.
+Suppose we are interested in a gene with Entrez ID$=27$.
+We can obtain the known variants for that gene with the function \texttt{transcripts},
+and the chromosome with \texttt{getChr}.
+We can also find out the island identifier that \texttt{casper} assigned to that gene
+(recall that \texttt{casper} merges multiple genes that have some overlapping exons into a single gene island).
+
+\footnotesize
+<<plot1>>=
+tx <- transcripts(entrezid='27', genomeDB=hg19DB)
+tx
+getChr(entrezid='27',genomeDB=hg19DB)
+islandid <- getIsland(entrezid='27',genomeDB=hg19DB)
+islandid
+getChr(islandid=islandid,genomeDB=hg19DB)
+@ 
+\normalsize
+
+Once we know the islandid, we can plot the variants with \texttt{genePlot}.
+The argument \texttt{col} can be set if one wishes to override the default rainbow colours.
+
+<<plot2>>=
+genePlot(islandid=islandid,genomeDB=hg19DB)
+@ 
+
+Figure \ref{fig:plot2} shows the resulting plot.
+The plot shows the identifiers for all transcripts
+in the gene island, and exons are displayed as boxes.
+The x-axis indicates the genomic position in bp.
+For instance, the last three variants have a different transcription end site
+than the rest, indicated by their last exon being different.
+Similarly, the first variant has an alternative transcription start site.
+
+\setkeys{Gin}{width=0.6\textwidth} 
+\begin{figure}
+\begin{center}
+<<label=plot2,fig=TRUE,echo=FALSE>>=
+<<plot2>>
+@
+\end{center}
+\caption{Transcripts for gene with Entrez ID$=27$}
+\label{fig:plot2}
+\end{figure}
+
+It can also be useful to add the aligned reads and estimated expression to the plot.
+This can be achieved by passing the optional arguments \texttt{reads} (the object returned by \texttt{procBam})
+and \texttt{exp} (the object returned by \texttt{calcExp}).
+
+<<plot3>>=
+genePlot(islandid=islandid,genomeDB=hg19DB,reads=pbam0,exp=eset)
+@ 
+
+Figure \ref{fig:plot3} shows the plot.
+Black segments correspond to pairs with short insert size (i.e. where both ends are close to each other, by default up to
+\texttt{maxFragLength}=500bp).
+They indicate the outer limits of the pair
+(i.e. left-most position of the left read and right-most position of the right read).
+Red/blue segments indicate pairs with long insert sizes.
+The red lines indicates the gapped alignments and the discontinuous blue lines simply fill in the gaps, so that they are easier to visualize.
+By staring at this plot long enough, one can make some intuitive guesses
+as to which variants may be more expressed.
+For instance, many reads align to the left-most exon, which suggests that variant NM\_00136001 is not highly expressed.
+Accordingly, \texttt{casper} estimated expression for this variant is lowest.
+There are few reads aligning to the exons to the right-end (which may be partially explained by the presence of a 3' bias).
+The last variant does not contain several of these genes, and hence has the highest estimated expression.
+Of course, inspecting the figure is simply meant to provide some intuition,
+to quantify alternative splicing \texttt{casper} uses precise probability calculations.
+
+\setkeys{Gin}{width=0.6\textwidth} 
+\begin{figure}
+\begin{center}
+<<label=plot3,fig=TRUE,echo=FALSE>>=
+<<plot3>>
+@
+\end{center}
+\caption{Transcripts for gene with Entrez ID$=27$}
+\label{fig:plot3}
+\end{figure}
+
+%\section{De novo variant discovery}
+%\label{sec:denovo}
+%
+%\texttt{casper} implements a Bayesian model selection strategy to detect novel variants and quantify their expression.
+%The basic idea is to first expand the annotated genome by adding new exons (or groups of exons, suggesting a new transcripts) 
+%suggested by the data.
+%Second, for each gene we consider all the variants that can be formed by including/excluding each exon,
+%and report the posterior probability that a given set of variants is expressed.
+%Conditional on their being expressed, we also estimate their expression level.
+%Denote a set of variants of interest by $\bm{\nu}$ and by $\bm{\pi}$ their relative expression.
+%We perform inference on the set of expressed variants using the posterior probability
+%$P(\bm{\nu} \mid {\bf y})$ conditional on the observed data ${\bf y}$,
+%and estimate their expression from $P(\bm{\pi} \mid \bm{\nu}, {\bf y})$.
+%Finally, we use these results to estimate the expression of each variant,
+%either by selecting the most probably set of variants or by 
+%perform modeling averaging, {\it i.e.} combine the estimated $\bm{\pi}$
+%under different sets of variants $\bm{\nu}_1,\bm{\nu}_2,\ldots$ according the their posterior probabilities $P(\bm{\nu}_i \mid {\bf y})$.
+%
+%We start by
+%expanding the annotated genome by detecting new exons and transcripts suggested by the data.
+%We then obtain path counts based on the expanded genome.
+%
+%<<createDenovoGenome>>=
+%hg19denovo <- createDenovoGenome(pbam0,DB=hg19DB,readLen=75)
+%hg19denovo
+%pcnovo <- pathCounts(pbam0,DB=hg19denovo)
+%@ 
+%
+%Second, we must set the prior probability that a set of variants is expressed.
+%We recommend setting these probabilities based on the annotated genome,
+%so that we assign high prior probability to combinations of variants that
+%are consistent with those in the genome.
+%For instance, genes with more exons tend to have a larger number of variants,
+%but variants missing many exons are typically not expressed.
+%
+%<<modelPrior>>=
+%mprior <- modelPrior(hg19DB)
+%mprior
+%@ 
+%
+%We can visualize the prior probabilities with \texttt{plotPriorAS}.
+%Setting \texttt{type='nbVariants'} displays the prior probability that
+%a gene with $E$ exons has $1,2,\ldots,2^{E}-1$ expressed variants.
+%Figure \ref{fig:plotprior1} displays these probabilities for $E=9$
+%(there are too few genes in \texttt{hg19DB} to obtain precise estimates for other $E$ values).
+%The figure also shows the observed proportion in the annotated genome \texttt{hg19DB}.
+%
+%\footnotesize
+%<<plotprior1>>=
+%plotPriorAS(mprior, type='nbVariants',exons=9)
+%@ 
+%\normalsize
+%
+%
+%\setkeys{Gin}{width=0.45\textwidth} 
+%\begin{figure}
+%\begin{center}
+%<<label=plotprior1,fig=TRUE,echo=FALSE>>=
+%<<plotprior1>>
+%@
+%\end{center}
+%\caption{Prior distribution on the number of variants for genes with 2, 3, 4 and 5 exons}
+%\label{fig:plotprior1}
+%\end{figure}
+%
+%We can also display the prior distribution on the number of exons
+%contained in an expressed variants by setting \texttt{type='nbExons'}.
+%
+%\footnotesize
+%<<plotprior2>>=
+%plotPriorAS(mprior, type='nbExons',exons=9)
+%@ 
+%\normalsize
+%
+%\setkeys{Gin}{width=0.45\textwidth} 
+%\begin{figure}
+%\begin{center}
+%<<label=plotprior2,fig=TRUE,echo=FALSE>>=
+%<<plotprior2>>
+%@
+%\end{center}
+%\caption{Prior distribution on the number of exons in a variant for genes with 2, 3, 4 and 5 exons}
+%\label{fig:plotprior2}
+%\end{figure}
+%
+%The function \texttt{calcDenovo} computes posterior probabilities and estimated expression for each set of variants.
+%For a gene with $E$ exons, there's $2^E-1$ possible variants and hence $2^{2^E-1}-1$ possible sets of expressed variants.
+%It is computationally unfeasible to enumerate such a super-exponential number of models.
+%By default, \texttt{calcDenovo} performs this exhaustive enumeration only for genes with up to 5 exons.
+%For genes with $\geq 6$ exons its uses an MCMC scheme combined with systematic search strategies
+%that attempts to explore the sets of variants wit highest posterior probability.
+%
+%
+%<<calcDenovo>>=
+%fit1 <- calcDenovo(distrs=distrs, genomeDB=hg19denovo, pc=pcnovo, readLength=75, islandid="4")
+%fit1
+%fit1[['4']]
+%@ 
+
+\bibliographystyle{plainnat}
+\bibliography{references} 
+
+\end{document}

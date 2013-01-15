@@ -1,0 +1,55 @@
+\name{getDistrs}
+\alias{getDistrs}
+\title{
+  Compute fragment start and fragment length distributions
+}
+\description{
+  Compute fragment start distributions by using reads
+  aligned to genes with only one annotated variant.
+  Estimate fragment length
+  distribution using fragments aligned to long exons (>1000nt).
+  Fragment length is defined as the distance between the start of the
+  left-end read and the end of the right-end read.
+}
+\usage{
+getDistrs(DB, bam, nreads=4*10^6)
+}
+\arguments{
+  \item{DB}{
+      Annotated genome. Object of class \code{knownGenome} as returned by \code{procGenome}.
+  }
+  \item{bam}{
+      Aligned reads, as returned by \code{scanBam}. It must be a list with
+      elements 'qname', 'rname', 'qwidth', 'pos' and 'mpos'.
+  }
+  \item{nreads}{
+      To speed up computations, only the first \code{nreads} are used to
+      obtain the estimates. The default value of 4 milions usually gives
+      highly precise estimates.
+  }
+}
+\value{
+  An object of class readDistrs with slots:
+  \item{lenDis}{Table with number of fragments with a given length}
+  \item{stDis}{Cumulative distribution function (object of type closure) for relative start position}
+}
+\author{
+Camille Stephan-Otto Attolini, David Rossell
+}
+\examples{
+data(K562.r1l1)
+data(hg19DB)
+bam0 <- rmShortInserts(K562.r1l1, isizeMin=100)
+
+distrs <- getDistrs(hg19DB,bam=bam0)
+
+#Fragment length distribution
+plot(distrs,'fragLength')
+
+#Fragment start distribution (relative to transcript length)
+plot(distrs,'readSt')
+}
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+\keyword{ stats }
+

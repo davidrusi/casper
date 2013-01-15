@@ -1,0 +1,18 @@
+useDynLib(casper)
+
+import(IRanges, graphics)
+importFrom(VGAM,vglm,betabinomial.ab,Coef)
+importFrom(mgcv,gam,predict.gam,s)
+importFrom(GenomicFeatures, transcripts, exonsBy)
+importFrom(survival,Surv,survfit)
+
+#export regular functions
+export(calcExp, genePlot, getDistrs, getReads, getIsland, getChr, transcripts, pathCounts, procBam, procGenome, rmShortInserts )
+
+exportClasses(annotatedGenome, pathCounts, procBam)
+#export general methods
+exportMethods("plot")
+
+
+
+
