@@ -4,7 +4,7 @@ Date: 2012-12-11
 Title: Characterization of Alternative Splicing based on Paired-End
         Reads
 Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss
-Maintainer: David Rossell <rosselldavid@gmail.org>
+Maintainer: David Rossell <rosselldavid@gmail.com>
 Depends: R (>= 2.14.1), Biobase, IRanges, methods, gtools,
         GenomicRanges
 Imports: VGAM, mgcv, GenomicFeatures, survival
