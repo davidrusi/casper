@@ -187,10 +187,12 @@ so that information on whether the experiment was stranded or not is imported.
 We start by obtaining and processing genome annotation data.
 Here we illustrate our package with a few selected genes obtained
 from the human genome version hg19.
-The command that one would use to store the full annotated genome into \texttt{hg19DB} is
+The commands that one would use to store the full annotated genome into \texttt{hg19DB} is
 
 \begin{verbatim}
-> hg19DB <- procGenome('hg19',mc.cores=6)
+genome='hg19'
+genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename="refGene")
+> hg19DB <- procGenome(genDB=genDB, genome=genome, mc.cores=6)
 \end{verbatim}
 
 We load the imported BAM file and processed human genome annotation.
