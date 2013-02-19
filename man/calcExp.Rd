@@ -66,6 +66,12 @@ eset <- calcExp(distrs=distrs, genomeDB=hg19DB, pc=pc, readLength=75, rpkm=FALSE
 head(exprs(eset))
 head(fData(eset))
 
+#Add fake sample by permuting and combine
+eset2 <- eset[sample(1:nrow(eset2),replace=FALSE),]
+esetall <- mergeExp(eset,eset2)
+
+#After merge samples are correctly matched
+head(exprs(eset2))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
