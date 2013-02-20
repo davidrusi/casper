@@ -1,4 +1,4 @@
-procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, priorq=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
+procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
   #Format input
   startcdf <- distrs@stDis(seq(0,1,.001))
   lendis <- as.double(distrs@lenDis/sum(distrs@lenDis))
@@ -13,11 +13,10 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, prio
   if ((niter<=burnin) & citype==2) stop("Too many burnin iterations specified. Decrease burnin or increase niter")
   if (missing(islandid)) islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
 
-  exons <- names(unlist(genomeDB@islands))
-  exons <- as.integer(sub(".*\\.", "", exons))
+  exons <- as.integer(names(genomeDB@islands@unlistData))
   names(exons) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
   exons <- split(unname(exons), names(exons))
-  exonwidth <- unlist(width(genomeDB@islands))
+  exonwidth <- width(genomeDB@islands@unlistData)
   names(exonwidth) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
   exonwidth <- split(unname(exonwidth), names(exonwidth))
   strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
@@ -72,63 +71,74 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, prio
     transcript <- c(unlist(lapply(ans, function(z) names(z[[1]]))), unname(unlist(miss)))
     gene <- c(rep(names(ans),sapply(ans,function(z) length(z[[1]]))), rep(names(miss), sapply(miss, length)))
     fdata <- data.frame(transcript=transcript, gene=gene)
-    misse <- rep(NA, length(unlist(miss)))
+    ntx.miss <- sapply(miss,length) #Added
+    misse <- rep(1/ntx.miss,ntx.miss) #Added: report prior mode for islands with no reads
+    a0 <- rep(priorq*ntx.miss,ntx.miss) #Added
+    missSE <- sqrt(priorq * (a0-priorq) / (a0^2 * (a0+1))) #Added
+    #misse <- rep(NA, length(unlist(miss))) #Removed
     names(misse) <- unlist(miss)
     exprsx <- matrix(c(unlist(lapply(ans,'[[',1)), misse) ,ncol=1)
     rownames(exprsx) <- c(unlist(lapply(ans, function(z) names(z[[1]]))), names(misse))
-    exprsx[exprsx==-1] <- NA
+    #exprsx[exprsx==-1] <- NA #Removed
     exprsx <- round(exprsx,10)
     if (citype==1) {
-      se <- c(unlist(lapply(ans,'[[',2)), misse)
-      se[se==-1] <- NA
-      alpha <- .05
-      #strategy 1
-      #fdata$ci95.high <- fdata$ci95.low <- rep(NA,nrow(fdata))
-      #sel <- !is.na(se) & se!=0
-      #fdata$ci95.high[sel] <- mapply(function(m,s) qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel]))
-      #fdata$ci95.low[sel] <- mapply(function(m,s) qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel]))
-      #sel <- !is.na(se) & se==0; fdata$ci95.high[sel] <- fdata$ci95.low[sel] <- exprsx[sel,1]
-      #sel <- fdata$ci95.high < exprsx[,1] & !is.na(fdata$ci95.high); fdata$ci95.high[sel] <- exprsx[sel,1]
-      #sel <- fdata$ci95.low > exprsx[,1] & !is.na(fdata$ci95.low); fdata$ci95.low[sel] <- exprsx[sel,1]
-      #strategy 2
-      fdata$ci95.low <- qnorm(alpha/2,mean=exprsx,sd=se)
-      fdata$ci95.high <- qnorm(1-alpha/2,mean=exprsx,sd=se)
-      sel <- round(fdata$ci95.low,10)<0 & !is.na(se); fdata$ci95.low[sel] <- 0
-      fdata$ci95.high[sel] <- unlist(mapply(function(m,s) qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
-      sel <- round(fdata$ci95.high,10)>1 & !is.na(se); fdata$ci95.high[sel] <- 1
-      fdata$ci95.low[sel] <- unlist(mapply(function(m,s) qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
+      se <- c(unlist(lapply(ans,'[[',2)), missSE) #Added: use missSE
+      #se[se==-1] <- NA #Removed
+      if (!rpkm) { #Added
+        alpha <- .05
+        fdata$ci95.low <- qnorm(alpha/2,mean=exprsx,sd=se)
+        fdata$ci95.high <- qnorm(1-alpha/2,mean=exprsx,sd=se)
+        sel <- round(fdata$ci95.low,10)<0 & !is.na(se); fdata$ci95.low[sel] <- 0
+        fdata$ci95.high[sel] <- unlist(mapply(function(m,s) qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
+        sel <- round(fdata$ci95.high,10)>1 & !is.na(se); fdata$ci95.high[sel] <- 1
+        fdata$ci95.low[sel] <- unlist(mapply(function(m,s) qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
+      }
+      fdata$se <- se #Added: store SE
     }
     if (citype==2) {
-      if(sum(unlist(lapply(ans, function(x) is.na(x[[3]]))))==0){ 
-        q <- lapply(ans,function(z) apply(z[[3]],2,quantile,probs=c(.025,.975)))
-        q <- t(do.call(cbind,q))
-        q <- rbind(q, matrix(NA, nrow=length(misse), ncol=2))
-        fdata$ci95.low <- q[,1]; fdata$ci95.high <- q[,2]
-        tmp <- cbind(exprsx, fdata[,3:4])
-        tmp <- as.data.frame(t(apply(tmp, 1, function(x){
-          if(!any(is.na(x))){
-            y <- x
-            if(x[2]>x[1]) y[2]=y[1]
-            if(x[3]<x[1]) y[3]=y[1]
-          } else y <- x
-          y
-          })))
-        fdata$ci95.low <- tmp$ci95.low
-        fdata$ci95.high <- tmp$ci95.high
+      if(sum(unlist(lapply(ans, function(x) is.na(x[[3]]))))==0){
+        fdata$se <- lapply(ans, function(z) (colMeans(z[[3]]^2) - colMeans(z[[3]])^2) * nrow(z)/(nrow(z) - 1)) #Added: store SE
+        if (!rpkm) { #Added
+          q <- lapply(ans,function(z) apply(z[[3]],2,quantile,probs=c(.025,.975)))
+          q <- t(do.call(cbind,q))
+          q <- rbind(q, matrix(NA, nrow=length(misse), ncol=2))
+          fdata$ci95.low <- q[,1]; fdata$ci95.high <- q[,2]
+          tmp <- cbind(exprsx, fdata[,c('ci95.low','ci95.high')])
+          tmp <- as.data.frame(t(apply(tmp, 1, function(x){
+            if(!any(is.na(x))){
+              y <- x
+              if(x[2]>x[1]) y[2]=y[1]
+              if(x[3]<x[1]) y[3]=y[1]
+            } else y <- x
+            y
+            })))
+          fdata$ci95.low <- tmp$ci95.low
+          fdata$ci95.high <- tmp$ci95.high
+        }
       }
     }
       
-    rownames(exprsx) <- rownames(fdata) <- fdata$transcript
-    fdata <- new("AnnotatedDataFrame",fdata)
-    ans <- new("ExpressionSet",exprs=exprsx,featureData=fdata)
-
-    #Return absolute expression levels
+  rownames(exprsx) <- rownames(fdata) <- fdata$transcript
+  #Compute log(RPKM)
   if (rpkm) {
-    nreads <- sapply(pc[unique(as.character(ans@featureData$gene))],sum)
-    geneLength <- sapply(genomeDB@islands[unique(as.character(ans@featureData$gene))], function(x) sum(width(x)))
-    nreads <- (nreads/totReads)/(geneLength/10^9)
-    exprs(ans) <- exprs(ans)*nreads[as.character(ans@featureData$gene)]
+    if (citype != 0) se.logpi <- fdata$se / exprsx #Added: delta method for Var(log(pi))
+    nreads <- sapply(pc[unique(as.character(fdata$gene))],sum)
+    geneLength <- sum(width(genomeDB@islands[unique(as.character(fdata$gene))])) #Modified: deals with GRanges (faster)
+    apost <- (nreads+(priorqGeneExpr-1)) #Added
+    theta <- apost/totReads #Added
+    theta.rpkm <- theta/(geneLength/10^9)  #Modified: assign posterior mode
+    exprsx <- log(exprsx) + log(theta.rpkm[as.character(fdata$gene)]) #Added
+    if (citype != 0) {
+      se.theta <- sqrt(apost * (1-apost/totReads) / (totReads * (totReads+1))) #Added
+      se.logtheta <- se.theta / theta #Added
+      fdata$se <- se.logpi + se.logtheta[as.character(fdata$gene)] #Added
+      alpha <- 0.05 #Added
+      err <- qnorm(alpha/2)*fdata$se; fdata$ci95.low <- exprsx + err; fdata$ci95.high <- exprsx - err #Added
+    }
   }
+  #Return ExpressionSet
+  fdata <- new("AnnotatedDataFrame",fdata)
+  ans <- new("ExpressionSet",exprs=exprsx,featureData=fdata)
   ans
 }
 
@@ -139,8 +149,8 @@ mergeExp <- function(minus, plus){
   ans
 }
 
-calcExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, priorq=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE) {
- totReads <- sum(getNreads(pc))
+calcExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE) {
+  totReads <- getNreads(pc); totReads <- sum(totReads) + priorqGeneExpr*length(totReads) #Modified: totReads includes prior sample size
   
   if (missing(readLength)) stop("readLength must be specified")
   if (genomeDB@denovo) stop("genomeDB must be a known genome")
@@ -153,13 +163,13 @@ calcExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, prio
     plus <- NULL
     if(length(plusGI)>0) {
       plusDB <- genomeBystrand(genomeDB, "+")
-      plus <- procExp(distrs, plusDB, pc=pc@counts$plus, readLength=readLength, islandid=plusGI, rpkm=rpkm, priorq=priorq, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
+      plus <- procExp(distrs, plusDB, pc=pc@counts$plus, readLength=readLength, islandid=plusGI, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
     }
     minusGI <- islandid[is[islandid]=="-"]
     minus <- NULL
     if(length(minusGI)>0) {
       minusDB <- genomeBystrand(genomeDB, "-")
-      minus <- procExp(distrs, minusDB, pc=pc@counts$minus, readLength=readLength, islandid=minusGI, rpkm=rpkm, priorq=priorq, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
+      minus <- procExp(distrs, minusDB, pc=pc@counts$minus, readLength=readLength, islandid=minusGI, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
     } 
     if(is.null(plus) & is.null(minus)) stop("No counts in islandid genes")
     if(!(is.null(plus) | is.null(minus))) { ans <- mergeExp(plus, minus) }
@@ -167,7 +177,7 @@ calcExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, prio
   } else {
     if(missing(islandid)) islandid <- names(pc@counts[[1]])
     if(sum(!unlist(lapply(pc@counts[islandid], is.null)))) stop("No counts in islandid genes")
-    ans <- procExp(distrs, genomeDB, pc=pc@counts[[1]], readLength=readLength, islandid=islandid, rpkm=rpkm, priorq=priorq, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
+    ans <- procExp(distrs, genomeDB, pc=pc@counts[[1]], readLength=readLength, islandid=islandid, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, niter=niter, burnin=burnin, mc.cores=mc.cores, citype=citype, totReads=totReads)
   }
 
   ans
