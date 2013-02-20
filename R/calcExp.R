@@ -1,4 +1,4 @@
-procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=FALSE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
+procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
   #Format input
   startcdf <- distrs@stDis(seq(0,1,.001))
   lendis <- as.double(distrs@lenDis/sum(distrs@lenDis))
