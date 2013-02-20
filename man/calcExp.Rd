@@ -73,7 +73,7 @@ head(exprs(eset))
 head(fData(eset))
 
 #Add fake sample by permuting and combine
-eset2 <- eset[sample(1:nrow(eset2),replace=FALSE),]
+eset2 <- eset[sample(1:nrow(eset),replace=FALSE),]
 esetall <- mergeExp(eset,eset2)
 
 #After merge samples are correctly matched
