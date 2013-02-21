@@ -11,7 +11,7 @@ export(calcExp, genePlot, getDistrs, getReads, getIsland, getChr, transcripts, p
 
 exportClasses(annotatedGenome, pathCounts, procBam)
 #export general methods
-exportMethods("plot")
+exportMethods("plot","lines")
 
 
 

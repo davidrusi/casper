@@ -1,6 +1,8 @@
 \name{plot}
 \alias{plot}
 \alias{plot,readDistrs,ANY-method}
+\alias{lines}
+\alias{lines,readDistrs-method}
 \docType{methods}
 \title{
 Plot estimated read start and fragment length distributions.
@@ -16,7 +18,9 @@ Plot estimated read start and fragment length distributions.
   distributed, so a lack of uniformity is not a problem per se).
 }
 \usage{
-plot(x, y, ...) 
+plot(x, y, ...)
+
+lines(x, ...)
 }
 \arguments{
  \item{x}{Object of type \code{readDistrs}, as returned by \code{getDistrs}.}

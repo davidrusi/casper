@@ -32,23 +32,52 @@ setMethod("show", signature(object="readDistrs"), function(object) {
 
 setMethod("plot", signature(x="readDistrs"), function(x, y, ...) {
   if (missing(y)) stop("Specify type of plot: 'fragLength' or 'readSt'")
+  args <- list(...)
+  if ('col' %in% names(args)) col <- args$col else col <- 1
+  if ('lty' %in% names(args)) lty <- args$lty else lty <- 1
+  if ('lwd' %in% names(args)) lwd <- args$lwd else lwd <- 1
   if (y=='fragLength') {
     n <- as.numeric(names(x@lenDis))
-    ylim <- c(0,max(x@lenDis))
+    if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(x@lenDis))
     x2plot <- double(max(n)-min(n)+1); names(x2plot) <- min(n):max(n)
     x2plot[names(x@lenDis)] <- x@lenDis
-    plot(as.numeric(names(x2plot)),x2plot,type='l',xlab='Fragment length',ylab='Counts',ylim=ylim)
+    plot(as.numeric(names(x2plot)),x2plot,type='l',xlab='Fragment length',ylab='Counts',ylim=ylim,col=col,lty=lty,lwd=lwd)
   } else if (y=='readSt') {
     s <- seq(0,1,by=0.02)
     probs <- diff(x@stDis(s))
-    plot(NA,NA,xlim=c(0,1),ylim=c(0,max(probs[!is.na(probs)])),xlab='Read start (relative to transcript length)',ylab='Density')
-    segments(s[-length(s)],probs,s[-1])
-    segments(s,c(0,probs),s,c(probs,0))
+    if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(probs[!is.na(probs)]))
+    plot(NA,NA,xlim=c(0,1),ylim=ylim,xlab='Read start (relative to transcript length)',ylab='Density')
+    segments(s[-length(s)],probs,s[-1],col=col,lty=lty,lwd=lwd)
+    segments(s,c(0,probs),s,c(probs,0),col=col,lty=lty,lwd=lwd)
   } else {
     stop("Second argument must be either 'fragLength' or 'readSt'")
   }
 }
 )
+
+
+setMethod("lines", signature(x="readDistrs"), function(x, ...) {
+  args <- list(...)
+  y <- args[[1]]
+  if ('col' %in% names(args)) col <- args$col else col <- 1
+  if ('lty' %in% names(args)) lty <- args$lty else lty <- 1
+  if ('lwd' %in% names(args)) lwd <- args$lwd else lwd <- 1
+  if (y=='fragLength') {
+    n <- as.numeric(names(x@lenDis))
+    x2plot <- double(max(n)-min(n)+1); names(x2plot) <- min(n):max(n)
+    x2plot[names(x@lenDis)] <- x@lenDis
+    lines(as.numeric(names(x2plot)),x2plot,col=col,lty=lty,lwd=lwd)
+  } else if (y=='readSt') {
+    s <- seq(0,1,by=0.02)
+    probs <- diff(x@stDis(s))
+    segments(s[-length(s)],probs,s[-1],col=col,lty=lty,lwd=lwd)
+    segments(s,c(0,probs),s,c(probs,0),col=col,lty=lty,lwd=lwd)
+  } else {
+    stop("Second argument must be either 'fragLength' or 'readSt'")
+  }
+}
+)
+
 
 
 ###############################################################
@@ -84,8 +113,8 @@ setMethod("show", signature(object="pathCounts"), function(object) {
 setClass("annotatedGenome", representation(islands = "GRangesList", transcripts = "list", exon2island = "data.frame", exonsNI="GRanges",  aliases="data.frame", genomeVersion="character", dateCreated="Date", denovo="logical"))
 valid_annotatedGenome <- function(object) {
   msg <- NULL
-  if (!(all(c('seqnames','start','end','width','id','island') %in% names(object@exon2island)))) msg <- "Incorrect column names in 'exon2island'"
-  if(!(all(c('tx_id','tx_name','gene_id','exid','tx','island_id') %in% names(object@aliases)))) msg <- "Incorrect column names in 'aliases'"
+  if (!(all(c('seqnames','start','end','width','island') %in% names(object@exon2island)))) msg <- "Incorrect column names in 'exon2island'"
+  if(!(all(c('tx_id','tx_name','gene_id','tx','island_id') %in% names(object@aliases)))) msg <- "Incorrect column names in 'aliases'"
   if (is.null(msg)) { TRUE } else { msg }
 }
 

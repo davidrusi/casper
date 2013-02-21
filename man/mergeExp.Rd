@@ -43,7 +43,7 @@ mergeExp(..., sampleNames,  keep=c('transcript','gene'))
   \code{calcExp} to obtain an \code{ExpressionSet} for an individual sample.
 }
 \examples{
-% See calcExp
+#See example in calcExp
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
