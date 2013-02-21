@@ -6,7 +6,6 @@
 \description{
   \code{mergeExp} combines the output of \code{calcExp} from multiple
   samples, i.e. multiple \code{ExpressionSet} objects, into a single \code{ExpressionSet}
-
 }
 \usage{
 mergeExp(..., sampleNames,  keep=c('transcript','gene'))
@@ -31,7 +30,11 @@ mergeExp(..., sampleNames,  keep=c('transcript','gene'))
   citype='asymp' in calcExp).
 }
 \value{
-  Object of class \code{ExpressionSet} combining the input ExpressionSets.
+  Object of class \code{ExpressionSet} combining the input
+  ExpressionSets. Its \code{featureData} contains the columns indicated
+  in the keep argument, plus a column \code{readCount} with the total
+  number of reads mapped to each gene (or gene island, when multiple
+  genes have overlapping exons).
 }
 \author{
   David Rossell
