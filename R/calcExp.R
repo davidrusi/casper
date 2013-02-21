@@ -131,7 +131,7 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
     if (citype != 0) {
       se.theta <- sqrt(apost * (1-apost/totReads) / (totReads * (totReads+1))) #Added
       se.logtheta <- se.theta / theta #Added
-      fdata$se <- se.logpi + se.logtheta[as.character(fdata$gene)] #Added
+      fdata$se <- sqrt(se.logpi^2 + se.logtheta[as.character(fdata$gene)]^2) #Added
       alpha <- 0.05 #Added
       err <- qnorm(alpha/2)*fdata$se; fdata$ci95.low <- exprsx + err; fdata$ci95.high <- exprsx - err #Added
     }
