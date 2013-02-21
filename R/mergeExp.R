@@ -4,6 +4,7 @@ mergeExp <- function(..., sampleNames,  keep=c('transcript','gene')) {
   if (any(sapply(esets,ncol) != 1)) stop("All ExpressionSet objects in '...' should have 1 column")
   if (missing(sampleNames)) sampleNames <- paste('Sample',1:length(esets),sep='')
   if (length(esets)>1) {
+    readCount <- rowSums(do.call("cbind",lapply(esets, function(z) fData(z)[,'explCnts'])))
     sel <- !(keep %in% c('transcript','gene'))
     fData(esets[[1]]) <- fData(esets[[1]])[,keep]
     fvarLabels(esets[[1]])[sel] <- paste(sampleNames[1],fvarLabels(esets[[1]])[sel],sep='.')
@@ -19,6 +20,9 @@ mergeExp <- function(..., sampleNames,  keep=c('transcript','gene')) {
     }
     ans <- do.call("combine",esets)
   } else {
+    readCount <- fData(esets[[1]])[,'explCnts']
     ans <- esets[[1]]
   }
+  fData(ans)$readCount <- readCount
+  return(ans)
 }
