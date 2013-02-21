@@ -82,7 +82,8 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
     #exprsx[exprsx==-1] <- NA #Removed
     exprsx <- round(exprsx,10)
     if (citype==1) {
-      se <- c(unlist(lapply(ans,'[[',2)), missSE) #Added: use missSE
+      se <- unlist(lapply(ans,'[[',2))
+      if(length(miss)>0) se <- c(se, missSE)
       #se[se==-1] <- NA #Removed
       if (!rpkm) { #Added
         alpha <- .05
