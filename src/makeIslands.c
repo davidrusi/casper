@@ -174,6 +174,14 @@ SEXP makeGeneIslands(SEXP exons, SEXP isl, SEXP exisl, SEXP txs, SEXP totEx, SEX
  }
 
   makeIslands(p_exons, p_islands, nex, totExo, ex2tx, tx2ex, ex2txP, tx2exP, ex2posP);
+  free(p_exons);
+  free(p_islands);
+  for(i=0; i<totExo; i++){
+    free(ex2tx[i]);
+    free(tx2ex[i]);
+  }
+  free(ex2tx);
+  free(tx2ex);
   
   UNPROTECT(7);
   return(isl);

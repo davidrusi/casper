@@ -384,10 +384,6 @@ double Casper::LaplaceApprox(double *mode, int n)
 
   if (n == 1) { return priorLikelihoodLn(mode); }
 
-
-
-  bool posdef;
-
   double *thmode, ***H, **G, **S;
 
 
@@ -410,9 +406,9 @@ double Casper::LaplaceApprox(double *mode, int n)
 
 
 
-  S= dmatrix(0,n,0,n);
+  S= dmatrix(1,n-1,1,n-1);
 
-  normapprox(S, G, H, mode, thmode, n, 0);
+  normapprox(S, G, H, mode, thmode, n, 1);
 
 
 
@@ -420,12 +416,42 @@ double Casper::LaplaceApprox(double *mode, int n)
 
   double gdet = vtGradLogdet(G, n);
 
-  double sdet = log(det(S, n - 1, &posdef));
+  double **cholS;
 
+  double sdet;
+
+  cholS= dmatrix(1,n-1,1,n-1);
+
+  bool posdef;
+  
+  choldc(S,n-1,cholS,&posdef);
+  
+  if (!posdef) {
+
+    int i; double lmin=0, *vals;
+
+    vals= dvector(1,n);
+
+    eigenvals(S,n-1,vals);
+
+    for (i=1; i<n; i++) if (vals[i]<lmin) lmin= vals[i];
+
+    lmin = -lmin + .001;
+
+    for (i=1; i<n; i++) S[i][i] += lmin;
+
+    choldc(S,n-1,cholS,&posdef);
+
+    free_dvector(vals,1,n);
+
+  }
+
+  sdet= choldc_det(cholS,n-1);
+
+  free_dmatrix(cholS, 1, n-1, 1, n-1);
 
 
   double integral = emlk + gdet + (double)(n - 1) / 2.0 * log(2 * M_PI) - 0.5 * sdet;
-
 
 
   delete [] thmode;
@@ -434,7 +460,7 @@ double Casper::LaplaceApprox(double *mode, int n)
 
   free_dmatrix(G,0,n,0,n);
 
-  free_dmatrix(S,0,n,0,n);
+  free_dmatrix(S,1,n-1,1,n-1);
 
 	
 
@@ -758,7 +784,7 @@ void Casper::normapprox(double **S, double** G, double*** H, double* mode, doubl
 
 	    }
 
-	  for (int d = 0; d < n; d++) S[rowS][colS] -= (priorq - 1.0) * (H[d][l][m] * mode[d] - G[d][l] * G[d][m]) / pow(mode[d], 2);
+	  for (int d = 0; d < n - 1; d++) S[rowS][colS] -= (priorq - 1.0) * (H[d][l][m] * mode[d] - G[d][l] * G[d][m]) / pow(mode[d], 2);
 
 	  if (l != m) S[colS][rowS] = S[rowS][colS];
 
@@ -1012,12 +1038,10 @@ double Casper::det(double** a, int n, bool *posdef)
 
 	double **aout = dmatrix(0, n - 1, 0, n - 1);
 
-
-
 	int i,j,k;
 
 	double sum;
-
+	*posdef= true;
 
 
 	for (i=0;i<n;i++) { for (j=i;j<n;j++) { aout[i][j]= a[i][j]; } }  //copy a into aout
@@ -1031,7 +1055,6 @@ double Casper::det(double** a, int n, bool *posdef)
 			if (i == j) {
 
 			  if (sum <= 0.0) *posdef= false;
-
 			  aout[i][i]=sqrt(sum);
 
 			} else aout[j][i]=sum/aout[i][i];
@@ -1058,3 +1081,12 @@ double Casper::det(double** a, int n, bool *posdef)
 
 }
 
+int Casper::totCounts()
+
+{
+
+  int totC = this->frame->totCounts();
+
+  return(totC);
+
+}

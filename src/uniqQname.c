@@ -48,21 +48,20 @@ SEXP uniqQname(SEXP qname, SEXP totReadsR, SEXP pos, SEXP mpos, SEXP names){
       hash_update(hashP, tmp, l+1);
       if((l+1)==3) {
 	strcpy(tmpres[count], CHAR(STRING_ELT(names, i)));
-	//SET_STRING_ELT(res, count, mkChar(CHAR(STRING_ELT(names, i))));
-	//hash_update(hashP, CHAR(STRING_ELT(names, i)), 1);
 	count++;
       }
     } else hash_insert(hashP, tmp, 1);
   }
   free(tmp);
   free(idtmp);
+  hash_destroy(hashP);
 
   SEXP res;
   PROTECT(res = allocVector(STRSXP, count));
-
   for (i=0; i<count; i++) {
     SET_STRING_ELT(res, i, mkChar(tmpres[i]));
   }
+
   SEXP ans;
   PROTECT(ans = allocVector(VECSXP, 2));
   SET_VECTOR_ELT(ans, 0, names);

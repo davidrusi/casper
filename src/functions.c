@@ -9,8 +9,7 @@
 
 int *procCigar(char *cigar, int *cigs){
 
-  int i;
-  char *num, tmp[1];
+  char *num;
   cigs[0]=0;
   num=malloc(10*sizeof(int));
   strcpy(num, "\0");
@@ -39,7 +38,7 @@ int *procCigar(char *cigar, int *cigs){
     cigar++;
   }
   
-  //  free(cigar);
+  //free(cigar);
   free(num);
   return(cigs);
 }

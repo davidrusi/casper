@@ -27,7 +27,7 @@ public:
 	Model(set<Variant*, VariantCmp>* variants);
 
 	Model(list<Variant*>* variants);
-
+	
 
 
 	// amount of variants in this model
@@ -80,7 +80,7 @@ public:
 
 	const char* getCodeStr(vector<Variant*>* allvariants);
 
-	//	void debugprint();
+	void debugprint();
 
 private:
 

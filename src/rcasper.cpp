@@ -44,199 +44,221 @@ double cumu_fragsta(double x)
 
 
 
-DataFrame* importDataFrame(SEXP exonsR, SEXP exonwidthR, SEXP pathCountsR, SEXP fragstaR, SEXP fraglenR, SEXP lenvalsR, SEXP readLengthR, SEXP strandR) 
+void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, DataFrame *df){
+  
+  for (int i = 0; i < np; i++) 
+    
+    {
+      
+
+      //Set counts
+
+      int count = pathCounts[i];
+      
+      
+      //Set nb of left & right visited exons
+      
+      const char* pname = CHAR(STRING_ELT(pnames, i));
+
+      char* varname = new char[strlen(pname) + 1];
+      
+      char* left= varname;
+      
+      strcpy(left, pname);
+      
+      if (left[0] != '.') continue;
+      
+      if (left[strlen(pname)-1] != '.') continue;
+      
+      char* mid = strchr(left, '-');
+      
+      if (mid == NULL) continue;
+      
+      mid[0] = '\0';
+      
+      char* right = mid+1;
+      
+      int leftc = 0, rightc = 0;
+		
+      if(strand==-1) {
+	
+	char *tmp= left;
+
+	left= right;
+	
+	right= tmp;
+	
+      }
+      
+      for (int l = strlen(left)-1; l >= 0; l--) { if (left[l] == '.') leftc++; }  
+      
+      for (int r = strlen(right)-1; r >= 0; r--) { if (right[r] == '.') rightc++; } 
+      
+      
+      
+      Fragment* f = new Fragment(leftc, rightc, count, i);
+      
+
+      //Set sequence of visited exons
+      
+      if ((leftc>0) && (rightc>0)) {
+
+	if(strand==1) {
+	  
+	  left = left+1;
+	  
+	  right[strlen(right)-1] = '\0';
+	  
+	} else {
+	  
+	  right = right+1;
+	  
+	  left[strlen(left)-1] = '\0';
+	  
+	}
+	
+	char* item;
+	
+	
+
+	item = strtok(left, ".");  //split string
+
+	for (int j = 0; item != NULL; j++) {
+	  
+	  int eid = atoi(item);
+	  
+	  if(strand==1) f->left[j] = eid;
+	  
+	  else f->left[leftc-j-1] = eid;
+	  
+	  item = strtok(NULL, ".");
+	  
+	}
+
+	item = strtok(right, ".");
+	
+	for (int j = 0; item != NULL; j++) {
+	  
+	  int eid = atoi(item);
+			  
+	  if(strand==1) f->right[j] = eid;
+	  
+	  else f->right[rightc-j-1] = eid;
+	  
+	  item = strtok(NULL, ".");
+
+	}
+
+
+	
+	bool c1= (strand==1) && (f->left[0] <= f->right[0]) && (f->left[f->leftc -1] <= f->right[f->rightc -1]);
+
+	bool c2= (strand== -1) && (f->left[0] >= f->right[0]) && (f->left[f->leftc -1] >= f->right[f->rightc -1]);
+	
+	if (c1 || c2) {
+	  
+	  if(inv==0) {
+
+	    df->addData(f);
+
+	  } else {
+
+	    df->addDataM(f);
+
+	  }
+	
+	} else {
+	  
+	  delete f;
+	  
+	}
+      } 
+
+      delete [] varname;
+    }
+
+
+
+}
+
+
+DataFrame* importDataFrame(SEXP exonsR, SEXP exonwidthR, SEXP pathCountsR, SEXP fragstaR, SEXP fraglenR, SEXP lenvalsR, SEXP readLengthR, SEXP strandR)
 
 {
 
-	int nexons=Rf_length(exonsR), nfraglen=Rf_length(fraglenR), readLength=INTEGER(readLengthR)[0], strand=INTEGER(strandR)[0];
+  int nexons=Rf_length(exonsR), nfraglen=Rf_length(fraglenR), readLength=INTEGER(readLengthR)[0], strand=INTEGER(strandR)[0];
 
-	int *exons=INTEGER(exonsR), *exonwidth=INTEGER(exonwidthR), *lenvals=INTEGER(lenvalsR);
+  int *exons=INTEGER(exonsR), *exonwidth=INTEGER(exonwidthR), *lenvals=INTEGER(lenvalsR);
 
-	double *fraglen= REAL(fraglenR);
+  double *fraglen= REAL(fraglenR);
 
 
 
-	//Define fragment length/start distributions and create DataFrame
+  //Define fragment length/start distributions and create DataFrame                                                                                                                                                                            
 
-	DiscreteDF* fraglen_dist = new DiscreteDF(fraglen, lenvals, nfraglen);	
+  DiscreteDF* fraglen_dist = new DiscreteDF(fraglen, lenvals, nfraglen);
 
 
 
-	lencdf= Rf_length(fragstaR);
+  lencdf= Rf_length(fragstaR);
 
-	startcdf= REAL(fragstaR);
+  startcdf= REAL(fragstaR);
 
-	//::fun_fragsta = fragstaR;
+  //::fun_fragsta = fragstaR;                                                                                                                                                                                                                  
 
 
 
-	DataFrame* df = new DataFrame(fraglen_dist, cumu_fragsta);
+  DataFrame* df = new DataFrame(fraglen_dist, cumu_fragsta);
 
-	df->frag_readlen= readLength;
+  df->frag_readlen= readLength;
 
 
 
-	//Add exons to DataFrame
+  //Add exons to DataFrame                                                                                                                                                                                                                     
 
-	for (int i = 0; i < nexons; i++) 
+  for (int i = 0; i < nexons; i++)
 
-	{
+    {
 
-		Exon *ex= new Exon(exons[i], exonwidth[i]);
+      Exon *ex= new Exon(exons[i], exonwidth[i]);
 
-		df->addExon(ex);
+      df->addExon(ex);
 
-	}
+    }
 
 
 
-	//Add exon path counts
+  //Add exon path counts                                                                                                                                                                                                                       
 
-	int np = LENGTH(pathCountsR);
+  int np = LENGTH(pathCountsR);
 
-	SEXP pnames = getAttrib(pathCountsR, R_NamesSymbol);
+  SEXP pnames = getAttrib(pathCountsR, R_NamesSymbol);
 
-	int* pathCounts = INTEGER(pathCountsR);  
+  int* pathCounts = INTEGER(pathCountsR);
 
 
+  if(strand!=0) {
 
-	for (int i = 0; i < np; i++) 
+    importFragments(np, pnames, pathCounts, strand, 0, df);
 
-	{
+  } else {
 
-		//Set counts
+    importFragments(np, pnames, pathCounts, 1, 0, df);
 
-		int count = pathCounts[i];
+    importFragments(np, pnames, pathCounts, -1, 1, df);
 
+  }
 
 
-		//Set nb of left & right visited exons
 
-		const char* pname = CHAR(STRING_ELT(pnames, i));
+  return df;
 
-		char* varname = new char[strlen(pname) + 1];
-
-		char* left= varname;
-
-		strcpy(left, pname);
-
-		if (left[0] != '.') continue;
-
-		if (left[strlen(pname)-1] != '.') continue;
-
-		char* mid = strchr(left, '-');
-
-		if (mid == NULL) continue;
-
-		mid[0] = '\0';
-
-		char* right = mid+1;
-
-		int leftc = 0, rightc = 0;
-
-		if(strand==-1) {
-
-		  char *tmp= left;
-
-		  left= right;
-
-		  right= tmp;
-
-		}
-
-		for (int l = strlen(left)-1; l >= 0; l--) { if (left[l] == '.') leftc++; }  
-
-		for (int r = strlen(right)-1; r >= 0; r--) { if (right[r] == '.') rightc++; } 
-
-
-
-		Fragment* f = new Fragment(leftc, rightc, count);
-
-
-
-		//Set sequence of visited exons
-
-		if ((leftc>0) && (rightc>0)) {
-
-		  if(strand==1) {
-
-                    left = left+1;
-
-                    right[strlen(right)-1] = '\0';
-
-                  } else {
-
-                    right = right+1;
-
-                    left[strlen(left)-1] = '\0';
-
-                  }
-
-		  char* item;
-
-	
-
-		  item = strtok(left, ".");  //split string
-
-		  for (int j = 0; item != NULL; j++) {
-
-			  int eid = atoi(item);
-
-			  if(strand==1) f->left[j] = eid;
-
-			  else f->left[leftc-j-1] = eid;
-
-			  item = strtok(NULL, ".");
-
-		  }
-
-		  item = strtok(right, ".");
-
-		  for (int j = 0; item != NULL; j++) {
-
-			  int eid = atoi(item);
-
-			  if(strand==1) f->right[j] = eid;
-
-			  else f->right[rightc-j-1] = eid;
-
-			  item = strtok(NULL, ".");
-
-		  }
-
-
-
-		  bool c1= (strand==1) && (f->left[0] <= f->right[0]) && (f->left[f->leftc -1] <= f->right[f->rightc -1]);
-
-		  bool c2= (strand== -1) && (f->left[0] >= f->right[0]) && (f->left[f->leftc -1] >= f->right[f->rightc -1]);
-
-		  if (c1 || c2) {
-
-		    df->addData(f);
-
-		  } else {
-
-		    delete f;
-
-		  }
-
-		}
-
-
-
-		delete [] varname;
-
-
-
-	}
-
-	return df;
 
 }
 
 
 
-void importTranscripts(set<Variant*, VariantCmp> *initvars, DataFrame* df, SEXP transcriptsR)
+void importTranscripts(set<Variant*, VariantCmp> *initvars, DataFrame* df, SEXP transcriptsR, SEXP strandR)
 
 {
 
@@ -249,6 +271,8 @@ void importTranscripts(set<Variant*, VariantCmp> *initvars, DataFrame* df, SEXP 
 	SEXP trow;
 
 	int ntsub, *tvals;
+
+	int strand=INTEGER(strandR)[0];
 
 	for (int i = 0; i < nt; i++) {
 
@@ -277,6 +301,10 @@ void importTranscripts(set<Variant*, VariantCmp> *initvars, DataFrame* df, SEXP 
 		v = new Variant(el);
 
 		v->id= i;
+
+		v->antisense=FALSE;
+
+		if((tvals[0] > tvals[1]) && strand==0) v->antisense=TRUE;
 
 		int nbchar= Rf_length(STRING_ELT(tnames,i));
 
@@ -322,7 +350,7 @@ extern "C"
 
     set<Variant*, VariantCmp> *initvars = new set<Variant*, VariantCmp>();
 
-    importTranscripts(initvars, df, transcriptsR);
+    importTranscripts(initvars, df, transcriptsR, strandR);
 
     df->fixUnexplFrags(initvars, 0); // Discard fragments that are unexplained by know variants
 
@@ -571,7 +599,7 @@ extern "C"
 
 
 		for (i=0; i<ngenes; i++) {
-		
+
 		  ansSingle= calcKnownSingle(&paccept, VECTOR_ELT(exonsR,i), VECTOR_ELT(exonwidthR,i), VECTOR_ELT(transcriptsR,i), VECTOR_ELT(pathCountsR,i), fragstaR, fraglenR, lenvalsR, readLengthR, priorqR, VECTOR_ELT(strandR, i), citypeR, niterR, burninR);
 
 		  SET_VECTOR_ELT(ansMultiple,i,ansSingle);
@@ -605,11 +633,11 @@ extern "C"
 	{
 
 		DataFrame* df = importDataFrame(exonsR, exonwidthR, pathCountsR, fragstaR, fraglenR, lenvalsR, readLengthR, strandR);
-		
+
 
 		set<Variant*, VariantCmp> *initvars = new set<Variant*, VariantCmp>();
 
-		importTranscripts(initvars, df, transcriptsR);
+		importTranscripts(initvars, df, transcriptsR, strandR);
 
 		df->fixUnexplFrags(initvars, 0); // Discard fragments that are unexplained by know variants
 
@@ -619,16 +647,35 @@ extern "C"
 
 		list<Fragment*>::const_iterator fi;
 
+		Fragment* f;
+
 		for (fi = df->data.begin(); fi != df->data.end(); fi++)
 
 		  {
 
-		    Fragment* f = *fi;
+		    f = *fi;
 
-		    totC += f->count;
+		    totC++;
+
+		    break;
 
 		  }
 
+		if(INTEGER(strandR)[0]==0) {
+
+		  for (fi = df->dataM.begin(); fi != df->dataM.end(); fi++)
+  
+		    {
+  
+		      f = *fi;
+
+		      totC++;
+
+		      break;
+
+		    }
+
+		}
 
 
 		//Model* model = new Model(new vector<Variant*>(initvars->begin(), initvars->end()));
@@ -643,7 +690,7 @@ extern "C"
 
 		Casper::em_tol= 0.00001;
 
-
+		totC = casp->totCounts();
 
 		int vc = model->count();
 
@@ -653,7 +700,7 @@ extern "C"
 
          	SEXP ans;
 
-                PROTECT(ans= allocVector(VECSXP, 4));
+                PROTECT(ans= allocVector(VECSXP, 5));
 
 
 
@@ -744,9 +791,12 @@ extern "C"
 		}
 
 
-
+		SET_VECTOR_ELT(ans, 4, allocVector(INTSXP, 1));
 		
+		int *totCp = INTEGER(VECTOR_ELT(ans, 4));
 
+		totCp[0] = totC;
+		
 		UNPROTECT(1);
 
 		delete df;
@@ -788,8 +838,6 @@ extern "C"
 		for (i=0; i<ngenes; i++) {
 
 		  int nexons = min(LENGTH(VECTOR_ELT(exonsR,i)), LENGTH(nvarPriorR));
-
-
 
 		  ansSingle= calcDenovoSingle(VECTOR_ELT(exonsR,i), VECTOR_ELT(exonwidthR,i), VECTOR_ELT(transcriptsR,i), VECTOR_ELT(pathCountsR,i), fragstaR, fraglenR, lenvalsR, readLengthR, modelUnifPriorR, VECTOR_ELT(nvarPriorR,nexons-1), VECTOR_ELT(nexonPriorR,nexons-1), priorqR, minppR, selectBest, methodR, VECTOR_ELT(niterR,i), exactMarginalR, VECTOR_ELT(strandR, i));
 
@@ -867,7 +915,7 @@ extern "C"
 
 	  set<Variant*, VariantCmp> *initvars = new set<Variant*, VariantCmp>();
 
-	  importTranscripts(initvars, df, transcriptsR);
+	  importTranscripts(initvars, df, transcriptsR, strandR);
 
 
 
@@ -920,7 +968,7 @@ extern "C"
 		{
 
 			seppl->exploreExact();
-
+			
 			resProbs = seppl->resultPPIntegral();
 
 		} 

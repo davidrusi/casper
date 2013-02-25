@@ -1,6 +1,7 @@
 \name{annotatedGenome-class}
 \Rdversion{1.1}
 \docType{class}
+\alias{annotatedGenome}
 \alias{annotatedGenome-class}
 \alias{show,annotatedGenome-method}
 

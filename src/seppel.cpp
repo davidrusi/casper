@@ -208,7 +208,7 @@ double Seppel::calcIntegral(Model* model, Model* similarModel)
 
 {
 
-
+  double *mode;
 
   if (modes.count(similarModel)==0) return this->calcIntegral(model);
 
@@ -228,7 +228,7 @@ double Seppel::calcIntegral(Model* model, Model* similarModel)
 
 
 
-    double* mode = this->initMode(model,similarModel);
+    mode = this->initMode(model,similarModel);
 
     casp->calculateMode(mode);
 
@@ -379,7 +379,7 @@ void Seppel::exploreUnif(int runs)
 	Model* omodl = possiblemodels->at(onum);
 
 	double olike = calcIntegral(omodl);
-
+	
 
 
 	int accepted = 0;
@@ -443,12 +443,13 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 	Model *omodl = startmodel;
 
 	double olike = calcIntegral(omodl);
-
+	
 	SmartModelDist* odist = new SmartModelDist(this, frame, omodl, 0.8, modelsSet);
 
 	
 
 	int accepted = 0;
+	double nlike, nprob, oprob, l, lp, x;
 
 
 
@@ -462,7 +463,7 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 
 	  //models->push_back(nmodl);
 
-	  double nlike = calcIntegral(nmodl,omodl);
+	  nlike = calcIntegral(nmodl,omodl);
 
 	  //double nlike = calcIntegral(nmodl);
 
@@ -476,19 +477,15 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 
 
 
-			double nprob = odist->densityLn(nmodl);
+			nprob = odist->densityLn(nmodl);
 
-			double oprob = ndist->densityLn(omodl);
+			oprob = ndist->densityLn(omodl);
 
+			l = nlike - olike + oprob - nprob;
 
+			lp = exp(l);
 
-			double l = nlike - olike + oprob - nprob;
-
-			double lp = exp(l);
-
-			
-
-			double x = runif();
+			x = runif();
 
 			if (x < lp) {
 
@@ -567,6 +564,7 @@ map<Model*, double, ModelCmp> Seppel::resultPPIntegral()
 			continue;
 
 		}
+
 
 		integralMax = max(mi->second, integralMax);
 
@@ -746,6 +744,8 @@ double Seppel::calculatePrior(Model* model) {
 
       ans= priorpNbVars[nbVars-1];
 
+
+
       //Prior on nb exons per variant
 
       if (nbVars < pow(2,E) -1) {  //when all variants were selected, prob of selected variants is 1 so this computation is skipped
@@ -764,11 +764,15 @@ double Seppel::calculatePrior(Model* model) {
 
         for (int i=0; i< E; i++) Fk[i]= nvarsPoibin[i] - Sk[i];
 
+
+
         for (int i=0; i< E; i++) {
 
           ans += Sk[i] * log(priorpNbExons[i]) + Fk[i] * log(1-priorpNbExons[i]);
 
         }
+
+
 
         if (E <= 20) {
 
@@ -782,12 +786,19 @@ double Seppel::calculatePrior(Model* model) {
 
       }
 
+
+
       return ans;
 
+
+
     }
+
+
 
   }
 
 }
+
 
 

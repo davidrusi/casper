@@ -3,6 +3,7 @@
 \alias{genePlot-methods}
 \alias{genePlot,CompressedIRangesList,ANY,ANY,ANY,ANY-method}
 \alias{genePlot,IRanges,ANY,ANY,ANY,ANY-method}
+\alias{genePlot,GRangesList,ANY,ANY,ANY,ANY-method}
 \alias{genePlot,IRangesList,ANY,ANY,ANY,ANY-method}
 \alias{genePlot,GRanges,ANY,ANY,ANY,ANY-method}
 \alias{genePlot,missing,character,annotatedGenome,GRanges,ExpressionSet-method}
@@ -52,6 +53,13 @@ genePlot(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab=''
     Plots a set of transcripts. Each element in the \code{generanges} corresponds to a
     transcript. Each transcript should contain exon start/end positions.
   }
+   \item{\code{signature(generanges="GRangesList", islandid="ANY",
+       genomeDB="ANY", reads="ANY", exp="ANY")}}{
+         Plots a set of transcripts. Each element in the
+	 \code{generanges} corresponds to a
+	 transcript. Each transcript should contain exon start/end
+	 positions.
+	   }
   \item{\code{signature(generanges="GRanges", islandid="ANY", genomeDB="ANY", reads="ANY", exp="ANY")}}{
     Plots a set of transcripts. Each space in \code{generanges} corresponds to a
     transcript. Each transcript should contain exon start/end positions.
@@ -80,8 +88,8 @@ genePlot(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab=''
 data(hg19DB)
 
 #Plot an IRangesList
-tx <- transcripts(entrezid="27",genomeDB=hg19DB)
-genePlot(tx)
+txs <- transcripts(entrezid="27",genomeDB=hg19DB)
+genePlot(txs)
 
 #Equivalently, indicate islandid
 islandid <- getIsland(entrezid="27",genomeDB=hg19DB)

@@ -16,9 +16,9 @@ public:
 
 	int count;
 
-
-
-	Fragment(int leftc, int rightc, int count);
+	int id;
+	
+	Fragment(int leftc, int rightc, int count, int id);
 
 	~Fragment();
 

@@ -1,34 +1,54 @@
 require(methods)
 
+setGeneric("subsetPbam", function(pbam, strand) standardGeneric("subsetPbam"))
+setMethod("subsetPbam", signature(pbam="procBam", strand="character"),
+          function(pbam, strand) {
+            if(strand=="+") {
+              pbam@pbam <- pbam@plus
+              pbam@junx <- pbam@pjunx
+            } else {
+              pbam@pbam <- pbam@minus
+              pbam@junx <- pbam@pminus
+            }
+            pbam
+          }
+          )
+
+
 buildRD<-function(reads){
+  sel <- reads$end<reads$start
+  st <- en <- integer(length(reads$start))
+  st[sel] <- reads$end[sel]; st[!sel] <- reads$start[!sel]
+  en[!sel] <- reads$end[!sel]; en[sel] <- reads$start[sel]
   if(sum(grepl("chr", unique(reads$chrom)))>0) {
-    reads<-GRanges(ranges=IRanges(start=ifelse(reads$end<reads$start, reads$end, reads$start), end=ifelse(reads$end>reads$start, reads$end, reads$start)), seqnames=reads$chrom, id=reads$key, flag=reads$flag, rid=reads$rid, strand=reads$rstrand, XS=reads$strand)
+    reads<-GRanges(ranges=IRanges(start=st, end=en), seqnames=reads$chrom, id=reads$key, flag=reads$flag, rid=reads$rid, strand=reads$rstrand, XS=reads$strand)
   } else {
-    reads<-GRanges(ranges=IRanges(start=ifelse(reads$end<reads$start, reads$end, reads$start), end=ifelse(reads$end>reads$start, reads$end, reads$start)), seqnames=paste("chr", reads$chrom, sep=""), id=reads$key, flag=reads$flag, rid=reads$rid, strand=reads$rstrand, XS=reads$strand)
+    reads<-GRanges(ranges=IRanges(start=st, end=en), seqnames=paste("chr", reads$chrom, sep=""), id=reads$key, flag=reads$flag, rid=reads$rid, strand=reads$rstrand, XS=reads$strand)
   }
-  res<-reads
-  res
+  return(reads)
 }
 
 uniquifyQname<-function(bam, seed=1){   	
   qname <- vector(mode='character', length=length(bam$qname))
   dups <- .Call("uniqQname", bam$qname, length(bam$qname), bam$pos, bam$mpos, qname)
   bam$qname <- dups[[1]]
-  if(length(dups[[2]])>0){
-    probPos<-bam$qname %in% dups[[2]]
-    probID<-paste(bam$qname[probPos], bam$pos[probPos])
-    set.seed(seed)
-    sel<-unlist(tapply(1:sum(probPos), probID, function(x) x[sample(1:length(x), 1)]))
-    fixed<-lapply(lapply(bam, "[", probPos), "[", sel)
-    bam1<-lapply(bam, function(x) x[!probPos])    
-    res<-lapply(names(bam), function(x) c(bam1[[x]], fixed[[x]]))
-    names(res)<-names(bam)
-  } else {
-    res<-bam
-  }
-  qdup<-bam$qname[bam$qname %in% bam$qname[duplicated(bam$qname)]] 
-  uni<-bam$qname %in% qdup
-  res<-lapply(res, "[", uni)
+  #if(length(dups[[2]])>0){
+  #  probPos<-bam$qname %in% dups[[2]]
+  #  probID<-paste(bam$qname[probPos], bam$pos[probPos])
+  #  set.seed(seed)
+  #  sel<-unlist(tapply(1:sum(probPos), probID, function(x) x[sample(1:length(x), 1)]))
+  #  fixed<-lapply(lapply(bam, "[", probPos), "[", sel)
+  #  bam1<-lapply(bam, function(x) x[!probPos])    
+  #  res<-lapply(names(bam), function(x) c(bam1[[x]], fixed[[x]]))
+  #  names(res)<-names(bam)
+  #} else {
+  #  res<-bam
+  #}
+  probPos <- bam$qname %in% dups[[2]]
+  bam <- lapply(bam, function(x) x[!probPos])    
+  qdup <- bam$qname[bam$qname %in% bam$qname[duplicated(bam$qname)]] 
+  uni <- bam$qname %in% qdup
+  res <- lapply(bam, "[", uni)
   names(res)<-names(bam)
   res
 }
@@ -90,7 +110,7 @@ setMethod("procBam", signature(bam='list',stranded='missing',seed='missing', ver
           function(bam, stranded, seed, verbose) procBam(bam=bam, stranded=FALSE, seed=as.integer(1), verbose=verbose)
           )
 
-setMethod("procBam", signature(bam='list',stranded='missing',seed='numeric', verbose='missing') ,
+setMethod("procBam", signature(bam='list',stranded='missing',seed='integer', verbose='missing') ,
           function(bam, stranded, seed, verbose) procBam(bam=bam, stranded=FALSE, seed=seed, verbose=FALSE)
           )
 

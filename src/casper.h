@@ -47,6 +47,10 @@ class Casper
   // indicates whether the model can explain all fragments
   bool isValid();
 
+  // counts total number of path counts contained in dataframe
+
+  int totCounts();
+
   static double priorq;
   static int em_maxruns;
   static double em_tol;

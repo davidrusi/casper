@@ -7,7 +7,7 @@ importFrom(GenomicFeatures, transcripts, exonsBy)
 importFrom(survival,Surv,survfit)
 
 #export regular functions
-export(calcExp, genePlot, getDistrs, getReads, getIsland, getChr, transcripts, pathCounts, procBam, procGenome, rmShortInserts, mergeExp )
+export(calcExp, getDistrs, getIsland, genePlot, pathCounts, procBam, procGenome, rmShortInserts, transcripts, getReads, getNreads, getChr, getIsland, subsetGenome, mergeExp )
 
 exportClasses(annotatedGenome, pathCounts, procBam)
 #export general methods

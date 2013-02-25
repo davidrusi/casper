@@ -38,6 +38,7 @@ typedef struct var_t {
   int nex;
   double exp;
   int len;
+  int strand;
   int *exst;
   int *exen;
   int *exid;
@@ -48,5 +49,4 @@ typedef struct gene_t {
   double exp;
   var_t *vars;
   char *chr;
-  int strand;
 } gene_t;

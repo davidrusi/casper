@@ -4,7 +4,7 @@
 
 
 
-Fragment::Fragment(int leftc, int rightc, int count)
+Fragment::Fragment(int leftc, int rightc, int count, int id)
 
 {
 
@@ -18,8 +18,9 @@ Fragment::Fragment(int leftc, int rightc, int count)
 
 	this->count = count;
 
-}
+	this->id = id;
 
+}
 
 
 Fragment::~Fragment() {
@@ -29,4 +30,5 @@ Fragment::~Fragment() {
   zaparray(right); //delete [] right;
 
 }
+
 

@@ -99,7 +99,7 @@ getDistrs<-function(DB, bam, nreads=4*10^6){
   
 
   exon_rank <- unlist(lapply(oneTx, function(x) 1:length(x)))
-  exon_strand <- islandStrand[as.character(DB@exon2island$island[match(names(oneExons), DB@exon2island$id)])]
+  exon_strand <- islandStrand[as.character(DB@exon2island$island[match(names(oneExons), rownames(DB@exon2island))])]
   strand(oneExons) <- exon_strand
   values(oneExons)$exon_rank <- exon_rank
   txid <- cumsum( values(oneExons)$exon_rank==1 )

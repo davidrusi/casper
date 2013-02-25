@@ -1,4 +1,4 @@
-void build_genes(gene_t *genes, double *ve, int *vn, int *vl, int *en, int *es, int *ee, int *ei, int *gs, int ngenes, SEXP chr);
+void build_genes(gene_t *genes, double *ve, int *vn, int *vl, int *en, int *es, int *ee, int *ei, int *txstr, int ngenes, SEXP chr);
 int choose_gene(double *exp, int ngenes);
 int choose_var(gene_t gene);
 int choose_len(int *ldv, double *ldd, int ldlen);

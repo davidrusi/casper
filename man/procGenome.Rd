@@ -13,7 +13,7 @@
 \usage{
 procGenome(genDB, genome, mc.cores = 1)
 
-createDenovoGenome(reads, DB, stranded=FALSE, minLinks=2,
+createDenovoGenome(reads, DB, minLinks=2,
 maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -25,10 +25,6 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
     (multicore package required)}
   \item{DB}{\code{annotatedGenome} object, as returned by
     \code{procGenome}}
-  \item{stranded}{Set to \code{TRUE} if a stranded RNA-seq experiment
-    was performed, e.g. if we know the strand of the transcript that
-    generated each read. Set to \code{FALSE} for non-stranded
-    experiments.}
   \item{minLinks}{Minimum number of reads joining two
     exons to merge their corresponding genes.}
   \item{maxLinkDist}{Maximum distance between two exons to merge

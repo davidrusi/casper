@@ -1,7 +1,9 @@
 #include <algorithm>
 #include "dataframe.h"
 #include "cppmemory.h"
+#include <list>
 using namespace std;
+
 
 DataFrame::DataFrame(DiscreteDF* fraglen_dist, double (*fragsta_cumu)(double))
 
@@ -33,6 +35,8 @@ DataFrame::~DataFrame() {
 
   std::for_each(data.begin(), data.end(), DeleteFromVector());
 
+  std::for_each(dataM.begin(), dataM.end(), DeleteFromVector());
+
   //FreeClear( &exons );
 
   //FreeClear( &data );
@@ -48,6 +52,14 @@ void DataFrame::addData(Fragment* f)
 {
 
 	this->data.push_back(f);
+
+}
+
+void DataFrame::addDataM(Fragment* f)
+
+{
+
+	this->dataM.push_back(f);
 
 }
 
@@ -81,23 +93,49 @@ map<Fragment*, double> DataFrame::probabilities(Variant* v)
 
 	list<Fragment*>::const_iterator fi;
 
-	for (fi = data.begin(); fi != data.end(); fi++)
 
-	{
+	if(v->antisense){
 
-		Fragment* f = *fi;
+	  
+	  for (fi = dataM.begin(); fi != dataM.end(); fi++)
+	    
+	    {
+	      
+	      Fragment* f = *fi;
 
-		double p = probability(v, f);
+	      double p = probability(v, f);
 
-		if (p > 0.0)
+	      if (p > 0.0)
+  
+		{
+		 
+		  cache[v][f] = p;
 
-        {
+                }
 
-			cache[v][f] = p;
+	    }
+	
+	} else {
 
+
+	  for (fi = data.begin(); fi != data.end(); fi++)
+	    
+	    {
+	      
+	      Fragment* f = *fi;
+	      
+	      double p = probability(v, f);
+
+	      if (p > 0.0)
+		
+		{
+
+		  cache[v][f] = p;
+		  
 		}
 
-    }
+	    }
+	}
 
 	return cache[v];
 
@@ -110,22 +148,21 @@ double DataFrame::probability(Variant* v, Fragment* f)
 	double p = 0.0;
 
 
-
 	if (v->contains(f))
-
-	{
-
-		int fs = v->indexOf(f->left[0]);
-
-		int fe = v->indexOf(f->left[f->leftc - 1]);
-
-		int bs = v->indexOf(f->right[0]);
-
-		int be = v->indexOf(f->right[f->rightc - 1]);
-
-		p = prob(fs, fe, bs, be, v->positions, v->length);
-
-	}
+	  
+	  {
+	    
+	    int fs = v->indexOf(f->left[0]);
+	    
+	    int fe = v->indexOf(f->left[f->leftc - 1]);
+	    
+	    int bs = v->indexOf(f->right[0]);
+	    
+	    int be = v->indexOf(f->right[f->rightc - 1]);
+	    
+	    p = prob(fs, fe, bs, be, v->positions, v->length);
+	    
+	  }
 
 	return p;
 
@@ -553,3 +590,54 @@ void DataFrame::debugprint() {
 
 }
 */
+
+
+bool compareF(Fragment* first, Fragment* second)
+
+{ return( first->id == second->id  ); }
+
+
+bool orderF(Fragment* first, Fragment* second)
+
+{ return( first->id < second->id  ); }
+
+
+int DataFrame::totCounts()
+
+{
+
+  list<Fragment*> data;
+
+  data = this->data;
+
+  if(this->dataM.size() > 0) 
+
+    {
+
+      data.insert(data.end(), this->dataM.begin(), this->dataM.end());
+
+      data.sort(orderF);
+
+      data.unique(compareF);
+
+    }
+
+
+  Fragment* f;
+
+  int totC = 0;
+
+  list<Fragment*>::const_iterator fi;                                                                                                                                                                                             
+
+  for (fi = data.begin(); fi != data.end(); fi++) {                                                                                                                                                                               
+
+
+    f = *fi;                                                                                                                                                                                                      
+    
+    totC += f->count;
+
+  }
+
+  return(totC);
+
+}

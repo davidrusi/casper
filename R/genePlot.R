@@ -1,6 +1,6 @@
 buildGene<-function(genomeDB, islandid, txs){
-    rd<-lapply(txs, function(x) ranges(genomeDB@islands[[islandid]][names(genomeDB@islands[[islandid]]) %in% names(x),]))
-    rdl<-IRangesList(rd)
+    rd<-lapply(txs, function(x) genomeDB@islands[[islandid]][names(genomeDB@islands[[islandid]]) %in% names(x),])
+    rdl<-GRangesList(rd)
     rdl
 }
 
@@ -27,7 +27,7 @@ setMethod("genePlot", signature(generanges='missing',islandid='character',genome
   txexp<-exprs(exp)[names(txs),]
   #if(sum(txexp)>0) txexp<-(txexp/sum(txexp))*100
   gene<-buildGene(txs=txs, genomeDB=genomeDB, islandid=islandid)
-  rangesPlot(x=reads[seqnames(reads) %in% as.character(genomeDB@exon2island[genomeDB@exon2island$id==names(gene[[1]])[1],]$space)], gene, exonProfile=FALSE)
+  rangesPlot(x=reads[as.character(genomeDB@exon2island[rownames(genomeDB@exon2island)==names(gene[[1]])[1],]$space)], gene, exonProfile=FALSE)
   #txexp
 }
 )
@@ -79,7 +79,7 @@ setMethod("genePlot",signature(generanges='GRanges'),
 
 setMethod("genePlot",signature(generanges='IRangesList'),
   function(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab='', xlim, cex=1, yaxt='n', col, ...) {
-    if (missing(xlim)) xlim <- range(c(start(generanges),end(generanges)))
+    if (missing(xlim)) xlim <- range(unlist(c(start(generanges),end(generanges))))
     if (missing(names.arg)) names.arg <- names(generanges)
     plot(NA,NA,xlim=xlim,ylim=c(0,1),xlab=xlab,ylab=ylab,yaxt=yaxt,...)
     nsplice <- length(generanges)
@@ -98,7 +98,7 @@ setMethod("genePlot",signature(generanges='IRangesList'),
   }
 )
 
-setMethod("genePlot",signature(generanges='CompressedIRangesList'),
+setMethod("genePlot",signature(generanges='GRangesList'),
   function(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab='', xlim, cex=1, yaxt='n', col, ...) {
     if (missing(xlim)) xlim <- range(c(start(unlist(generanges)),end(unlist(generanges))))
     if (missing(names.arg)) names.arg <- names(generanges)
@@ -210,7 +210,7 @@ setMethod("rangesPlot",signature(x='GRanges',gene='IRanges'),
   }
 )
 
-setMethod("rangesPlot",signature(x='GRanges',gene='IRangesList'),
+setMethod("rangesPlot",signature(x='GRanges',gene='GRangesList'),
 function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, heights=c(2,1), ...) {
   if (missing(xlim)) xlim <- c(min(unlist(start(gene))),max(unlist(end(gene))))
   rangesPlot(unlist(ranges(x)),gene=gene,exonProfile=exonProfile,maxFragLength=maxFragLength,xlab=xlab,ylab=ylab,xlim=xlim,heights=heights,...)  
@@ -262,8 +262,8 @@ setMethod("rangesPlot",signature(x='procBam'),
 
 
 findLongInserts <- function(x, minsize) {
-  #Select long paired end inserts in a RangedData object ordered by pair id (e.g. as returned by procBam in package casper)
-  # - x: RangedData, column id must indicate read pair id. Assumed to be ordered according to read id & fragment start
+  #Select long paired end inserts in a GRanges object ordered by pair id (e.g. as returned by procBam in package casper)
+  # - x: GRanges, column id must indicate read pair id. Assumed to be ordered according to read id & fragment start
   # - minsize: minimum length for an insert to be considered long. Defaults to 99% percentile of observed insert widths
   # Returns: ids of long inserts
   w <- end(x)[-1] - start(x)[-length(x)]

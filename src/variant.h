@@ -48,7 +48,7 @@ public:
 
 	//bool strand;
 
-
+	bool antisense; // TRUE if transcript is in oposite strand as island
 
 	// used for hashing
 

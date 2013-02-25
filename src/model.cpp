@@ -275,19 +275,20 @@ const char* Model::getCodeStr(vector<Variant*>* allvariants)
 
 
 
-/*void Model::debugprint() {
-	// Transcripts
+void Model::debugprint() {
+  // Transcripts
 	printf("Model:\n");
 
 	vector<Variant*>::const_iterator vi;
 	for (vi = items.begin(); vi != items.end(); vi++) {
 		Variant* v = *vi;
 		printf("Var id; Nb. exons\n%i\t%i\n", v->id, v->exonCount);
-		for (int e = 0; e < v->exonCount; e++) Rprintf("  %i\n", v->exons[e]->id);
+		for (int e = 0; e < v->exonCount; e++) printf("  %i\n", v->exons[e]->id);
 	}
 
 	printf("\n");
 
 }
-*/
+
+
 

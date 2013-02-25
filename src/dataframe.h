@@ -29,10 +29,14 @@ public:
 	// all fragments
 
 	list<Fragment*> data;
+	
+	list<Fragment*> dataM;
 
 
 
 	void addData(Fragment* f);
+
+	void addDataM(Fragment* f);
 
 	void addExon(Exon* e);
 
@@ -62,6 +66,9 @@ public:
 
 	int frag_readlen;
 
+	// returns total number of counts in data and dataM objects
+
+	int totCounts();
 
 
 	//	void debugprint();

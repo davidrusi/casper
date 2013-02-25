@@ -77,7 +77,7 @@ eset2 <- eset[sample(1:nrow(eset),replace=FALSE),]
 esetall <- mergeExp(eset,eset2)
 
 #After merge samples are correctly matched
-head(exprs(eset2))
+head(exprs(esetall))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

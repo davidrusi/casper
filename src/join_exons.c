@@ -65,7 +65,7 @@ SEXP joinExons(SEXP sexons, SEXP sreads, SEXP stot){
       chk=0;
       for(k=2; k<links[i][0]+1; k++) if(links[i][k-1] != links[i][k]) chk++;
       if(chk>0){
-	ans[j] = malloc(15 * links[i][0] * sizeof(char));
+	ans[j] = malloc(15 * (links[i][0]+1) * sizeof(char));
 	sprintf(id, "%d", links[i][1]);
 	strcpy(ans[j], id);
 	strcat(ans[j], ".");
@@ -97,7 +97,7 @@ SEXP joinExons(SEXP sexons, SEXP sreads, SEXP stot){
       bucket=myhash.bucket[i];
       while(bucket) {
 	//Malloc here space for tmpkey instead of fixed 200 chars
-	tmpkey[j] = malloc(strlen(bucket->key) * sizeof(char));
+	tmpkey[j] = malloc((strlen(bucket->key)+1) * sizeof(char));
 	strcpy(tmpkey[j], bucket->key);
 	tmpcounts[j] = bucket->data;
 	bucket = bucket->next;
@@ -105,7 +105,8 @@ SEXP joinExons(SEXP sexons, SEXP sreads, SEXP stot){
       }
     }
   }
-
+  int ksize=j;
+  
   SEXP res;
   SEXP keys;
   SEXP counts;
@@ -122,8 +123,8 @@ SEXP joinExons(SEXP sexons, SEXP sreads, SEXP stot){
   SET_VECTOR_ELT(res, 1, counts);
 
   for(i=0; i<finalSize; i++) free(ans[i]);
-  for(i=0; i<j; i++) free(tmpkey[i]);
-  for(i=0; i<counter; i++) free(links[i]);
+  for(i=0; i<ksize; i++) free(tmpkey[i]);
+  for(i=0; i<tot; i++) free(links[i]);
 
   free(ans);
   free(links);

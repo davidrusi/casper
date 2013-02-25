@@ -1535,10 +1535,10 @@ void Avecx(double *A, double *x, double *z, int rowini, int rowfi, int colini, i
 }
 
 void Atvecx(double *A, double *x, double *z, int rowini, int rowfi, int colini, int colfi) {
-  int _i, _j, nrow=rowfi-rowini+1;
+  int _i, _j, ncol=colfi-colini+1;
   for(_i=rowini;_i<=rowfi;_i++){				 
     for(z[_i]=0,_j=colini; _j<=colfi; _j++)		 
-      z[_i]+=A[_j + _i*nrow]*x[_j];	 
+      z[_i]+=A[_j + _i*ncol]*x[_j];	 
   } 
 }
 
@@ -2421,33 +2421,33 @@ double dpoisson(int x, double mu, int logscale) {
 /* *************************************************' 
    normal cdf and inv cdf 
  ************************************************* */ 
-double	pnormC(double y, double m, double s) 
-/* returns cdf of normal N(m,s^2) at x */ 
-{	 
-  double  /* used to all be float... */
-    p, q, mean,sd,bound,x,z; 
-  double  
-    cdf; 
-  int  
-    status,which; 
- 
-  /* primitive type conversion */ 
-  x = y;  
-  mean = m; 
-  sd = s; 
-  which = 1; 
-  z = (x-mean)/sd; 
- 
-  if (z < -5.0) 
-    p = 2.86e-7F; 
-  else if (z > 5.0) 
-    p = 0.9999997F; 
-  else 
-    cdfnor(&which,&p, &q,     &x,     &mean,  &sd,    &status,    &bound); 
-   
-  cdf = p; /* another primitive type conversion */ 
-  return cdf; 
+double pnormC(double y, double m, double s) {
+  double cdf, p, mean, sd, bound, x, z;
+    /* primitive type conversion */
+    x = y;
+    mean = m;
+    sd = s;
+    z = (x - mean) / sd;
+
+    if (z < -20.0) {
+      p= 2.753624e-89;
+      //p = 2.86e-7F;
+    }
+    else if (z > 20.0) {
+      p= 1 - 2.753624e-89;
+      //p = 0.9999997F;
+    }
+    else {
+        double q;
+        int status;
+        int which = 1;
+        cdfnor(&which, &p, &q, &x, &mean, &sd, &status, &bound);
+    }
+
+    cdf = p; /* another primitive type conversion */
+    return cdf;
 }
+
 
 
 double dnormC(double y, double m, double s, int logscale) {
@@ -2492,39 +2492,41 @@ double dmvnormC(double *y, int n, double *mu, double **cholsinv, double det, int
 }
 
 
-double	qnormC (double cdf, double m, double s) 
-/* returns inv cdf of normal N(m,s^2) at p */ 
-{	 
-  double /* used to all be floats.. */
-    p,q,mean,sd,bound,x; 
-  double  
-    y; 
-  int  
-    status,which; 
- 
-  if( (cdf < 0.0) | (cdf > 1.0) ){ 
-    char proc[]="qnormc", act[]="tried inverse cdf with p<0 or p>1";
-    errorC(proc, act, 1); 
-  }  
-  /* par check */ 
-  if (cdf <= 2.86e-07) 
-    y = -5.0*s+m; 
-  else if (cdf >= 0.9999997) 
-    y = 5.0*s+m; 
-  else{ 
-    /* primitive type conversion */ 
-    p = cdf; 
-    q = 1.0-p;
-    mean = m; 
-    sd = s; 
-    which = 2; 
-     
-    cdfnor(&which,&p,&q, &x,&mean,&sd,&status,&bound); 
-   
-    y = x; /* another primitive type conversion */ 
-  } 
-  return y; 
-} 
+double qnormC(double cdf, double m, double s) {
+    double y;
+
+    if ((cdf < 0.0) | (cdf > 1.0)) {
+      char proc[]="qnormC", act[]="tried inverse cdf with p<0 or p>1", what[]="";
+      nrerror(proc,act,what); 
+      /*NOTREACHED*/
+    }
+
+    /* par check */
+    if (cdf <= 2.753624e-89) {
+	y = -20.0*s + m;
+    }
+    else if (cdf >= 0.99999999999999989) {
+        y = 8.209536 * s + m;
+    }
+    else {
+        /* primitive type conversion */
+        double p = cdf;
+        double q = 1.0 - p;
+        double mean = m;
+        double sd = s;
+        double bound;
+        double x;
+        int which = 2;
+        int  status;
+
+        cdfnor(&which, &p, &q, &x, &mean, &sd, &status, &bound);
+
+        y = x; /* another primitive type conversion */
+    }
+
+    return y;
+}
+
 
 
 /* returns draw from binomial(n,p) */  

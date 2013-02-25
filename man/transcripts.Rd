@@ -12,7 +12,7 @@ annotatedGenome objects store information regarding genes and
 transcripts. When there's an overlap in exons between several genes,
 these genes are grouped into gene islands.
 
-The function transcripts retrives all stored transcripts for a given
+The function transcripts retrieves all stored transcripts for a given
 gene or island.
 }
 \usage{
