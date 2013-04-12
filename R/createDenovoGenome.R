@@ -4,7 +4,7 @@ setMethod("findNewExons", signature(pbam='list'),
             if(mc.cores>1) require(multicore)
             if(mc.cores>1) {
               if ('multicore' %in% loadedNamespaces()) {
-                nex <- mclapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen), mc.cores=mc.cores)
+                nex <- multicore::mclapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen), mc.cores=mc.cores)
               } else stop('multicore library has not been loaded!')
             } else {
               nex <- lapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen))
@@ -25,7 +25,7 @@ setMethod("findNewExons", signature(pbam='procBam') ,
 setGeneric("assignExons2Gene", function(reads, chrs, ...) standardGeneric("assignExons2Gene"))
 setMethod("assignExons2Gene", signature(chrs='list'),
           function(reads, chrs, mc.cores, DB, ...){
-            ans <- mclapply(chrs, function(x) assignExons2Gene(reads=reads, DB=DB, chrs=x, mc.cores=mc.cores, ...), mc.cores=mc.cores)
+            ans <- multicore::mclapply(chrs, function(x) assignExons2Gene(reads=reads, DB=DB, chrs=x, mc.cores=mc.cores, ...), mc.cores=mc.cores)
             misschr <- unlist(lapply(ans, function(x) as.character(unique(seqnames(x@exonsNI)))))
             allchr <- as.character(unique(seqnames(DB@exonsNI)))
             misschr <- allchr[!(allchr %in% misschr)]
@@ -75,7 +75,7 @@ findNewExonsF <- function(pbam, cov=NULL, DB, minConn=3, minJunx=3, minLen=12, m
   isl <- slice(cov, lower=1,  rangesOnly=T)
   islcov <- Views(cov, isl[names(cov)])
 
-  cnt <- mclapply(names(isl), function(chr){
+  cnt <- multicore::mclapply(names(isl), function(chr){
     viewApply(islcov[[chr]], sum)
   }, mc.cores=mc.cores)
   cnt <- unlist(cnt)
@@ -91,7 +91,7 @@ findNewExonsF <- function(pbam, cov=NULL, DB, minConn=3, minJunx=3, minLen=12, m
   isls <- disjoin(isls)
   
   ## Redefine known and new exons by junctions
-  isls <- mclapply(unique(as.character(seqnames(DB@exonsNI)@values)), function(x){
+  isls <- multicore::mclapply(unique(as.character(seqnames(DB@exonsNI)@values)), function(x){
     if(sum(seqnames(junx)==x)){
       y <- junx[seqnames(junx) == x]
       y <- y[width(y)>3]
@@ -117,7 +117,7 @@ findNewExonsF <- function(pbam, cov=NULL, DB, minConn=3, minJunx=3, minLen=12, m
   ## Find exons to redefine (grow)
   lex <- nisl[!(names(nisl) %in% names(nex))]
   
-  lex <- mclapply(unique(as.character(seqnames(DB@exonsNI)@values)), function(x){
+  lex <- multicore::mclapply(unique(as.character(seqnames(DB@exonsNI)@values)), function(x){
     junx <- junx[seqnames(junx)==x]
     junx <- junx[width(junx)>5]
     scnt <- tapply(values(junx)$counts, start(junx), sum)
@@ -288,28 +288,28 @@ mergeStrDenovo <- function(plus, minus){
   ans <- new("annotatedGenome", aliases=alia, denovo=TRUE, exonsNI=allexonsNI, transcripts=alltrans, exon2island=ex2is, dateCreated=Sys.Date(), genomeVersion=plus@genomeVersion, islands=allislands)
   ans
 }
-
-createDenovoGenome <- function(reads, DB, cov, minLinks=2, maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1){
-  cat("Finding new exons\n")
-  somex <- NULL
-  DBplus <- NULL
-  DBminus <- NULL
-  stranded <- ifelse(class(reads)=='list', reads[[1]]@stranded, reads@stranded)
-  if(any(strand(DB@islands@unlistData)=='+')) DBplus <- casper:::genomeBystrand(DB, "+")
-  if(any(strand(DB@islands@unlistData)=='-')) DBminus <- casper:::genomeBystrand(DB, "-")
-  if(any(strand(DB@islands@unlistData)=='*')) DBmix <- casper:::genomeBystrand(DB, "*")
-  if(stranded){
-    newexplus <- NULL
-    newexminus <- NULL
-    if(!is.null(DBplus)) newexplus <- findNewExons(casper:::subsetPbam(reads, "+"), DBplus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
-    if(!is.null(DBminus)) newexminus <- findNewExons(casper:::subsetPbam(reads, "-"), DBminus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
-    if(!is.null(DBmix)) newexmix <- findNewExons(reads, DBmix, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
-    if(!is.null(newexplus) | !is.null(newexminus)) somex <- 1
-  } else {
-    newex <- findNewExons(reads, DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
-    if(!is.null(newex)) somex <- 1
-  }
-  if(!is.null(somex)){
+createDenovoGenome <- function(reads, DB, minLinks=2,  maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1){}
+#createDenovoGenome <- function(reads, DB, cov, minLinks=2, maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1){
+#  cat("Finding new exons\n")
+#  somex <- NULL
+#  DBplus <- NULL
+#  DBminus <- NULL
+#  stranded <- ifelse(class(reads)=='list', reads[[1]]@stranded, reads@stranded)
+#  if(any(strand(DB@islands@unlistData)=='+')) DBplus <- casper:::genomeBystrand(DB, "+")
+#  if(any(strand(DB@islands@unlistData)=='-')) DBminus <- casper:::genomeBystrand(DB, "-")
+#  if(any(strand(DB@islands@unlistData)=='*')) DBmix <- casper:::genomeBystrand(DB, "*")
+#  if(stranded){
+#    newexplus <- NULL
+#    newexminus <- NULL
+#    if(!is.null(DBplus)) newexplus <- findNewExons(casper:::subsetPbam(reads, "+"), DBplus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(DBminus)) newexminus <- findNewExons(casper:::subsetPbam(reads, "-"), DBminus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(DBmix)) newexmix <- findNewExons(reads, DBmix, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(newexplus) | !is.null(newexminus)) somex <- 1
+#  } else {
+#    newex <- findNewExons(reads, DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(newex)) somex <- 1
+#  }
+#  if(!is.null(somex)){
   #  if(!is.null(DBplus)){
   #    cat("Done...\nCreating denovo genome for positive strand\n")
   #    if(stranded) {
@@ -350,14 +350,14 @@ createDenovoGenome <- function(reads, DB, cov, minLinks=2, maxLinkDist=1e+05, ma
     #  if(!is.null(DBplus)) denovo <- denovoplus
     #  if(!is.null(DBminus)) denovo <- denovominus
     #}
-    chrs <- as.list(unique(as.character(seqnames(reads@pbam)@values)))
-    denovo <- assignExons2Gene(exons=newex, DB=DB, reads=reads, chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
-  } else {
-    denovo <- DB
-    denovo@denovo <- TRUE
-  }
-  denovo
+#    chrs <- as.list(unique(as.character(seqnames(reads@pbam)@values)))
+#    denovo <- assignExons2Gene(exons=newex, DB=DB, reads=reads, chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
+#  } else {
+#    denovo <- DB
+#    denovo@denovo <- TRUE
+#  }
+#  denovo
 
-}
+#}
 
  

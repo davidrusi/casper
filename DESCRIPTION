@@ -12,8 +12,8 @@ Description: Infer alternative splicing from paired-end RNA-seq data. The model 
 License: GPL (>=2)
 LazyLoad: yes
 Collate: GenericDefs.R ClassDefinitions.R calcExp.R
-        createDenovoGenome.R genePlot.R getDistrs.R mergeExp.R pathCounts.R
+         genePlot.R getDistrs.R mergeExp.R pathCounts.R
         procBam.R procGenome.R rmShortInserts.R truncnorm.R wrapKnown.R
-	simReads.R
+	simReads.R createDenovoGenome.R
 biocViews: Bioinformatics, GeneExpression, DifferentialExpression,
         Transcription, RNASeq, HighThroughputSequencing
