@@ -8,6 +8,7 @@ simReads <- function(islandid, nSimReads, pis, rl, seed, writeBam, distrs, genom
   if(!is.null(chr)){
     isl2chr <- genomeDB@exon2island$seqname
     names(isl2chr) <- genomeDB@exon2island$island
+    lr_file=NULL
     sims <- lapply(chr, function(x){
       if(verbose) cat("Simulating ", x, "\n")
       if(writeBam) lr_file <- paste(bamFile, tmp, ".", x, ".sam", sep="")

@@ -222,7 +222,6 @@ function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, h
 setMethod("rangesPlot",signature(x='procBam'),
   function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, heights=c(2,1), ...) {
     if (missing(xlim)) xlim <- range(unlist(start(gene)))
-    browser()
     x <- getReads(x)
     x <- x[start(x)>=xlim[1] & end(x)<=xlim[2],]
     if(sum(duplicated(names(x)))==0) names(x) <- sub("\\..*", "", names(x))

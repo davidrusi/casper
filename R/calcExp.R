@@ -11,7 +11,8 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
   burnin <- as.integer(burnin)
   verbose <- as.integer(verbose)
   if ((niter<=burnin) & citype==2) stop("Too many burnin iterations specified. Decrease burnin or increase niter")
-  if (missing(islandid)) islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
+  #if (missing(islandid)) islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
+  if (missing(islandid)) islandid <- names(genomeDB@islands)
 
   exons <- as.integer(names(genomeDB@islands@unlistData))
   names(exons) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
@@ -119,6 +120,7 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
         fdata$ci95.low <- qnorm(alpha/2,mean=exprsx,sd=se)
         fdata$ci95.high <- qnorm(1-alpha/2,mean=exprsx,sd=se)
         sel <- round(fdata$ci95.low,10)<0 & !is.na(se); fdata$ci95.low[sel] <- 0
+        se[sel][se[sel]==0] <- 1e-20
         fdata$ci95.high[sel] <- unlist(mapply(function(m,s) casper:::qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
         sel <- round(fdata$ci95.high,10)>1 & !is.na(se); fdata$ci95.high[sel] <- 1
         fdata$ci95.low[sel] <- unlist(mapply(function(m,s) casper:::qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
@@ -155,7 +157,6 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
         }
       }
     }
-      
   rownames(exprsx) <- rownames(fdata) <- fdata$transcrips
   
   #Compute log(RPKM)
