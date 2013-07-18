@@ -21,11 +21,13 @@ startDist <- function(st,fragLength,txLength, nreads=NULL) {
   fit <- summary(survfit(Surv(time=trunc,time2=st,event=rep( TRUE,length(st))) ~ 1))
   s <- 1-fit$time
   pcum <- fit$surv
-  f <- approxfun(s,pcum)
-  sseq <- seq(0,1,.001)
-  startcdf <- f(sseq)
-  startcdf[1] <- 0; startcdf[length(startcdf)] <- 1
-  f <- approxfun(sseq[!is.na(startcdf)], startcdf[!is.na(startcdf)])
+  if(length(s)>1){
+    f <- approxfun(s,pcum)
+    sseq <- seq(0,1,.001)
+    startcdf <- f(sseq)
+    startcdf[1] <- 0; startcdf[length(startcdf)] <- 1
+    f <- approxfun(sseq[!is.na(startcdf)], startcdf[!is.na(startcdf)])
+  } else f <- approxfun(c(0,1), c(0,0))
   return(f)
 }
 

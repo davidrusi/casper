@@ -1,5 +1,6 @@
 mergeExp <- function(..., sampleNames,  keep=c('transcript','gene')) {
   esets <- list(...)
+  if(class(esets[[1]])=='list') esets <- unlist(esets)
   if (length(unique(sapply(esets,nrow))) != 1) stop('Number of rows do not match')
   if (any(sapply(esets,ncol) != 1)) stop("All ExpressionSet objects in '...' should have 1 column")
   if (missing(sampleNames)) sampleNames <- paste('Sample',1:length(esets),sep='')
