@@ -244,7 +244,7 @@ Variant* DataFrame::path2Variant(Fragment* f)
 
 {
 
-	int eid; Exon *ex;
+	int eid=0; Exon *ex;
 
 	vector<Exon*>::iterator itexon;
 

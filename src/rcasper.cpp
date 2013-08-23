@@ -652,7 +652,7 @@ extern "C"
 
 		  {
 
-		    f = *fi;
+		    //f = *fi;
 
 		    totC++;
 
@@ -666,7 +666,7 @@ extern "C"
   
 		    {
   
-		      f = *fi;
+		      //f = *fi;
 
 		      totC++;
 

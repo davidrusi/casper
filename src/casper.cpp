@@ -364,7 +364,7 @@ double Casper::calculateIntegral(double *mode, int n, int method) {
 
     ans= LaplaceApprox(mode,n);
 
-  } else if (method==2) {
+  } else {  //method==2
 
     double *pi=NULL, paccept;
 
