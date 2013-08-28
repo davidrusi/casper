@@ -77,8 +77,10 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
     sim.exp <- do.call(cbind,lapply(sim.exp,'[[','exp'))
     colnames(sim.exp) <- sampleNames(xnew)
     b <- new("AnnotatedDataFrame", data=pData(xnew))
-    e <- new("ExpressionSet", exprs=sim.exp, phenoData=b, featureData=new("AnnotatedDataFrame", data.frame(explCnts, readCount=rowSums(explCnts)))) 
-    ans[[k]] <- list(simTruth=fData(xnew), simExprTrue=exprs(xnew), simExpr=e)
+    e <- new("ExpressionSet", exprs=sim.exp, phenoData=b, featureData=new("AnnotatedDataFrame", data.frame(explCnts, readCount=rowSums(explCnts))))
+    ans[[k]] <- list(simTruth=fData(xnew), simExpr=e)
+    #ans[[k]] <- list(simTruth=fData(xnew), simExprTrue=exprs(xnew), simExpr=e)
+    ans <- new("simulatedSamples",ans)
     if (verbose) cat("\n")
   }
   return(ans)

@@ -38,7 +38,10 @@ simMultSamples(B, nsamples, nreads, readLength, x, groups='group', distrs, genom
   \code{mc.cores>1} requires package \code{parallel}}
 }
 \value{
-  List of length \code{B}, where each element is itself a list containing an individual simulation.
+  Object of class \code{simulatedSamples}, which extends a list
+  of length \code{B}. See the class documentation for some helpful
+  methods (e.g. coef, exprs, mergeBatches).
+  Each element is itself a list containing an individual simulation.
   
   \item{simTruth}{\code{data.frame} indicating the mean and
   standard deviation of the Normal distribution used to generate data

@@ -1,6 +1,40 @@
 require(methods)
 
 
+setClass("simulatedSamples", representation("list"))
+
+valid_simulatedSamples <- function(object) {
+  msg <- NULL
+  if (!all(sapply(object, function(z) 'simTruth' %in% names(z)))) msg <- "All list elements must have an element 'simTruth'"
+  if (!all(sapply(object, function(z) 'simExpr' %in% names(z)))) msg <- "All list elements must have an element 'simExpr'"
+  if (!all(sapply(object, function(z) class(z$simTruth)=='data.frame'))) msg <- "Element simExpr must be of class data.frame"
+  if (!all(sapply(object, function(z) class(z$simExpr)=='ExpressionSet'))) msg <- "Element simExpr must be of class ExpressionSet"
+  if(!(is.null(msg))) { TRUE } else { msg }
+}
+
+setValidity("simulatedSamples", valid_simulatedSamples)
+
+setMethod("show", signature(object="simulatedSamples"), function(object) {
+  cat("simulatedSamples object with",length(object),"simulated datasets (",ncol(object[[1]]$simExpr),"samples each)\n")
+  cat("- 'coef' gets true differences between group means (returns matrix)\n")
+  cat("- 'exprs' gets estimated expressions (returns list of ExpressionSets)\n")
+  cat("- 'mergeBatches' combines exprs with a given ExpressionSet (returns list of ExpressionSets)\n")
+}
+)
+
+setMethod("coef", signature(object="simulatedSamples"), function(object) {
+  do.call(cbind,lapply(object, function(z) z$simTruth[,'mean.1'] - z$simTruth[,'mean.2']))
+}
+)
+
+
+setMethod("exprs", signature(object="simulatedSamples"), function(object) {
+  lapply(object, '[[', "simExpr")
+}
+)
+
+
+###############################################################
 
 setClass("procBam", representation(pbam = "GRanges", junx="GRanges", stranded = "logical", plus="GRanges", minus="GRanges", pjunx="GRanges", mjunx="GRanges"))
 

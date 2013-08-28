@@ -3,6 +3,7 @@ setGeneric("getIsland", function(entrezid, txid, genomeDB) standardGeneric("getI
 setGeneric("getChr", function(entrezid, txid, islandid, genomeDB) standardGeneric("getChr"))
 setGeneric("getNreads", function(pc) standardGeneric("getNreads"))
 setGeneric("getReads", function(x) standardGeneric("getReads"))
+setGeneric("mergeBatches", function(x,y,mc.cores=1) standardGeneric("mergeBatches"))
 setGeneric("plotExpr", function(gene, minProbExpr=.5, minExpr=.1, xlab='(kb)', ylab='', xlim, cex=1, yaxt='n', col, ...) standardGeneric("plotExpr"))
 setGeneric("procBam", function(bam, stranded, seed, verbose=FALSE, rname, keep.junx=FALSE, keep.flag=FALSE, ...) standardGeneric("procBam"))
 setGeneric("procGenome", function(genDB, genome, mc.cores=1) standardGeneric("procGenome"))

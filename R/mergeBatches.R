@@ -1,13 +1,34 @@
-mergeBatches <- function(x, y) {
+setMethod("mergeBatches", signature(x='ExpressionSet',y='simulatedSamples'), function(x, y, mc.cores=1) {
+  if (mc.cores>1) {
+    if ('parallel' %in% loadedNamespaces()) {
+      ans <- parallel::mclapply(y, function(z) mergeBatches(x,z$simExpr), mc.cores=mc.cores)
+    } else {
+      stop("parallel package has not been loaded!")
+    }
+  } else {
+    ans <- lapply(y, function(z) mergeBatches(x,z$simExpr))
+  }
+  return(ans)
+}
+)
+
+setMethod("mergeBatches", signature(x='ExpressionSet',y='ExpressionSet'), function(x, y, mc.cores=1) {
   #Merge ExpressionSets x and y, apply quantile norm and adjust for batch effects via partial residuals
-  if ((class(x) != 'ExpressionSet') | (class(y) != 'ExpressionSet')) stop('x and y must be ExpressionSet objects')
+  n <- names(fData(x))[names(fData(x)) %in% names(fData(y))]
+  nx <- names(fData(x))
+  nx[nx %in% n] <- paste(nx[nx %in% n],'x',sep='.')
+  names(fData(x)) <- nx
+  ny <- names(fData(y))
+  ny[ny %in% n] <- paste(ny[ny %in% n],'y',sep='.')
+  names(fData(y)) <- ny
   xnew <- combine(x,y)
   xnew$batch <- factor(rep(c('batch1','batch2'),c(ncol(x),ncol(y))))
   xnewnorm <- quantileNorm(xnew)
   xnewadj <- anovaAdjustment(xnewnorm, adjustmentVariable='batch')
+  if (all(c('readCount.x','readCount.y') %in% fvarLabels(xnewadj))) fData(xnewadj)$readCount <- rowSums(fData(xnewadj)[,c('readCount.x','readCount.y')])
   return(xnewadj)
 }
-
+)
 
 ### AUXILIZARY FUNCTIONS: QUANTILE NORMALIZATION & ANOVA ADJUSTMENT
 quantileNorm <- function(x) { UseMethod("quantileNorm") }

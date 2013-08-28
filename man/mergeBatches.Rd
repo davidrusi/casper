@@ -1,5 +1,7 @@
 \name{mergeBatches}
 \alias{mergeBatches}
+\alias{mergeBatches,ExpressionSet,ExpressionSet-method}
+\alias{mergeBatches,ExpressionSet,simulatedSamples-method}
 \title{
   Merge two ExpressionSet objects by doing quantile normalization
   and computing partial residuals (i.e. substracting group mean
@@ -8,23 +10,31 @@
   per group.
 }
 \description{
-  \code{mergeBatches} combines \code{x} and \code{y} into a single
+  \code{mergeBatches} combines \code{x} and \code{y} into an
   \code{ExpressionSet},
   performs quantile normalization and adjusts for batch effects by
   subtracting the mean expression in each batch (and then adding the
   grand mean so that the mean expression per gene is unaltered).
 }
 \usage{
-mergeBatches(x, y)
+mergeBatches(x, y, mc.cores=1)
 }
 \arguments{
   \item{x}{\code{ExpressionSet} object with data from batch 1.}
-  \item{y}{\code{ExpressionSet} object with data from batch 2.}
+  \item{y}{Either \code{ExpressionSet} object with data from batch 2, or
+  \code{simulatedSamples} object with data from multiple simulations.}
+  \item{mc.cores}{Number of processors to be used (ignored when \code{y}
+  is an \code{ExpressionSet})}
 }
 \value{
-  \code{ExpressionSet} with combined expressions.
+  When \code{y} is an \code{ExpressionSet}, \code{mergeBatches} returns
+  an \code{ExpressionSet} with combined expressions.
   Its \code{featureData} contains a variable \code{"batch"} indicating
   the batch that each sample corresponded to.
+
+  When \code{y} is a \code{simulatedSamples} object, \code{mergeBatches}
+  is applied to combine \code{x} with each dataset in \code{y} and a
+  list of \code{ExpressionSet} objects is returned.
 }
 \author{
   David Rossell

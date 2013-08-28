@@ -48,8 +48,8 @@ priorqGeneExpr=2, citype="none", niter=10^3, burnin=100, mc.cores=1, verbose=FAL
   (i.e. intervals that contain the true parameter value with 95\% posterior probability).
 }
 \references{
-Rossell D. QASPER: Quantifying Alternative Splicing from Paired End
-Reads. Technical report, IRB Barcelona (2010)
+Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End
+RNA-sequencing data. COBRA (http://biostats.bepress.com/cobra/art97)
 }
 \author{
   Camille Stephan-Otto Attolini, Manuel Kroiss, David Rossell
