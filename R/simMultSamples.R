@@ -56,7 +56,6 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
   if (verbose) cat(paste("Obtaining ",B," simulations (",sum(nsamples)," samples with ",nreads," reads each)\n",sep=''))
   for (k in 1:B) {
     xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
-    #xnew <- t(t(exprs(xnew)) - colMeans(exprs(xnew)) + colMeans(exprs(x)))
     sampleNames(xnew) <- paste("Sample",1:ncol(xnew))
     featureNames(xnew) <- featureNames(x)
     # fData(xnew), simulated (phi, mu1, mu2)
@@ -78,7 +77,7 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
     sim.exp <- do.call(cbind,lapply(sim.exp,'[[','exp'))
     colnames(sim.exp) <- sampleNames(xnew)
     b <- new("AnnotatedDataFrame", data=pData(xnew))
-    e <- new("ExpressionSet", exprs=sim.exp, phenoData=b, featureData=new("AnnotatedDataFrame", explCnts)) 
+    e <- new("ExpressionSet", exprs=sim.exp, phenoData=b, featureData=new("AnnotatedDataFrame", data.frame(explCnts, readCount=rowSums(explCnts)))) 
     ans[[k]] <- list(simTruth=fData(xnew), simExprTrue=exprs(xnew), simExpr=e)
     if (verbose) cat("\n")
   }
