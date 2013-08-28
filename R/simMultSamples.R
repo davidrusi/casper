@@ -80,6 +80,7 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
     e <- new("ExpressionSet", exprs=sim.exp, phenoData=b, featureData=new("AnnotatedDataFrame", data.frame(explCnts, readCount=rowSums(explCnts))))
     ans[[k]] <- list(simTruth=fData(xnew), simExpr=e)
     #ans[[k]] <- list(simTruth=fData(xnew), simExprTrue=exprs(xnew), simExpr=e)
+    names(ans) <- paste('sim',1:length(ans),sep='')
     ans <- new("simulatedSamples",ans)
     if (verbose) cat("\n")
   }

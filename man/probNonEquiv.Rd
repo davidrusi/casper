@@ -60,10 +60,9 @@ RNA-sequencing data. COBRA (http://biostats.bepress.com/cobra/art97)
   abline(v=c(-.5,.5))
 
   #Check false positives
-  truth <- rep(0:1,c(p-11,11))
-  table(truth, pp>.5)
-  table(truth, pp>.9)
-
+  truth <- rep(c(FALSE,TRUE),c(p-11,11))
+  getRoc(truth, pp>.9)
+  getRoc(truth, pp>.5)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

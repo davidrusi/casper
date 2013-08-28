@@ -18,6 +18,9 @@
 }
 \section{Slots}{
   The class extends a list directly.
+  \describe{
+    \item{.Data}{A list, each element containing a different simulated dataset}
+  }
 }
 \section{Methods}{
   \describe{

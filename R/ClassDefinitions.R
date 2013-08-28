@@ -23,7 +23,9 @@ setMethod("show", signature(object="simulatedSamples"), function(object) {
 )
 
 setMethod("coef", signature(object="simulatedSamples"), function(object) {
-  do.call(cbind,lapply(object, function(z) z$simTruth[,'mean.1'] - z$simTruth[,'mean.2']))
+  ans <- do.call(cbind,lapply(object, function(z) z$simTruth[,'mean.1'] - z$simTruth[,'mean.2']))
+  rownames(ans) <- rownames(object[[1]]$simTruth)
+  ans
 }
 )
 
