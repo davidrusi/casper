@@ -17,8 +17,8 @@ void addPath(int *unex, int *unrid, hash_t *hash, int totEx);
 SEXP pathCounts(SEXP reid, SEXP rid, SEXP exst, SEXP exid){
     //void pathCounts(char **reid, int *rid, int *exst, int *exid, int nreads){
     
-  int totF, hashSize, i, *p_rid, *p_exst, *p_exid, nreads, *p_reid;
-    hash_node_t *bucket;
+  int hashSize, i, *p_rid, *p_exst, *p_exid, nreads, *p_reid;
+  hash_node_t *bucket;
     path_t *frags;
     hash_t  *pathsHashPtr, pathsHash, *fragsHashPtr, fragsHash;
     pathsHashPtr=&pathsHash;
@@ -41,8 +41,8 @@ SEXP pathCounts(SEXP reid, SEXP rid, SEXP exst, SEXP exid){
     p_reid=INTEGER(reid);
     
     path_t **pfrags=&frags;
-    totF = buildFrags(fragsHashPtr, p_reid, p_rid, p_exst, p_exid, nreads, pfrags);
-        
+    buildFrags(fragsHashPtr, p_reid, p_rid, p_exst, p_exid, nreads, pfrags);
+    
     for(i=0; i<fragsHash.size; i++) {
         if(fragsHash.bucket[i]!=NULL)  {
             bucket=fragsHash.bucket[i];
@@ -193,12 +193,5 @@ int sort(const void *x, const void *y) {
     if((a[2]-b[2])!=0) res = a[2]-b[2];
     else res = a[0]-b[0];
     return( res );
-}
-
-int sort2(const void *x, const void *y) {
-    int *a = *(int**)x, *b= *(int**)y;
-    int res;
-    res = (a[0] - b[0]) * (a[1] - b[1]);
-    return( a[2] - b[2] );
 }
 

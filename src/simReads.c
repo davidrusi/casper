@@ -14,8 +14,8 @@
 
 SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP exon_num, SEXP exon_st, SEXP exon_end, SEXP exon_id, SEXP len_distrV, SEXP len_distrD, SEXP st_distrV, SEXP st_distrD, SEXP read_len, SEXP nn, SEXP tx_strand, SEXP lr_fileR, SEXP chr, SEXP rseed, SEXP rbam, SEXP rinsideBam, SEXP verbose){
 
-  int i=0, *ge, *vn, *vl, *en, *es, *ee, *ei, *txstr, ngenes, *ldv, rl, ldlen, sdlen, n, bam, insideBam;
-  double *ve, *ldd, *sdv, *sdd;
+  int i=0, *ge, *vn, *vl, *en, *es, *ee, *ei, *txstr, ngenes, *ldv, rl, sdlen, n, bam, insideBam;
+  double *ve, *sdv, *sdd;
   FILE *LRFILE=NULL;
   SEXP startsTmp;
   PROTECT(gene_exp);// = coerceVector(gene_exp, INTSXP));
@@ -49,7 +49,6 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   ei = INTEGER(exon_id);
   txstr = INTEGER(tx_strand);
   ldv = INTEGER(len_distrV);
-  ldd = REAL(len_distrD);
   sdv = REAL(st_distrV);
   sdd = REAL(st_distrD);
   rl = INTEGER(read_len)[0];
@@ -57,7 +56,6 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   bam = INTEGER(rbam)[0];
   insideBam = INTEGER(rinsideBam)[0];
   ngenes = length(var_num);
-  ldlen = length(len_distrD);
   sdlen = length(st_distrD);
   gene_t *genes;
   genes = malloc((ngenes+1) * sizeof(gene_t));
@@ -114,14 +112,12 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   paths = &paths_pted;
   hash_init(paths, NextPow2(length(exon_st)*20)); 
 
-  int l=0, cnt=0;
+  int cnt=0;
   char geStr[2], *last;
   
   i=0;
   while(i<n) {
-  
     j=0;
-    l=0;
     cnt=0;
     gene = ge[i];
     var = choose_var(genes[gene]);

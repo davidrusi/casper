@@ -148,7 +148,7 @@ void add_gap(char *str, int gap){
 
 int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, int *starts){
 
-  int en, rst, ren, wis, sum;
+  int en=-1, rst=-1, ren=-1, wis, sum;
   char *pa, id[100];
   int i, pos=0, here, skip, l;
 
@@ -170,10 +170,10 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
 
   here=0;
   sum=1;
-  int chk=0;
+  //  int chk=0;
   for(i=0; i<var.nex; i++) {
     skip=0;
-    chk=0;
+    //   chk=0;
     wis = abs(var.exen[i] - var.exst[i])+1;
     if((sum<=st) && (st<sum+wis)) {
       sprintf(id, "%d", var.exid[i]);
@@ -201,10 +201,10 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
   strcat(pa, "-");
   sum=1;
   here=0;
-  chk=0;
+  // chk=0;
   for(i=0; i<var.nex; i++) {
     skip=0;
-    chk=0;
+    //  chk=0;
     wis = abs(var.exen[i] - var.exst[i]) + 1;
     if((sum<=rst) && (rst<sum+wis)){
       sprintf(id, "%d", var.exid[i]);
