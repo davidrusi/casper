@@ -107,7 +107,8 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
     for(i in 1:length(which)) ans[[i]] <- procChr(i)
   }
   gc()
-  if(keep.pbam) allpbam <- lapply(ans, "[[", "pbam")
+   if(keep.pbam) allpbam <- lapply(ans, "[[", "pbam")
+   browser()
   allpc <- casper:::mergePCWr(ans, genomeDB)
   alldistr <- suppressWarnings(casper:::mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
   exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)

@@ -15,33 +15,33 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
-simMAE <- function(nsim, islandid=NULL, n, r, f, burnin=1000, pc, distrs, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
+simMAE <- function(nsim, islandid=NULL, n, r, f, burnin=1000, pc, disArray, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
    if (length(r) != length(n)) stop("length(n) not equal to length(r)")
    if(is.null(islandid)) islandid <- names(genomeDB@transcripts)
    U <- NULL
    txe <- list()
    pcs <- list()
    for (j in 1:length(n)) {
-     d <- distrs
-     nmean <-  mean(rep(as.numeric(names(d@lenDis)), d@lenDis))
-     nmean <- f[j] - nmean
-     names(d@lenDis) <- as.numeric(names(d@lenDis)) + round(nmean)
+     distrs <- disArray[[j]]
+     #nmean <-  mean(rep(as.numeric(names(d@lenDis)), d@lenDis))
+     #nmean <- f[j] - nmean
+     #names(d@lenDis) <- as.numeric(names(d@lenDis)) + round(nmean)
      if(verbose) cat(paste("Generating posterior samples j =",j, "\n"))
-      pis <- simPost(islandid=islandid, nsim=nsim, distrs=d, genomeDB=genomeDB, pc=pc, readLength=r[j], mc.cores=mc.cores.int*mc.cores, verbose=verbose)
+      pis <- simPost(islandid=islandid, nsim=nsim, distrs=distrs, genomeDB=genomeDB, pc=pc, readLength=r[j], mc.cores=mc.cores.int*mc.cores, verbose=verbose)
      if(verbose) cat(paste("Running simulations for j =",j, "\n"))
      if(mc.cores.int>1) {
        require(parallel)
        res <- parallel::mclapply(1:nsim, function(i){
-         sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=d, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+         sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
-         sim.exp <- exprs(calcExp(islandid=islandid, distrs=d, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
+         sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
        }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
      } else {
        res <- lapply(1:nsim, function(i){
-         sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=d, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+         sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
-         sim.exp <- exprs(calcExp(islandid=islandid, distrs=d, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE))
+         sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
        })
      }
