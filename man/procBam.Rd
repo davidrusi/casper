@@ -77,7 +77,8 @@ In case of multihits with same start position for both reads but
   Camille Stephan-Otto Attolini
 }
 \seealso{
-\code{scanBam} from package \code{Rsamtools}
+  \code{scanBam} from package \code{Rsamtools},
+  \code{help("procBam-class")}, \code{getReads}. 
 }
 \examples{
 ##See example in calcExp

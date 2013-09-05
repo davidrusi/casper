@@ -9,6 +9,7 @@
 \alias{genePlot,missing,character,annotatedGenome,GRanges,ExpressionSet-method}
 \alias{genePlot,missing,character,annotatedGenome,missing,missing-method}
 \alias{genePlot,missing,character,annotatedGenome,procBam,ExpressionSet-method}
+\alias{genePlot,missing,character,annotatedGenome,procBam,missing-method}
 \title{
   Plot exon structure for each transcript of a given gene.
 }
@@ -72,9 +73,15 @@ genePlot(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab=''
   \item{\code{signature(generanges="missing", islandid="character", genomeDB="annotatedGenome", reads="missing", exp="missing")}}{
     Plots all transcripts stored in \code{genomeDB} for island with identifier \code{islandid}.
   }
-  \item{\code{signature(generanges="missing", islandid="character", genomeDB="annotatedGenome", reads="procBam", exp="ExpressionSet")}}{
+  \item{\code{signature(generanges="missing", islandid="character", genomeDB="annotatedGenome", reads="procBam", exp="missing")}}{
     Plots all transcripts stored in \code{genomeDB} for island with
     identifier \code{islandid}. Individual reads are added to the plot
+    (\code{reads} contains start/end of individual read fragments).
+  }
+  \item{\code{signature(generanges="missing", islandid="character", genomeDB="annotatedGenome", reads="procBam", exp="ExpressionSet")}}{
+    Plots all transcripts stored in \code{genomeDB} for island with
+    identifier \code{islandid}. Individual reads and estimated
+    expression are added to the plot
     (\code{reads} contains start/end of individual read fragments).
   }
 }}

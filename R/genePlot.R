@@ -10,6 +10,15 @@ setMethod("genePlot", signature(generanges='missing',islandid='character',genome
 }
 )
 
+setMethod("genePlot", signature(generanges='missing',islandid='character',genomeDB='annotatedGenome',reads='procBam',exp='missing') , function(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab='', xlim, cex=1, yaxt='n', col, ...) {
+  txs <- transcripts(islandid=islandid, genomeDB=genomeDB)
+  gene<-buildGene(txs=txs, genomeDB=genomeDB, islandid=islandid)
+  chr <- getChr(islandid=islandid, genomeDB=genomeDB)
+  reads@pbam <- reads@pbam[seqnames(reads@pbam) %in% chr]
+  rangesPlot(x=reads, gene=gene, exonProfile=FALSE)
+}
+)
+
 setMethod("genePlot", signature(generanges='missing',islandid='character',genomeDB='annotatedGenome',reads='procBam',exp='ExpressionSet') , function(generanges, islandid, genomeDB, reads, exp, names.arg, xlab='', ylab='', xlim, cex=1, yaxt='n', col, ...) {
   txs <- transcripts(islandid=islandid, genomeDB=genomeDB)
   txexp<-exprs(exp)[names(txs),]
@@ -224,6 +233,9 @@ setMethod("rangesPlot",signature(x='procBam'),
     if (missing(xlim)) xlim <- range(unlist(start(gene)))
     x <- getReads(x)
     x <- x[start(x)>=xlim[1] & end(x)<=xlim[2],]
+    if (is.null(names(x))) {
+      if (!is.null(x$names)) names(x) <- x$names else warning("Could not find read pair names in pbam")
+    }    
     if(sum(duplicated(names(x)))==0) names(x) <- sub("\\..*", "", names(x))
     if (length(x)==0) {
       warning('There are no reads in the specified region')

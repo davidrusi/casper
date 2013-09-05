@@ -46,11 +46,17 @@
 }
 \section{Methods}{
   \describe{
-    \item{show}{\code{signature(object = "procBam")}: Displays general information about the object. }
+    \item{show}{\code{signature(object = "procBam")}: Displays general
+      information about the object. }
+    \item{getReads}{\code{signature(x = "procBam")}: Extracts the
+      aligned reads stored in \code{x}. }
 	 }
 }
 \author{
 Camille Stephan-Otto Attolini, David Rossell
+}
+\seealso{
+\code{getReads}
 }
 \examples{
 showClass("procBam")
