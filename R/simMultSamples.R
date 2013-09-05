@@ -42,11 +42,12 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
 # groups: name of column in pData(x) indicating the groups
 # distrs: fragment start and length distributions. It can be either an object of class readDistrs, or a list where each element is of class readDistrs. In the latter case, an element is chosen at random for each individual sample (so that uncertainty in these distributions is taken into account).
 # genomeDB: annotatedGenome object
-  if (!all(paste(sampleNames(x),'se',sep='.') %in% names(fData(x)))) {
-    stop("Estimate SE cannot be found in fData(x). Please run calcExp with citype='asymp'")
-  } else {
-    sigma2ErrorObs <- fData(x)[,paste(sampleNames(x),'se',sep='.'),drop=FALSE]^2
-  }
+  sigma2ErrorObs <- NA
+  #if (!all(paste(sampleNames(x),'se',sep='.') %in% names(fData(x)))) {
+  #  stop("Estimate SE cannot be found in fData(x). Please run calcExp with citype='asymp'")
+  #} else {
+  #  sigma2ErrorObs <- fData(x)[,paste(sampleNames(x),'se',sep='.'),drop=FALSE]^2
+  #}
   if (verbose) cat("Fitting NNGV model...\n")
   seed <- sample(1:10000, 1)
   l <- genomeDB@txLength[featureNames(x)]
@@ -111,6 +112,122 @@ rowVar <- function (x, ...) { return((rowMeans(x^2, ...) - rowMeans(x, ...)^2) *
 
 
 simnewsamplesNoisyObs <- function(fit,groupsnew,sel,x,groups,sigma2ErrorObs) {
+# Simulate parameters from the posterior of NNGV under the presence of noisy observations, and new (non-noisy) observations from the posterior predictive
+# Model
+#  xhat_ij ~ N(x_ij, v_i), where v_i= mean(sigma2Error[i,])
+#  x_ij ~ N(mu_ik, sigma2Indiv_i), where k is group of observation j
+#  mu_ik ~ Normal(mu0, sigma02)
+#  phi_i = v_i + sigma2Indiv ~ IGamma * I(phi_i > v_i)
+#
+# Equivalent marginal model for xhat_ij
+#  xhat_ij ~ N(mu_ik, phi_i) where phi_i = v_i + sigma2Indiv_i
+#
+# Returns posterior draws for (mu, phi, sigma2Indiv) and posterior predictive for x (the non-noisy version x rather than the noisy xhat)
+if (is(x, "exprSet") | is(x,"ExpressionSet")) {
+  if (is.character(groups) && length(groups)==1) { groups <- as.factor(pData(x)[, groups]) }
+  x <- exprs(x)
+} else if (!is(x,"data.frame") & !is(x,"matrix")) { stop("x must be an exprSet, data.frame or matrix") } 
+patterns <- fit$patterns
+groupsr <- gaga:::groups2int(groups,patterns); K <- as.integer(max(groupsr)+1)
+groupsnewr <- gaga:::groups2int(groupsnew,patterns)
+v <- fit$pp
+
+# Checks
+if ((max(groupsnewr)>max(groupsr)) | (min(groupsnewr)<min(groupsr))) stop('Groups indicated in groupsnew do not match with those indicated in groups')
+if (ncol(x)!=length(groups)) stop('length(groups) must be equal to the number of columns in x')
+if (!is.matrix(v)) stop('Argument v must be a matrix')
+if (ncol(v)!=nrow(patterns)) stop('Argument v must have as many columns as rows has patterns')
+if (nrow(x)!=nrow(v)) stop('Arguments x and v must have the same number of rows')
+if (ncol(patterns)!=K) stop('patterns must have number of columns equal to the number of distinct elements in groups')
+for (i in 1:nrow(patterns)) { patterns[i,] <- as.integer(as.integer(as.factor(patterns[i,]))-1) }
+par <- getpar(fit)
+
+sigmanew <- double(nrow(x))
+munew <- matrix(NA,nrow=nrow(x),ncol=length(unique(groupsnewr))); colnames(munew) <- colnames(patterns)
+xnew <- matrix(NA,nrow=nrow(x),ncol=length(groupsnewr))
+
+#Draw delta
+if (nrow(patterns)>1) {
+  for (j in 2:ncol(v)) v[,j] <- v[,j]+v[,j-1]
+  u <- runif(nrow(x)); d <- apply(u<v,1,function(z) which(z)[1])
+} else {
+  d <- rep(1,nrow(x))
+}
+
+#Draw v
+#l <- rowMeans(sigma2ErrorObs)/rowVar(sigma2ErrorObs); a <- rowMeans(sigma2ErrorObs)^2/rowVar(sigma2ErrorObs)
+#v <- rgamma(nrow(x), a, l)
+#v <- rowMeans(sigma2ErrorObs)
+
+#Draw phi
+a.sigma <- .5*(par['v0']+ncol(x))
+b.sigma <- rep(.5*par['v0']*par['sigma02'], nrow(x))
+simpat <- unique(d)
+for (k in 1:length(simpat)) {
+  rowsel <- d==k
+  curgroups <- unique(patterns[k,])
+  for (j in 1:length(curgroups)) {
+    groupids <- colnames(patterns)[patterns[k,]==curgroups[j]]
+    colsel <- groups %in% groupids
+    xbar <- rowMeans(x[rowsel,colsel])
+    b.sigma[rowsel] <- b.sigma[rowsel] + .5*rowSums((x[rowsel,colsel]-xbar)^2)
+  }
+}
+
+sigmanew <- 1/sqrt(rgamma(nrow(x),a.sigma,b.sigma))
+#sigmanew <- 1/sqrt(rgammatrunc(1/v,a.sigma,b.sigma))
+
+#Draw mu
+for (k in 1:length(simpat)) {
+  rowsel <- d==k
+  curgroups <- unique(patterns[k,])
+  for (j in 1:length(curgroups)) {
+    groupids <- colnames(patterns)[patterns[k,]==curgroups[j]]
+    colsel <- groups %in% groupids; ncolsel <- sum(colsel)
+    xbar <- rowMeans(x[rowsel,colsel])
+    v <- 1/(ncolsel/sigmanew[rowsel]^2 + 1/par['tau02'])
+    m <- (ncolsel*xbar/sigmanew[rowsel]^2 + par['mu0']/par['tau02']) * v
+    munew[rowsel, groupids] <- rnorm(sum(rowsel),m,sd=sqrt(v))
+  }
+}
+
+
+#Draw x
+#sigmaIndiv <- sqrt(sigmanew^2 - v)
+#sigmaIndiv <- sqrt(simEstError(sigma2=sigmanew^2, sigma2ErrorObs=sigma2ErrorObs)$sigma2Indiv)
+sigmaIndiv <- sqrt(sigmanew^2)
+design <- as.matrix(model.matrix(~ -1 + factor(groupsnewr)))
+xnew <- t(design %*% t(munew)) + matrix(rnorm(nrow(x)*length(groupsnewr),0,sd=sigmaIndiv),nrow=nrow(xnew))
+
+#Create ExpressionSet
+metadata <- data.frame(labelDescription='Group that each array belongs to',row.names='group')
+pheno <- new("AnnotatedDataFrame", data=data.frame(group=groupsnew), dimLabels=c("rowNames", "columnNames"), varMetadata=metadata)
+sampleNames(pheno) <- paste("Array",1:nrow(pheno))
+#
+metadata <- data.frame(labelDescription=c('Expression pattern','SD for noisy obs','SD for non-noisy obs',paste('mean',colnames(patterns))),row.names=c('d','sigma','sigmaIndiv',paste('mean',1:ncol(patterns),sep='.')))
+fdata <- data.frame(d,sigmanew,sigmaIndiv,munew)
+fdata <- new("AnnotatedDataFrame", data=fdata,varMetadata=metadata)
+sampleNames(fdata) <- paste("Gene",1:nrow(fdata))
+varLabels(fdata) <- c('d','sigma','sigmaIndiv',paste('mean',1:ncol(patterns),sep='.'))
+#
+experimentData <- new("MIAME", title = "Dataset simulated with simnewsamples", abstract = "Expression data simulated from the posterior predictive distribution of a normal-normal model with generalized variances (see emfit in package EBarrays), under the assumption that input observations are noisy rather than exact. Posterior predictive observations are for non-noisy observations.")
+#ans <- data.frame(xnew)
+colnames(xnew) <- paste('Array',1:nrow(pheno)); rownames(xnew) <- paste('Gene',1:nrow(fdata))
+xnew <- new("ExpressionSet", phenoData=pheno, featureData=fdata, exprs = xnew, experimentData = experimentData)
+return(xnew)
+}
+
+rgammatrunc <- function(upper, a, l) {
+  #Draw from x ~ Gamma(a,l) I(x < upper)
+  p <- pgamma(upper, a, l)
+  u <- runif(length(p), 0, p)
+  ans <- qgamma(u, a, l)
+  return(ans)
+}
+
+
+
+simnewsamplesNoisyObs_old <- function(fit,groupsnew,sel,x,groups,sigma2ErrorObs) {
 # Simulate parameters from the posterior of NNGV under the presence of noisy observations, and new (non-noisy) observations from the posterior predictive
 # Model
 #  xhat_ij ~ N(x_ij, sigma2Error_i)

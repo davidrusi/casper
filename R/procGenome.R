@@ -8,9 +8,16 @@ setMethod("getIsland",signature(entrezid='character',txid='missing',genomeDB='an
 )
 
 setMethod("getIsland",signature(entrezid='missing',txid='character',genomeDB='annotatedGenome'),function(entrezid, txid, genomeDB) {
-  as.character(genomeDB@aliases[txid,'island_id'])
+  if (txid %in% rownames(genomeDB@aliases)) {
+    ans <- as.character(genomeDB@aliases[txid,'island_id'])
+  } else {
+    warning("Exact match for txid not found, using 'grep' instead. Multiple matches may be returned")
+    ans <- as.character(genomeDB@aliases[grep(txid,rownames(genomeDB@aliases)),'island_id'])
+  }
+  return(ans)
 }
 )
+
 
 setMethod("getChr",signature(entrezid='missing',txid='missing',islandid='character', genomeDB='annotatedGenome'), function(entrezid, txid, islandid, genomeDB) {
   as.character(genomeDB@exon2island$seqnames[match(TRUE,genomeDB@exon2island$island == islandid)])

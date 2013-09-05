@@ -37,6 +37,9 @@ transcripts(entrezid, islandid, genomeDB)
 \code{IRangesList} where each element in the list corresponds to a
 different transcript.
 }
+\seealso{
+genePlot to plot the resulting transcripts
+}
 \examples{
 data(hg19DB)
 tx <- transcripts(entrezid="27",genomeDB=hg19DB)

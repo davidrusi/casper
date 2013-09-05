@@ -15,7 +15,7 @@ valid_simulatedSamples <- function(object) {
 setValidity("simulatedSamples", valid_simulatedSamples)
 
 setMethod("show", signature(object="simulatedSamples"), function(object) {
-  cat("simulatedSamples object with",length(object),"simulated datasets (",ncol(object[[1]]$simExpr),"samples each)\n")
+  cat("simulatedSamples object with ",length(object)," simulated datasets (",ncol(object[[1]]$simExpr)," samples each)\n",sep="")
   cat("- 'coef' gets true differences between group means (returns matrix)\n")
   cat("- 'exprs' gets estimated expressions (returns list of ExpressionSets)\n")
   cat("- 'mergeBatches' combines exprs with a given ExpressionSet (returns list of ExpressionSets)\n")

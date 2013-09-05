@@ -13,7 +13,7 @@ export(calcDenovo, calcExp, createDenovoGenome, getDistrs, getIsland, genePlot, 
 
 exportClasses(annotatedGenome, simulatedSamples, pathCounts, procBam)
 #export general methods
-exportMethods("plot","lines")
+exportMethods("plot","lines","coef")
 
 
 
