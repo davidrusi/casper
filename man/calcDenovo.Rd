@@ -48,15 +48,23 @@ relativeExpr(expr, summarize="modelAvg", minProbExpr=0.5, minExpr=0.05)
   not recommend this option as it may ignore a substantial amount of
   uncertainty.}
 \item{method}{Method used to perform the model search. 
-  \code{"exact"} exhaustively enumerates all possible models (warning:
-  this is not feasible for genes over 5 exons). \code{"rwmcmc"} uses a
+  \code{"allmodels"} enumerates all possible models (warning:
+  this is not feasible for genes with >5 exons). \code{"rwmcmc"} uses a
   random-walk MCMC scheme to focus on models with high posterior
-  probability. \code{"auto"} uses \code{"exact"} for genes with up to 5
+  probability.
+  \code{"submodels"} considers that some isoforms in \code{genomeDB}
+  may not be expressed, but does not search for new variants.
+  \code{"auto"} uses \code{"allmodels"} for genes with up to 5
   exons and \code{"rwmcmc"} for longer genes. See details.}
 \item{niter}{Number of MCMC iterations.}
 \item{exactMarginal}{Set to \code{FALSE} to estimate posterior model
   probabilities as the proportion of MCMC visits. Set to \code{TRUE} to
   use the integrated likelihoods (default). See details.}
+\item{integrateMethod}{Method to compute integrated likelihoods. The default
+  (\code{'plugin'}) evaluates likelihood*prior at the posterior mode and
+  is the faster option. Set \code{'Laplace'} for Laplace approximations
+and \code{'IS'} for Importance Sampling. The latter increases
+computation cost very substantially.}
 \item{verbose}{Set to \code{TRUE} to display progress information.}
 \item{mc.cores}{Number of processors to be used for parallel
   computation. Can only be used if the package \code{multicore} is

@@ -42,7 +42,7 @@ public:
 
 	int indexOf(Variant* v);
 
-	// get the ith variant
+	// get the ith variant (starts at i=0)
 
 	Variant* get(int i);
 

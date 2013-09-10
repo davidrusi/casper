@@ -313,10 +313,7 @@ Variant* DataFrame::path2Variant(Fragment* f)
 
 
 
-
-int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, int denovo)
-
-{
+int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
 
 	// copy all fragments
 
@@ -394,6 +391,12 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, int denovo)
 
 		  initvars->insert(nv);
 
+		  std::ostringstream out;
+		  out << "CASP.";
+		  out << geneid[0];
+		  out << ".";
+		  out << (varshortnames->size()+1);
+		  (*varshortnames)[nv] += out.str();
 
 
 			// delete all fragments that this variant can explain

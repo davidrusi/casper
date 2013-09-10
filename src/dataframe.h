@@ -54,7 +54,7 @@ public:
 
 	Variant* path2Variant(Fragment* f); 
 
-	int fixUnexplFrags(set<Variant*, VariantCmp>* initvars, int denovo);
+	int fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo);
 
 
 

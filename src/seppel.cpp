@@ -1,12 +1,13 @@
 #include <algorithm>
-#include "seppel.h"
 #include <iostream>
-#include "cppmemory.h"
 #include <limits>
+#include "cppmemory.h"
+#include "dropVariant.h"
+#include "seppel.h"
 using namespace std;
 
 
-Seppel::Seppel(DataFrame* frame)
+Seppel::Seppel(DataFrame* frame, int integrateMethod)
 
 {
 
@@ -14,6 +15,7 @@ Seppel::Seppel(DataFrame* frame)
 
   this->modelUnifPrior= 1;
 
+  this->integrateMethod= integrateMethod;
 
 
   varis = new vector<Variant*>();
@@ -28,7 +30,7 @@ Seppel::Seppel(DataFrame* frame)
 
 
 
-Seppel::Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior) 
+Seppel::Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior, int integrateMethod) 
 
 {
 
@@ -42,6 +44,7 @@ Seppel::Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior)
 
   this->modelUnifPrior= 0;
 
+  this->integrateMethod= integrateMethod;
 
 
   varis = new vector<Variant*>();
@@ -234,7 +237,7 @@ double Seppel::calcIntegral(Model* model, Model* similarModel)
 
     modes[model] = mode;
 
-    like = casp->calculateIntegral(mode, model->count());
+    like = casp->calculateIntegral(mode, model->count(), this->integrateMethod);
 
     prior = calculatePrior(model);
 
@@ -282,7 +285,7 @@ double Seppel::calcIntegral(Model* model)
 
     modes[model] = mode;
 
-    like = casp->calculateIntegral(mode, model->count());
+    like = casp->calculateIntegral(mode, model->count(), this->integrateMethod);
 
     prior = calculatePrior(model);
 
@@ -529,6 +532,77 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 
 }
 
+
+void Seppel::exploreSubmodels(Model* model, int maxdropit) {
+ //Exhaustively consider all submodels of a given model, up to a certain depth controlled by maxdropit. 
+ //Uses an iterative scheme so that for any submodel with 0 prob, no further submodels are considered.
+ //Input
+ // - model: model for which we want to consider all possible submodels
+ // - maxdropit: max number of iterations in the scheme. For maxdropit=1 submodels dropping 1 variant are considered, else up to 2^(maxdropit-1) variants are dropped
+
+  int i, j, nvars= model->count();
+  double nlike;
+  Variant *v;
+  vector<Variant*> newitems (model->items);
+  Model *newmodel;
+  dropVariant *dropvars= new dropVariant(nvars), *tmp;
+
+  modelsSet->insert(model);
+  nlike= calcIntegral(model);
+
+  //Initialize: check dropping individual variants
+  for (i=0; i<nvars; i++) {
+    v= newitems[0]; //model->get(i); //pointer to variant i
+    newitems.erase(newitems.begin());  //remove variant i
+    newmodel= new Model(&newitems);  //new model without variant i
+    modelsSet->insert(newmodel); //store model
+
+    nlike = calcIntegral(newmodel,model); //post prob of newmodel
+    if (nlike != 1) {
+      int *varsin;
+      varsin= ivector(0,nvars-1);
+      for (j=0; j<i; j++) varsin[j]= 1;
+      varsin[i]= 0;
+      for (j=i+1; j<nvars; j++) varsin[j]= 1;
+      dropvars->add(varsin);
+    }
+
+    newitems.push_back(v); //add variant i at the end
+  }
+
+  //Iterate: drop combinations of variables
+  i=0;
+  while ((i<maxdropit) && (dropvars->size()>1)) {
+    tmp= dropvars->combinations();
+    delete dropvars;
+    dropvars= tmp;
+    map<string, int*>::const_iterator mi;
+    mi= dropvars->submodels.begin();
+
+    while(mi != dropvars->submodels.end()) {
+      //Define new model
+      newitems.clear();
+      for (j=0; j<nvars; j++) {
+        if (mi->second[j] == 1) newitems.push_back(model->get(j));
+      }
+      newmodel= new Model(&newitems); //new model
+      modelsSet->insert(newmodel); //store model
+
+      //If new model has 0 prob, erase from dropvars
+      nlike = calcIntegral(newmodel,model); //post prob of newmodel
+      if (nlike == 1) {
+	string s= mi->first;
+	mi++;
+	dropvars->erase(s);
+      } else {
+	mi++;
+      }
+    }
+    i++;
+  }
+
+  delete dropvars;
+}
 
 
 map<Model*, double*, ModelCmp> Seppel::resultModes()

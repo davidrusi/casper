@@ -20,7 +20,7 @@ double Casper::priorq = 3;
 
 
 
-Casper::Casper(Model* model, DataFrame* frame)
+Casper::Casper(Model* model, DataFrame* frame, int integrateMethod)
 
 {
 
@@ -28,7 +28,7 @@ Casper::Casper(Model* model, DataFrame* frame)
 
 	this->frame = frame;
 
-
+	this-> integrateMethod= integrateMethod;
 
 	vector<Variant* >::const_iterator vi;
 
@@ -338,7 +338,11 @@ void Casper::IPMH(double *pi, double *paccept, double *integralIS, int niter, in
 
 
 
-
+double Casper::calculateIntegral() {
+ 
+  return calculateIntegral(this->integrateMethod);
+ 
+}
 
 double Casper::calculateIntegral(int method) {
 
@@ -355,12 +359,21 @@ double Casper::calculateIntegral(int method) {
 }
 
 
+double Casper::calculateIntegral(double *mode, int n) {
+ 
+  return calculateIntegral(mode, n, this->integrateMethod);
+ 
+}
 
 double Casper::calculateIntegral(double *mode, int n, int method) {
 
   double ans;
 
-  if (method==1) {
+  if (method==0) {
+
+    ans= priorLikelihoodLn(mode); 
+
+  } else if (method==1) {
 
     ans= LaplaceApprox(mode,n);
 

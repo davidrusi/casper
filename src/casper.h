@@ -11,7 +11,7 @@ using namespace std;
 class Casper
 {
  public:
-  Casper(Model* model, DataFrame* frame);
+  Casper(Model* model, DataFrame* frame, int integrateMethod=1);
 
   // current model (set of variants) that tries to explain the data
   Model* model;
@@ -35,8 +35,10 @@ class Casper
   void IPMH(double *pi, double *paccept, double *integralIS, int niter, int burnin, double *mode, double **Sinv); //same using pre-computed mode & hessian
 
   // gives the integral given the current model and data
-  double calculateIntegral(int method=1);  //uses mode=calculateMode() and n= model->count()
-  double calculateIntegral(double* mode, int n, int method=1);  //do integral with pre-computed mode
+  double calculateIntegral(int method);  //uses mode=calculateMode() and n= model->count()
+  double calculateIntegral(); //same using default method= this->integrateMethod
+  double calculateIntegral(double* mode, int n, int method);  //do integral with pre-computed mode
+  double calculateIntegral(double* mode, int n); //same using default method= this->integrateMethod
   double LaplaceApprox(double *mode, int n);
 
   // evaluate the likelihood & prior
@@ -54,6 +56,7 @@ class Casper
   static double priorq;
   static int em_maxruns;
   static double em_tol;
+  int integrateMethod;  //0: plug-in post mode; 1: Laplace; 2: importance sampling with is_runs
   static int is_runs;
 
  private:

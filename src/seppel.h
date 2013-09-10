@@ -8,11 +8,11 @@ class Seppel
 
 public:
 
-	Seppel(DataFrame* frame);
+  Seppel(DataFrame* frame, int integrateMethod=0);
 
-	Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior);
+  Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior, int integrateMethod=0);
 
-	~Seppel();
+  ~Seppel();
 
 
 
@@ -30,6 +30,7 @@ public:
 
 	void exploreSmart(Model* startmodel, int runs); // Metropolis-Hastings MCMC with random walk (uses SeppelSmartDist as proposal)
 
+	void exploreSubmodels(Model* model, int maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
 
 
 	map<Model*, double*, ModelCmp> resultModes();
@@ -45,6 +46,8 @@ public:
 	double integralSum; //sum integrals/exp(integralMax)
 
 	double integralMax; //maximum log(integrals), i.e. log(marginal likelihood) + log(prior)
+
+        int integrateMethod;  //0: plug-in post mode; 1: Laplace; 2: importance sampling with is_runs
 
 
 

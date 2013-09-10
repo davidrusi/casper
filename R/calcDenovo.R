@@ -4,13 +4,12 @@
 
 require(methods)
 
-setClass("denovoGeneExpr", representation(posprob = "data.frame", expression = "data.frame", variants = "GRanges", integralSum= "numeric", npathDeleted= "numeric"))
+setClass("denovoGeneExpr", representation(posprob = "data.frame", expression = "data.frame", variants = "matrix", integralSum= "numeric", npathDeleted= "numeric"))
 
 valid_denovoGeneExpr <- function(object) {
   msg <- NULL
   if (any(!(c('model','posprob') %in% colnames(object@posprob)))) msg <- "Incorrect colnames in 'posprob'"
   if (any(!(c('model','expr','varName') %in% colnames(object@expression)))) msg <- "Incorrect colnames in 'expression'"
-  if (class(object@variants)!='GRanges') msg <- "Element variants must be of class 'Granges'"
   if (is.null(msg)) { TRUE } else { msg }
 }
 
@@ -59,8 +58,8 @@ setMethod("show", signature(object="denovoGenomeExpr"), function(object) {
 }
 )
 
-#setMethod("[", signature(x="denovoGenomeExpr"), function(x, i, ...) { new("denovoGenomeExpr", islands=x@islands[i]) })
-#setMethod("[[", signature(x="denovoGenomeExpr"), function(x, i, j, ...) { x@islands[[i]] } )
+setMethod("[", signature(x="denovoGenomeExpr"), function(x, i, ...) { new("denovoGenomeExpr", islands=x@islands[i]) })
+setMethod("[[", signature(x="denovoGenomeExpr"), function(x, i, j, ...) { x@islands[[i]] } )
 #setMethod("as.list", signature(x="denovoGenomeExpr"), function(x) {x@islands})
                             
 
@@ -68,12 +67,17 @@ setMethod("show", signature(object="denovoGenomeExpr"), function(object) {
 ## Function calcDenovo
 #########################################################################
 
-calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE, method='auto', niter, exactMarginal=TRUE, verbose=TRUE, mc.cores=1) {
+calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE, method='auto', niter, exactMarginal=TRUE, integrateMethod='plugin', verbose=TRUE, mc.cores=1) {
+  if (integrateMethod=='plugin') {
+      integrateMethod <- as.integer(0)
+  } else if (integrateMethod=='Laplace') {
+      integrateMethod <- as.integer(1)
+  } else { integrateMethod <- as.integer(2) }
   if (missing(readLength)) stop("readLength must be specified")
   if (class(genomeDB)!='annotatedGenome') stop("genomeDB must be of class 'annotatedGenome'")
-  if (!genomeDB@denovo) stop("genomeDB must be a de novo annotated genome. Use createDenovoGenome")
+  #if (!genomeDB@denovo) stop("genomeDB must be a de novo annotated genome. Use createDenovoGenome")
   if (class(pc)!="pathCounts") stop("pc must be of class 'pathCounts'")
-  if (!pc@denovo) stop("pc must be computed using a genome annotated de novo")
+  #if (!pc@denovo) stop("pc must be computed using a genome annotated de novo")
   if (!missing(mprior)) {
     if (!all(c('nvarPrior','nexonPrior') %in% slotNames(mprior))) stop("Incorrect mprior. Please use modelPrior to generate it.")
     modelUnifPrior <- as.integer(0)
@@ -84,7 +88,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     nexonPrior <- list(bbpar=matrix(c(0,0),nrow=1),obs=NA,pred=NA)
     modelUnifPrior <- as.integer(1)
   }
-  if (!(method %in% c('auto','rwmcmc','priormcmc','exact'))) stop("method must be auto, rwmcmc, priormcmc or exact")
+  if (!(method %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) stop("method must be auto, rwmcmc, priormcmc, allmodels or submodels")
 
   #Format input
   if (verbose) cat("Formatting input...\n")
@@ -102,8 +106,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
   nexonPrior <- lapply(nexonPrior,as.double)
   minpp <- as.double(minpp)
   selectBest <- as.integer(selectBest)
-  if (method=='auto') method <- 0 else if (method=='exact') method <- 1 else if (method=='rwmcmc') method <- 2 else method <- 3
-  method <- as.integer(method)
+  method <- as.integer(switch(method, auto=0, allmodels=1, rwmcmc=2, priormcmc=3, submodels=4))
   verbose <- as.integer(verbose)
   exactMarginal <- as.integer(exactMarginal)
   if (missing(islandid)) {
@@ -131,7 +134,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
   
   #Define basic function
   f <- function(z) {
-    islandid <- as.integer(as.factor(z))
+    islandid <- as.integer(z)
     exons <- exons[z]
     exonwidth <- exonwidth[z]
     transcripts <- genomeDB@transcripts[z]
@@ -145,7 +148,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     strand[sel] <- 0
     strand <- as.list(as.integer(strand))
     #pc <- pc[z] pc's have to be subset from previous step to deal with strandedness !!!!!!
-    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,priorq=priorq,minpp=minpp,selectBest=selectBest,method=method,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, strand=strand)
+    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,priorq=priorq,minpp=minpp,selectBest=selectBest,method=method,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
     lapply(1:length(ans), function(y) formatDenovoOut(ans[[y]], genomeDB@islands[z][[y]]))
   }
 
@@ -234,21 +237,17 @@ formatDenovoOut <- function(ans, genesel) {
   ans[[1]] <- data.frame(ans[[1]])
   colnames(ans[[1]]) <- c('model','posprob','priorprob')
   ans[[1]] <- ans[[1]][order(ans[[1]][,'posprob'],decreasing=TRUE),]
-  ans[[6]] <- NULL
   ans[[2]] <- data.frame(ans[[2]],ans[[3]])
   colnames(ans[[2]]) <- c('model','expr','varName')
   ans[[3]] <- NULL
-  variants <- genesel[as.character(ans[[3]])]
-  names(variants) <- sub("\\..*", "", names(variants))
-  ans[[3]] <- variants
-  ans[[4]] <- NULL
+  colnames(ans[[3]]) <- c('varName','exons')
   names(ans[[4]]) <- c('sum','logmax')
   names(ans) <- c('posprob','expression','variants','integralSum','npathDeleted')
   new("denovoGeneExpr",posprob=ans$posprob,expression=ans$expression,variants=ans$variants,integralSum=ans$integralSum,npathDeleted=ans$npathDeleted)
 }
 
-calcDenovoMultiple <- function(exons, exonwidth, transcripts, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, priorq, minpp, selectBest, method, niter, exactMarginal, verbose, strand) {
-  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,priorq,minpp,selectBest,method,niter,exactMarginal,verbose, strand)
+calcDenovoMultiple <- function(exons, exonwidth, transcripts, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, priorq, minpp, selectBest, method, niter, exactMarginal, verbose, integrateMethod, strand) {
+  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,priorq,minpp,selectBest,method,niter,exactMarginal,verbose,integrateMethod,strand)
   return(ans)
 }
 
