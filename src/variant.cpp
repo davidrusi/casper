@@ -56,9 +56,9 @@ Variant::Variant(vector<Exon*>* exons)
 
 		out << (exon->id);
 
-		(*this).name += out.str();
+		(*this).exoncomb += out.str();
 
-		(*this).name += ",";
+		(*this).exoncomb += ",";
 
 
 
@@ -82,7 +82,7 @@ Variant::Variant(vector<Exon*>* exons)
 
 
 
-	(*this).name = (*this).name.substr(0, (*this).name.size()-1); //remove last ","
+	(*this).exoncomb = (*this).exoncomb.substr(0, (*this).exoncomb.size()-1); //remove last ","
 
 	this->length = this->positions[i] - 1;
 

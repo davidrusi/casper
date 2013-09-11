@@ -8,29 +8,33 @@ class Seppel
 
 public:
 
-  Seppel(DataFrame* frame, int integrateMethod=0);
+  Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod=0);
 
-  Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior, int integrateMethod=0);
+  Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int integrateMethod=0);
 
   ~Seppel();
 
 
 
-	double calcIntegral(Model* model);  //compute integral (requires computing mode)
+  double calcIntegral(Model* model);  //compute integral (requires computing mode)
+  double calcIntegral(Model* model, bool knownVarsCheck);  //compute integral (requires computing mode)
 
-	double calcIntegral(Model* model, Model* similarModel); //same but initializes mode using mode from a similar model (saves time)
+  double calcIntegral(Model* model, Model* similarModel); //same but initializes mode using similarModel's mode (faster)
+  double calcIntegral(Model* model, Model* similarModel, bool knownVarsCheck); //same but initializes mode using similarModel's mode (faster)
 
-	double* initMode(Model* model, Model* similarModel);
+  double* initMode(Model* model, Model* similarModel);
 
 
 
-	void exploreExact(); // exhaustive enumeration of all possible models
+  void exploreExact(set<Variant*, VariantCmp> *initvaris); // exhaustive enumeration of all possible models
 
-	void exploreUnif(int runs); //Metropolis-Hastings MCMC with independent proposals (uniform)
+  void exploreExactFast(set<Variant*, VariantCmp> *initvaris); //same as exploreExact, but faster as once it encounters a model with 0 prob it does not list any further submodels
 
-	void exploreSmart(Model* startmodel, int runs); // Metropolis-Hastings MCMC with random walk (uses SeppelSmartDist as proposal)
+  void exploreUnif(int runs, set<Variant*, VariantCmp> *initvaris); //Metropolis-Hastings MCMC with independent proposals (uniform)
 
-	void exploreSubmodels(Model* model, int maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
+  void exploreSmart(Model* startmodel, int runs); // Metropolis-Hastings MCMC with random walk (uses SeppelSmartDist as proposal)
+
+  void exploreSubmodels(Model* model, int maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
 
 
 	map<Model*, double*, ModelCmp> resultModes();
@@ -55,6 +59,7 @@ public:
 
 	double calculatePrior(Model* model); //compute log-prior probability
 
+	set<Variant*>* knownVars;  //variants that must be in any model, else calcIntegral assigns 0 post prob
 
 
 private:

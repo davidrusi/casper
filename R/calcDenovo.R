@@ -60,7 +60,7 @@ setMethod("show", signature(object="denovoGenomeExpr"), function(object) {
 
 setMethod("[", signature(x="denovoGenomeExpr"), function(x, i, ...) { new("denovoGenomeExpr", islands=x@islands[i]) })
 setMethod("[[", signature(x="denovoGenomeExpr"), function(x, i, j, ...) { x@islands[[i]] } )
-#setMethod("as.list", signature(x="denovoGenomeExpr"), function(x) {x@islands})
+setMethod("as.list", signature(x="denovoGenomeExpr"), function(x) {x@islands})
                             
 
 #########################################################################
@@ -138,6 +138,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     exons <- exons[z]
     exonwidth <- exonwidth[z]
     transcripts <- genomeDB@transcripts[z]
+    if (length(genomeDB@knownVars)>0) { knownVars <- genomeDB@knownVars[z] } else { knownVars <- lapply(1:length(z), function(z) character(0)) }
     tmp <- strand[z]
     strand <- vector(mode='integer', length=length(tmp))
     sel <- tmp=='+'
@@ -148,7 +149,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     strand[sel] <- 0
     strand <- as.list(as.integer(strand))
     #pc <- pc[z] pc's have to be subset from previous step to deal with strandedness !!!!!!
-    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,priorq=priorq,minpp=minpp,selectBest=selectBest,method=method,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
+    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,knownVars=knownVars,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,priorq=priorq,minpp=minpp,selectBest=selectBest,method=method,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
     lapply(1:length(ans), function(y) formatDenovoOut(ans[[y]], genomeDB@islands[z][[y]]))
   }
 
@@ -246,8 +247,8 @@ formatDenovoOut <- function(ans, genesel) {
   new("denovoGeneExpr",posprob=ans$posprob,expression=ans$expression,variants=ans$variants,integralSum=ans$integralSum,npathDeleted=ans$npathDeleted)
 }
 
-calcDenovoMultiple <- function(exons, exonwidth, transcripts, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, priorq, minpp, selectBest, method, niter, exactMarginal, verbose, integrateMethod, strand) {
-  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,priorq,minpp,selectBest,method,niter,exactMarginal,verbose,integrateMethod,strand)
+calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, priorq, minpp, selectBest, method, niter, exactMarginal, verbose, integrateMethod, strand) {
+  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,knownVars,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,priorq,minpp,selectBest,method,niter,exactMarginal,verbose,integrateMethod,strand)
   return(ans)
 }
 

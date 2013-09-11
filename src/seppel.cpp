@@ -7,13 +7,15 @@
 using namespace std;
 
 
-Seppel::Seppel(DataFrame* frame, int integrateMethod)
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
 {
 
   this->frame = frame;
 
   this->modelUnifPrior= 1;
+
+  this->knownVars= knownVars;
 
   this->integrateMethod= integrateMethod;
 
@@ -30,7 +32,7 @@ Seppel::Seppel(DataFrame* frame, int integrateMethod)
 
 
 
-Seppel::Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior, int integrateMethod) 
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int integrateMethod) 
 
 {
 
@@ -43,6 +45,8 @@ Seppel::Seppel(DataFrame* frame, double* nvarPrior, double* nexonPrior, int inte
   this->frame = frame;
 
   this->modelUnifPrior= 0;
+
+  this->knownVars= knownVars;
 
   this->integrateMethod= integrateMethod;
 
@@ -206,20 +210,50 @@ double* Seppel::initMode(Model* model, Model* similarModel) {
 }
 
 
+double Seppel::calcIntegral(Model* model, Model* similarModel) {
 
-double Seppel::calcIntegral(Model* model, Model* similarModel) 
+  return calcIntegral(model, similarModel, true);
+
+}
+
+
+double Seppel::calcIntegral(Model* model, Model* similarModel, bool knownVarsCheck) 
 
 {
 
   double *mode;
 
-  if (modes.count(similarModel)==0) return this->calcIntegral(model);
-
   if (model == NULL) return 1;
 
   if (integrals.count(model) > 0) return integrals[model];
 
+  if (modes.count(similarModel)==0) return this->calcIntegral(model);
 
+  unsigned int nknownVars= knownVars->size();
+
+  if (knownVarsCheck && (nknownVars > 0)) {
+
+    unsigned int knownInModel=0;
+    vector<Variant *>::const_iterator itvarvec;
+
+    itvarvec= (model->items).begin();
+
+    while ((knownInModel<nknownVars) && (itvarvec != (model->items).end())) {
+
+      knownInModel += knownVars->count(*itvarvec);
+
+      itvarvec++;
+
+    }
+
+    if (knownInModel < nknownVars) {
+
+      integrals[model]= 1;
+      return 1;
+
+    }
+
+  }
 
   double like = 1, prior = 1;
 
@@ -260,16 +294,47 @@ double Seppel::calcIntegral(Model* model, Model* similarModel)
 }
 
 
+double Seppel::calcIntegral(Model* model) {
+
+  return calcIntegral(model, true);
+
+}
 
 
-
-double Seppel::calcIntegral(Model* model) 
+double Seppel::calcIntegral(Model* model, bool knownVarsCheck) 
 
 {
 
   if (model == NULL) return 1;
 
   if (integrals.count(model) > 0) return integrals[model];
+
+
+  unsigned int nknownVars= knownVars->size();
+
+  if (knownVarsCheck && (nknownVars > 0)) {
+
+    unsigned int knownInModel=0;
+    vector<Variant *>::const_iterator itvarvec;
+
+    itvarvec= (model->items).begin();
+
+    while ((knownInModel<nknownVars) && (itvarvec != (model->items).end())) {
+
+      knownInModel += knownVars->count(*itvarvec);
+
+      itvarvec++;
+
+    }
+
+    if (knownInModel < nknownVars) {
+
+      integrals[model]= 1;
+      return 1;
+
+    }
+
+  }
 
 
 
@@ -306,12 +371,26 @@ double Seppel::calcIntegral(Model* model)
 }
 
 
+void Seppel::exploreExactFast(set<Variant*, VariantCmp> *initvaris) {
 
-void Seppel::exploreExact()
+  frame->allVariants(varis, initvaris);
 
-{
+  Model* m= new Model(varis);
 
-  frame->allModels(varis, models);  //store all possible variants & models
+  modelsSet->insert(m);
+
+  int maxdropit=1;
+
+  if (m->items.size() > 1) maxdropit = (int) ceil(log2((double) m->items.size()) + 1);
+
+  exploreSubmodels(m, maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
+
+}
+
+
+void Seppel::exploreExact(set<Variant*, VariantCmp> *initvaris) {
+
+  frame->allModels(varis, models, initvaris);  //store all possible variants & models
 
 
 
@@ -329,9 +408,7 @@ void Seppel::exploreExact()
 
 }
 
-void Seppel::exploreUnif(int runs)
-
-{
+void Seppel::exploreUnif(int runs, set<Variant*, VariantCmp> *initvaris) {
 
 
 
@@ -339,7 +416,7 @@ void Seppel::exploreUnif(int runs)
 
   vector<Model*>* models = new vector<Model*>();
 
-  frame->allModels(varis, models);  //store all possible variants & models
+  frame->allModels(varis, models, initvaris);  //store all possible variants & models
 
 
 
@@ -552,22 +629,29 @@ void Seppel::exploreSubmodels(Model* model, int maxdropit) {
 
   //Initialize: check dropping individual variants
   for (i=0; i<nvars; i++) {
-    v= newitems[0]; //model->get(i); //pointer to variant i
-    newitems.erase(newitems.begin());  //remove variant i
-    newmodel= new Model(&newitems);  //new model without variant i
-    modelsSet->insert(newmodel); //store model
 
-    nlike = calcIntegral(newmodel,model); //post prob of newmodel
-    if (nlike != 1) {
-      int *varsin;
-      varsin= ivector(0,nvars-1);
-      for (j=0; j<i; j++) varsin[j]= 1;
-      varsin[i]= 0;
-      for (j=i+1; j<nvars; j++) varsin[j]= 1;
-      dropvars->add(varsin);
+    v= newitems[0];                    //pointer to variant i
+    newitems.erase(newitems.begin());  //remove variant i
+
+    if (knownVars->count(v) == 0) {
+
+      newmodel= new Model(&newitems);  //new model without variant i
+      modelsSet->insert(newmodel);
+   
+      nlike = calcIntegral(newmodel,model,false);
+      if (nlike != 1) {
+        int *varsin;
+        varsin= ivector(0,nvars-1);
+        for (j=0; j<i; j++) varsin[j]= 1;
+        varsin[i]= 0;
+        for (j=i+1; j<nvars; j++) varsin[j]= 1;
+        dropvars->add(varsin);
+      }
+
     }
 
-    newitems.push_back(v); //add variant i at the end
+    newitems.push_back(v); //add back variant i
+
   }
 
   //Iterate: drop combinations of variables

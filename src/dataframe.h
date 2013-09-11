@@ -58,11 +58,13 @@ public:
 
 
 
-	// returns a list of all possible models that could explain this data
+	// returns a list of all possible models
 
-	void allModels(vector<Variant*> *varis, vector<Model*> *models);
+	void allModels(vector<Variant*> *varis, vector<Model*> *models, vector<Variant*> *initvaris);
+	void allModels(vector<Variant*> *varis, vector<Model*> *models, set<Variant*, VariantCmp> *initvaris);
 
-        void allVariants(vector<Variant*> *varis);
+        void allVariants(vector<Variant*> *varis, set<Variant*, VariantCmp> *initvaris);
+        void allVariants(vector<Variant*> *varis, vector<Variant*> *initvaris);
 
 	int frag_readlen;
 
@@ -91,7 +93,7 @@ private:
 
 	double prob(int fs, int fe, int bs, int be, int* pos, double T);
 
-	void allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* vars);
+	void allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* vars, set<string>* inithash);
 
 	void allModelsRec(vector<Variant*>* stack, unsigned int level, vector<Variant*>* vars, vector<Model*>* models);
 

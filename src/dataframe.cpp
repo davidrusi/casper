@@ -465,39 +465,6 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 
 
-void DataFrame::allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* varis)
-
-{
-
-	if (exons.size() == level)
-
-	{
-
-		if (stack->size() > 0)
-
-		{
-
-			Variant* v = new Variant(stack);
-
-			varis->push_back(v);
-
-		}
-
-		return;
-
-	}
-
-	
-
-	stack->push_back(exons.at(level));
-
-	allVariantsRec(stack, level + 1, varis);
-
-	stack->pop_back();
-
-	allVariantsRec(stack, level + 1, varis);
-
-}
 
 void DataFrame::allModelsRec(vector<Variant*>* stack, unsigned int level, vector<Variant*>* vars, vector<Model*>* models)
 
@@ -533,14 +500,23 @@ void DataFrame::allModelsRec(vector<Variant*>* stack, unsigned int level, vector
 
 }
 
-void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models)
+void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, set<Variant*, VariantCmp> *initvaris) {
 
-{
+  set<string> inithash;
+  set<Variant*, VariantCmp>::iterator itvec;
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) {
+
+    inithash.insert((*itvec)->exoncomb);
+
+  }
+
 
   vector<Exon*>* estack = new vector<Exon*>();
 
-  allVariantsRec(estack, 0, varis);
+  allVariantsRec(estack, 0, varis, &inithash);
 
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) varis->push_back(*itvec);
 	
 
   vector<Variant*>* vstack = new vector<Variant*>();
@@ -555,17 +531,177 @@ void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models)
 
 }
 
-void DataFrame::allVariants(vector<Variant*> *varis)
 
-{
+void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, vector<Variant*> *initvaris) {
 
-	vector<Exon*>* estack = new vector<Exon*>();
+  set<string> inithash;
+  vector<Variant*>::iterator itvec;
 
-	allVariantsRec(estack, 0, varis);
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) {
 
-	delete estack;
+    inithash.insert((*itvec)->exoncomb);
+
+  }
+
+
+
+  vector<Exon*>* estack = new vector<Exon*>();
+
+  allVariantsRec(estack, 0, varis, &inithash);
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) varis->push_back(*itvec);
+	
+
+  vector<Variant*>* vstack = new vector<Variant*>();
+
+  allModelsRec(vstack, 0, varis, models);
+
+
+
+  delete estack; 
+
+  delete vstack; 
 
 }
+
+
+//Old version not considering initial variant names
+//void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models) {
+// 
+//  vector<Exon*>* estack = new vector<Exon*>();
+// 
+//  allVariantsRec(estack, 0, varis);
+// 
+// 	
+// 
+//  vector<Variant*>* vstack = new vector<Variant*>();
+// 
+//  allModelsRec(vstack, 0, varis, models);
+// 
+// 
+// 
+//  delete estack; 
+// 
+//  delete vstack; 
+// 
+//}
+
+
+void DataFrame::allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* varis, set<string>* inithash) {
+
+  if (exons.size() == level) {
+
+    if (stack->size() > 0)	{
+
+      Variant* v = new Variant(stack);
+
+      if (inithash->count(v->exoncomb) == 0) {
+
+	varis->push_back(v);
+
+      } else {
+
+	delete v;
+
+      }
+
+    }
+
+    return;
+
+  }
+
+  stack->push_back(exons.at(level));
+
+  allVariantsRec(stack, level + 1, varis, inithash);
+
+  stack->pop_back();
+
+  allVariantsRec(stack, level + 1, varis, inithash);
+
+}
+
+
+
+void DataFrame::allVariants(vector<Variant*> *varis, set<Variant*, VariantCmp> *initvaris) {
+
+  set<string> inithash;
+  set<Variant*, VariantCmp>::iterator itvec;
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) {
+
+    inithash.insert((*itvec)->exoncomb);
+
+  }
+
+  vector<Exon*>* estack = new vector<Exon*>();
+
+  allVariantsRec(estack, 0, varis, &inithash);
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) varis->push_back(*itvec);
+
+  delete estack;
+
+}
+
+void DataFrame::allVariants(vector<Variant*> *varis, vector<Variant*> *initvaris) {
+
+  set<string> inithash;
+  vector<Variant*>::iterator itvec;
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) {
+
+    inithash.insert((*itvec)->exoncomb);
+
+  }
+
+  vector<Exon*>* estack = new vector<Exon*>();
+
+  allVariantsRec(estack, 0, varis, &inithash);
+
+  for (itvec = initvaris->begin(); itvec != initvaris->end(); itvec++) varis->push_back(*itvec);
+
+  delete estack;
+
+}
+
+//Old version, does not respect already existing variants
+
+//void DataFrame::allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* varis) {
+// 
+//  if (exons.size() == level) {
+// 
+//    if (stack->size() > 0)	{
+// 
+//      Variant* v = new Variant(stack);
+// 
+//      varis->push_back(v);
+// 
+//    }
+// 
+//    return;
+// 
+//  }
+// 
+//  stack->push_back(exons.at(level));
+// 
+//  allVariantsRec(stack, level + 1, varis);
+// 
+//  stack->pop_back();
+// 
+//  allVariantsRec(stack, level + 1, varis);
+// 
+//}
+
+//void DataFrame::allVariants(vector<Variant*> *varis) {
+// 
+//  vector<Exon*>* estack = new vector<Exon*>();
+// 
+//  allVariantsRec(estack, 0, varis);
+// 
+//  delete estack;
+// 
+//}
 
 
 /*

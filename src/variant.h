@@ -1,17 +1,9 @@
 #include "fragment.h"
-
 #include "exon.h"
-
 #include <map>
-
 #include <string>
-
 #include <vector>
-
 #include <sstream>
-
-
-
 using namespace std;
 
 
@@ -26,8 +18,8 @@ public:
 
 	int id;
 
-	std::string name;
-
+	std::string name;  //any name for the variant. Initialized to sequence of exons
+	std::string exoncomb;  //sequence of exons in the variant, initialized to ""
 
 
 	// ordered array of exons of this variant

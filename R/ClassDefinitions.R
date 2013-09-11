@@ -149,7 +149,7 @@ setMethod("show", signature(object="pathCounts"), function(object) {
 ###############################################################
 
 
-setClass("annotatedGenome", representation(islands = "GRangesList", transcripts = "list", exon2island = "data.frame", exonsNI="GRanges",  aliases="data.frame", genomeVersion="character", dateCreated="Date", txLength="numeric", denovo="logical"))
+setClass("annotatedGenome", representation(islands = "GRangesList", transcripts = "list", knownVars = "list", exon2island = "data.frame", exonsNI="GRanges",  aliases="data.frame", genomeVersion="character", dateCreated="Date", txLength="numeric", denovo="logical"))
 valid_annotatedGenome <- function(object) {
   msg <- NULL
   if (!(all(c('seqnames','start','end','width','island') %in% names(object@exon2island)))) msg <- "Incorrect column names in 'exon2island'"
