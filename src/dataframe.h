@@ -1,9 +1,6 @@
 #include "model_cmp.h"
-
 #include "discretedf.h"
-
 #include <vector>
-
 using namespace std;
 
 
@@ -50,9 +47,12 @@ public:
 
 
 
-	// create variant from fragment
+	Variant* path2Variant(Fragment* f); 	// create single variant from fragment
 
-	Variant* path2Variant(Fragment* f); 
+	//create >1 variants from initvaris/fragment and add to newvaris. Proposed variants already in allvarnames are not added.
+	void path2Variants(set <Variant*, VariantCmp> *newvaris, set <string> *allvarnames, bool *explained, set <Variant*, VariantCmp> *initvaris, Fragment* f); 
+
+
 
 	int fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo);
 
