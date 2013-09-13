@@ -180,7 +180,7 @@ setMethod("rangesPlot",signature(x='IRanges'),
     } else {
       x <- x[order(start(x))]
       cover <- coverage(x)
-      cover <- seqselect(cover,(cover@lengths[1]+1):length(cover))
+      cover <- tail(cover, n=-runLength(cover)[1L])  # remove 1st run
       layout(c(2,1),heights=heights)
       par(oma=c(1,0,0,0),mar=c(2.1,.1,.1,.1))
       genePlot(gene=gene, xlab='', ylab='', xlim=xlim, ...)
@@ -188,7 +188,7 @@ setMethod("rangesPlot",signature(x='IRanges'),
       if (exonProfile) {
         st <- c(start(x[sel]),start(x[!sel]),end(x[!sel])); en <- c(end(x[sel]),start(x[!sel]),end(x[!sel]))
         pr <- coverage(IRanges(start=st,end=en))
-        pr <- seqselect(pr, (pr@lengths[1]+1):length(pr))
+        pr <- tail(pr, n=-runLength(pr)[1L])  # remove 1st run
         minst <- min(st)
         lines(minst:(minst+length(pr)-1),pr/max(pr),col='gray')
       }
@@ -249,7 +249,7 @@ setMethod("rangesPlot",signature(x='procBam'),
       if (exonProfile) {
         st <- c(start(x)[sel],start(x)[!sel],end(x)[!sel]); en <- c(end(x)[sel],start(x)[!sel],end(x)[!sel])
         pr <- coverage(IRanges(start=st,end=en))
-        pr <- seqselect(pr, (pr@lengths[1]+1):length(pr))
+        pr <- tail(pr, n=-runLength(pr)[1L])  # remove 1st run
         minst <- min(st)
         lines(minst:(minst+length(pr)-1),pr/max(pr),col='gray')
       }
