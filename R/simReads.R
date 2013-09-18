@@ -91,6 +91,7 @@ splitPaths <- function(paths, DB, mc.cores, stranded, geneid){
 
 casperSim <- function(genomeDB, distrs, nSimReads, pis, islandid, lr_file=NULL, rl, chrlen, seed, bam, chr=NULL, verbose=FALSE){
   if (verbose) cat("Formatting input\n")
+
   sel <- islandid
   nSimReads <- nSimReads[sel]
   txs <- genomeDB@transcripts[sel]
@@ -128,8 +129,17 @@ casperSim <- function(genomeDB, distrs, nSimReads, pis, islandid, lr_file=NULL, 
   ee=exon_end
   ei=exs
   ngenes=length(sel)
-  ldv <- sample(as.integer(names(distrs@lenDis)), prob=distrs@lenDis/sum(distrs@lenDis), size=sum(nSimReads), replace=T)
-  ldd <- as.numeric(1)
+  #ldv <- sample(as.integer(names(distrs@lenDis)), prob=distrs@lenDis/sum(distrs@lenDis), size=sum(nSimReads), replace=T)
+  #ldd <- as.numeric(1
+  #browser()
+  ldv <- cumsum(distrs@lenDis)/sum(distrs@lenDis)
+  #th <- seq(0,1, length=length(ldv))
+  #ldv <- approxfun(ldv, ldd)
+  #th <- seq(0, 1, len=10000)
+  #ldv <- ldv(th)
+  #ldv[1] <- 0
+  ldd <- as.numeric(names(distrs@lenDis))
+  #ldd <- round(seq(min(ldd), max(ldd), length=10000))
   th <- seq(0, 1, len=10000)
   std <- distrs@stDis(th)
   std[1] <- 0
@@ -140,7 +150,14 @@ casperSim <- function(genomeDB, distrs, nSimReads, pis, islandid, lr_file=NULL, 
   if (verbose) cat("Simulating fragments\n")
 # insideBam deprecated, only in case it is useful in simulations, return from C all information written to the bam file
   insideBam=integer(0)
+
+
+#  dyn.load("/Volumes/biostats/cstephan/casper_bioC/casper/src/casper.so")
+#  source("/Volumes/biostats/cstephan/casper_bioC/casper/R/simPost.R")
   ans <- .Call("casperSimC", ge, ve, vn, as.integer(vl), en, es, ee, ei, ldv, ldd, sdv, sdd, as.integer(rl), length(ge), as.integer(tx_strand), lr_file, chroms, as.integer(seed), as.integer(bam), as.integer(insideBam), as.integer(verbose))
+
+#pdf("try.dis.pdf");plot(density(ans[[3]]), xlim=c(0,500));lines(density(ans2[[3]]), col=2);lines(density(ans3[[3]]), col=3);dev.off()
+  
   ans <- ans[1:7]
   names(ans[[7]]) <- ans[[6]]
   ans[[6]] <- NULL

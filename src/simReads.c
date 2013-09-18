@@ -14,10 +14,11 @@
 
 SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP exon_num, SEXP exon_st, SEXP exon_end, SEXP exon_id, SEXP len_distrV, SEXP len_distrD, SEXP st_distrV, SEXP st_distrD, SEXP read_len, SEXP nn, SEXP tx_strand, SEXP lr_fileR, SEXP chr, SEXP rseed, SEXP rbam, SEXP rinsideBam, SEXP verbose){
 
-  int i=0, *ge, *vn, *vl, *en, *es, *ee, *ei, *txstr, ngenes, *ldv, rl, sdlen, n, bam, insideBam;
-  double *ve, *sdv, *sdd;
+  int i=0, *ge, *vn, *vl, *en, *es, *ee, *ei, *txstr, ngenes, rl, sdlen, n, bam, insideBam;
+  double *ve, *sdv, *sdd, *ldd, *ldv;
   FILE *LRFILE=NULL;
   SEXP startsTmp;
+
   PROTECT(gene_exp);// = coerceVector(gene_exp, INTSXP));
   PROTECT(var_exp);// = coerceVector(var_exp, REALSXP));
   PROTECT(var_num);// = coerceVector(var_num, INTSXP));
@@ -38,7 +39,9 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   PROTECT(rbam);// = coerceVector(rbam, INTSXP));
   PROTECT(rinsideBam);// = coerceVector(rinsideBam, INTSXP));
   PROTECT(verbose);
-  
+
+
+
   ge = INTEGER(gene_exp);
   ve = REAL(var_exp);
   vn = INTEGER(var_num);
@@ -48,7 +51,8 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   ee = INTEGER(exon_end);
   ei = INTEGER(exon_id);
   txstr = INTEGER(tx_strand);
-  ldv = INTEGER(len_distrV);
+  ldv = REAL(len_distrV);
+  ldd = REAL(len_distrD);
   sdv = REAL(st_distrV);
   sdd = REAL(st_distrD);
   rl = INTEGER(read_len)[0];
@@ -57,6 +61,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   insideBam = INTEGER(rinsideBam)[0];
   ngenes = length(var_num);
   sdlen = length(st_distrD);
+  int ldlen = length(len_distrV);
   gene_t *genes;
   genes = malloc((ngenes+1) * sizeof(gene_t));
   build_genes(genes, ve, vn, vl, en, es, ee, ei, txstr, ngenes, chr);
@@ -122,8 +127,9 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
     gene = ge[i];
     var = choose_var(genes[gene]);
     st=-1;
-    len = ldv[i];
-    if(len>genes[gene].vars[var].len) len=genes[gene].vars[var].len;
+    //len = ldv[i];
+    len = choose_len(genes[gene].vars[var].len, ldv, ldd, ldlen);
+    //if(len>genes[gene].vars[var].len) len=genes[gene].vars[var].len;
     while(j==0){
       cnt++;
       st = choose_st(len, genes[gene].vars[var].len, sdv, sdd, sdlen, genes[gene].vars[var].strand);

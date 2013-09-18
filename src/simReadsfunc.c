@@ -93,21 +93,6 @@ int choose_var(gene_t gene){
 //-------- Choose length
 //############-----------
 
-int choose_len(int *ldv, double *ldd, int ldlen) {
-  int i;
-  double tmp=0, ran;
-  ran = rand() / ( RAND_MAX + 1.0 );
-  for(i=0; i<ldlen; i++){
-    if((tmp<=ran) && (ran < tmp + ldd[i])) return(ldv[i]);
-    tmp += ldd[i];
-  }  
-  Rprintf("Error: no length chosen\n");
-  return(0);
-}
-
-//#############------------
-//-------- Choose start
-//############-----------
 
 double cumu_fragsta(double x, double *startcdf, double lencdf)
 {
@@ -117,8 +102,37 @@ double cumu_fragsta(double x, double *startcdf, double lencdf)
   double y1= startcdf[idx], x1= (double) idx / (lencdf-1);
   idx++;
   double y2= startcdf[idx], x2= (double) idx / (lencdf-1);
+  //printf("%f %f %f %f %f %f %d\n", x, x1, x2, y1, y2, lencdf, idx); 
   return y1 + (x-x1) * (y2-y1)/(x2-x1);
 }
+
+
+/*int choose_len(int varlen, double *ldv, double *ldd, int ldlen){
+  double maxp=1;
+  if(varlen<ldd[ldlen-1]) maxp=cumu_fragsta((double)varlen - ldd[0], ldd, ldlen);   //ldv[(int)(varlen-ldd[0])];
+  double ran = ((double)rand() / (double) RAND_MAX)*maxp;
+  int ret = (int) (cumu_fragsta(ran, ldv, ldlen)*(ldd[ldlen-1]-ldd[0])) + ldd[0];
+  if(ret<0) printf("%f %f %f %d %d %f %f %d\n", ran, maxp, cumu_fragsta(ran, ldv, ldlen), ret, varlen, ldd[0], ldd[ldlen-1], ldlen);
+  return(ret);
+  }*/
+
+
+int choose_len(int varlen, double *ldv, double *ldd, int ldlen) {
+  int i;
+  double ran, maxp=1;
+  if(varlen<ldd[ldlen-1]) maxp=ldv[(int)(varlen-ldd[0])];
+ 
+  ran = (rand() / ( RAND_MAX + 1.0 )) *maxp;
+  if(ran<ldv[0]) return(ldd[0]);
+  for(i=1; i<ldlen; i++) if((ldv[i-1]<=ran) && (ran < ldv[i])) return(ldd[i]);
+  Rprintf("Error: no length chosen %f %f\n", ran, maxp);
+  return(0);
+}
+
+
+//#############------------
+//-------- Choose start
+//############-----------
 
 int choose_st(int fraglen, int varlen, double *sdv, double *sdd, int sdlen, int strand){
   int stdlen;

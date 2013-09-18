@@ -224,6 +224,7 @@ simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, se
     }
   }
   pc <- simReads(nonzero, nSimReads=nreadsPerGeneSim, pis=pis, rl=rl, seed=seed, distrs=distrs, genomeDB=genomeDB, mc.cores=mc.cores, repSims=FALSE, writeBam=FALSE, verbose=verbose)
+  #pc <- ans$pc
   gc()
   if(verbose) cat("Finished simulations\n")
   notinpc <- names(genomeDB@transcripts)[!(names(genomeDB@transcripts) %in% names(pc@counts[[1]]))]
@@ -231,5 +232,5 @@ simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, se
   names(pcs) <- c(names(pc@counts[[1]]), notinpc)
   pcs[names(pc@counts[[1]])] <- pc@counts[[1]]
   pc@counts[[1]] <- pcs
-  list(pc=pc, pis=pis, distrsim=distrs)
+  list(pc=pc, pis=pis, distrsim=distrs)#, len=ans$sims[[3]])
 }
