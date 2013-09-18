@@ -6,7 +6,7 @@
 \description{
   Estimate expression of gene splicing variants,
   assuming that the set of variants is known.
-  When \code{relativeExpr} is set to \code{FALSE}, reads per kilobase
+  When \code{rpkm} is set to \code{TRUE}, fragments per kilobase
   per million are returned. Otherwise relative expression estimates are returned.
 }
 \usage{
@@ -25,7 +25,7 @@ priorqGeneExpr=2, citype="none", niter=10^3, burnin=100, mc.cores=1, verbose=FAL
 \item{rpkm}{Set to \code{FALSE} to return relative expression levels,
   i.e. the proportion of reads generated from each variant per
   gene. These proportions add up to 1 for each gene.
-  Set to \code{TRUE} to return reads per kilobase per million (RPKM).}
+  Set to \code{TRUE} to return fragments per kilobase per million (RPKM).}
 \item{priorq}{Parameter of the prior distribution on the proportion of reads coming from each variant. The prior is Dirichlet with prior sample size for each variant equal to priorq.
             We recommend \code{priorq=2} for estimation, as it pools the
 	    estimated expression away from 0 and 1 and returned lower

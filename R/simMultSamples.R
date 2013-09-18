@@ -17,17 +17,18 @@ logrpkm2thpi <- function(txids, lrpkm, genomeDB) {
 }
 
 
-logrpkm <- function(txids, th, pi, genomeDB) {
+logrpkm <- function(txids, th, pi, genomeDB, len) {
   #txids: data.frame with transcript, gene
   #th: data.frame with gene and proportion/probability of reads from each gene
   #pi: matrix with relative expression of each isoform, rownames must indicate tx identifier
-  #genomeDB: annotatedGenome
+  #genomeDB: annotatedGenome (not needed if len is provided)
+  #len: named vector with transcript lengths (not needed if genomeDB is provided)
   txids$gene <- as.character(txids$gene)
   th$gene <- as.character(th$gene)
   th <- merge(txids[,c('transcript','gene')], th, by='gene')
   rownames(th) <- as.character(th$transcript)
   th <- th[rownames(pi),,drop=FALSE]
-  len <- genomeDB@txLength[rownames(pi)]
+  if (missing(len)) { len <- genomeDB@txLength[rownames(pi)] } else { len <- len[rownames(pi)] }
   lrpkm <- log(10^9) + log(th[,-1:-2,drop=FALSE]) + log(pi) - log(len)
   return(lrpkm)
 }

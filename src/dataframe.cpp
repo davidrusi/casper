@@ -2,6 +2,7 @@
 #include "dataframe.h"
 #include "cppmemory.h"
 #include <list>
+#include <Rinternals.h>
 using namespace std;
 
 
@@ -240,206 +241,6 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T)
 
 
 
-Variant* DataFrame::path2Variant(Fragment* f) 
-
-{
-
-	int eid=0; Exon *ex;
-
-	vector<Exon*>::iterator itexon;
-
-	vector<Exon*>* el = new vector<Exon*>();
-
-	for (itexon= exons.begin(); (*itexon)->id != f->left[0]; itexon++) {
-	  
-		ex= (*itexon);
-		
-		el->push_back(ex);
-
-	}
-
-	for (int i=0; i< f->leftc; i++) {
-
-		eid = f->left[i];
-
-		ex = id2exon[eid];
-
-		el->push_back(ex);
-
-	}
-
-	if (eid != f->right[0]) {
-
-		eid = f->right[0];
-
-		ex = id2exon[eid];
-
-		el->push_back(ex);
-
-	}
-
-	for (int i=1; i< f->rightc; i++) {
-
-		eid = f->right[i];
-
-		ex = id2exon[eid];
-
-		el->push_back(ex);
-
-	}
-	
-	while ((*itexon)->id != eid) { itexon++; }
-
-	itexon++;
-
-	while (itexon != exons.end()) {
-
-		ex= (*itexon);
-
-		el->push_back(ex);
-
-		itexon++;
-
-	}
-
-	Variant* v = new Variant(el);
-
-	delete el;
-
-	return v;
-
-}
-
-
-//For each variant in initvaris, add a new variant to newvaris strictly following the path set by f
-//
-// Input
-// - initvaris: initial set of variants that will act as templates for the new variants
-// - f: fragment we wish to explain
-//
-// Ouput
-// - newvaris: set where elements will be added (can be non-empty at entry)
-// - allvarnames: new variants with exoncomb in allvarnames are discarded. allvarnames is updated with new variants in newvaris
-// - explained: returns true if a new variant assigns prob >0 to frag, else returns false
-//
-// Note: as a side effect, path probabilities for new variants are computed & stored in this->cache
-void DataFrame::path2Variants(set <Variant*, VariantCmp> *newvaris, set <string> *allvarnames, bool *explained, set <Variant*, VariantCmp> *initvaris, Fragment* f) {
-
-  (*explained) = false;
-
-  set <Variant*, VariantCmp>::iterator itvarset;
-
-  for (itvarset = initvaris->begin(); itvarset != initvaris->end(); itvarset++) {
-
-    int eid=0, curvarex; Exon *ex; Variant *curvar= (*itvarset); //Exon **curexons= (*itvarset)->exons;
-
-    vector<Exon*>::iterator itexon;
-
-    vector<Exon*>* el = new vector<Exon*>();
-
-    curvarex = 0; ex= (curvar->exons)[0];
-
-    while ((curvarex < curvar->exonCount) && (ex->id < (f->left[0]))) {
-
-      el->push_back(ex);
-
-      curvarex++;
-
-      ex= (curvar->exons)[curvarex];
-		
-    }
-
-    for (int i=0; i< f->leftc; i++) {
-
-      eid = f->left[i];
-
-      ex = id2exon[eid];
-
-      el->push_back(ex);
-
-    }
-
-    if (eid != f->right[0]) {
-
-      eid = f->right[0];
-
-      ex = id2exon[eid];
-
-      el->push_back(ex);
-
-    }
-
-    for (int i=1; i< f->rightc; i++) {
-
-      eid = f->right[i];
-
-      ex = id2exon[eid];
-
-      el->push_back(ex);
-
-    }
-
-    if (eid < ((curvar->exons)[curvar->exonCount -1])->id) {
-
-      ex= (curvar->exons)[curvarex];
-      while (ex->id <= eid) {
-        curvarex++;
-        ex= (curvar->exons)[curvarex];
-      }
-       
-      while ( curvarex < curvar->exonCount ) {
-       		
-        el->push_back(ex);
-       
-        curvarex++;
-       
-        ex= (curvar->exons)[curvarex];
-       
-      }
-
-    }
-	
-    if (el->size() > 0) {
-
-      Variant* v = new Variant(el);
-
-      if (allvarnames->count(v->exoncomb) == 0) {
-
-	allvarnames->insert(v->exoncomb);
-
-	double fragprob = probability(v, f);
-
-	if (fragprob > 0) {
-
-	  *explained = true;
-
-	  newvaris->insert(v);
-
-	  map<Fragment*, double> probs = probabilities(v);  //update cache with all path prob for new variant
-
-	} else {
-
-	  delete v;
-
-	}
-
-      } else {
-
-	delete v;
-
-      }
-
-    }
-
-    delete el;
-
-  }
-
-}
-
-
-
-
 int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
 
 	// copy all fragments
@@ -474,7 +275,7 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 	  //Propose new variants
 	  set <string> allvarnames;
-	  set <Variant*, VariantCmp> newvaris;
+	  set <Variant*, VariantCmp> newvaris, bestvaris, *varisptr;
 	  set <Variant*, VariantCmp>::const_iterator itvarset;
 	   
 	  for (itvarset = initvars->begin(); itvarset != initvars->end(); itvarset++) allvarnames.insert((*itvarset)->exoncomb);
@@ -484,7 +285,7 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 	    bool explained = false;
 	    Fragment* frag = (*itqueue);
 	   
-	    path2Variants(&newvaris, &allvarnames, &explained, initvars, frag); //propose new variants, add their names to allvarnames
+	    path2Variants(&newvaris, &bestvaris, &allvarnames, &explained, initvars, frag); //propose new variants, add their names to allvarnames
 
 	    if (!explained) {
 
@@ -496,8 +297,24 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
  
 	  }
 
+	  if ((initvars->size() + newvaris.size()) > 20) {  //if too many new variants were proposed, used only best ones
+
+	    varisptr= &bestvaris;
+
+	    for (itvarset = newvaris.begin(); itvarset != newvaris.end(); itvarset++) {
+
+	      if (bestvaris.count(*itvarset) == 0) delete (*itvarset);  //delete variants that will not be used
+
+	    }
+
+	  } else {
+
+	    varisptr= &newvaris;
+
+	  }
+
 	  //Add new variants to initvars, short names to varshortnames
-	  for (itvarset = newvaris.begin(); itvarset != newvaris.end(); itvarset++) {
+	  for (itvarset = varisptr->begin(); itvarset != varisptr->end(); itvarset++) {
      
 	    Variant* nv = (*itvarset);
 
@@ -646,6 +463,204 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 }
 */
+
+
+
+Variant* DataFrame::path2Variant(Fragment* f) 
+
+{
+
+	int eid=0; Exon *ex;
+
+	vector<Exon*>::iterator itexon;
+
+	vector<Exon*>* el = new vector<Exon*>();
+
+	for (itexon= exons.begin(); (*itexon)->id != f->left[0]; itexon++) {
+	  
+		ex= (*itexon);
+		
+		el->push_back(ex);
+
+	}
+
+	for (int i=0; i< f->leftc; i++) {
+
+		eid = f->left[i];
+
+		ex = id2exon[eid];
+
+		el->push_back(ex);
+
+	}
+
+	if (eid != f->right[0]) {
+
+		eid = f->right[0];
+
+		ex = id2exon[eid];
+
+		el->push_back(ex);
+
+	}
+
+	for (int i=1; i< f->rightc; i++) {
+
+		eid = f->right[i];
+
+		ex = id2exon[eid];
+
+		el->push_back(ex);
+
+	}
+	
+	while ((*itexon)->id != eid) { itexon++; }
+
+	itexon++;
+
+	while (itexon != exons.end()) {
+
+		ex= (*itexon);
+
+		el->push_back(ex);
+
+		itexon++;
+
+	}
+
+	Variant* v = new Variant(el);
+
+	delete el;
+
+	return v;
+
+}
+
+
+
+//For each variant in initvaris, add a new variant to newvaris strictly following the path set by f
+//
+// Input
+// - initvaris: initial set of variants that will act as templates for the new variants
+// - f: fragment we wish to explain
+//
+// Ouput
+// - newvaris: set where elements will be added (can be non-empty at entry)
+// - bestvaris: variant assigning highest prob to is added to bestvar
+// - allvarnames: new variants with exoncomb in allvarnames are discarded. allvarnames is updated with new variants in newvaris
+// - explained: returns true if a new variant assigns prob >0 to frag, else returns false
+//
+// Note: as a side effect, path probabilities for new variants are computed & stored in this->cache
+void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*, VariantCmp> *bestvaris, set <string> *allvarnames, bool *explained, set <Variant*, VariantCmp> *initvaris, Fragment* f) {
+
+  (*explained) = false;
+
+  double maxprob=0;
+  Variant *bestvar;
+
+  set <Variant*, VariantCmp>::iterator itvarset;
+
+  for (itvarset = initvaris->begin(); itvarset != initvaris->end(); itvarset++) {
+
+    int eid=0, curvarex; Exon *ex; Variant *curvar= (*itvarset);
+
+    vector<Exon*>::iterator itexon;
+
+    vector<Exon*>* el = new vector<Exon*>();
+
+    curvarex = 0; ex= (curvar->exons)[0];
+
+    while ((curvarex < curvar->exonCount) && (ex->id < (f->left[0]))) {
+
+      el->push_back(ex);
+
+      curvarex++;
+
+      ex= (curvar->exons)[curvarex];
+		
+    }
+
+    for (int i=0; i< f->leftc; i++) {
+
+      eid = f->left[i];
+
+      if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+
+      el->push_back(ex);
+
+    }
+
+    for (int i=0; i< f->rightc; i++) {
+
+      eid = f->right[i];
+
+      if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+
+      if (eid > f->left[f->leftc -1]) el->push_back(ex);
+
+    }
+
+    if (eid < ((curvar->exons)[curvar->exonCount -1])->id) {
+
+      ex= (curvar->exons)[curvarex];
+
+      while (ex->id <= eid) { curvarex++; ex= (curvar->exons)[curvarex]; }
+       
+      while ( curvarex < curvar->exonCount ) {
+       		
+        el->push_back(ex);
+       
+        curvarex++;
+       
+        ex= (curvar->exons)[curvarex];
+       
+      }
+
+    }
+	
+    if (el->size() > 0) {
+
+      Variant* v = new Variant(el);
+
+      if (allvarnames->count(v->exoncomb) == 0) {
+
+	allvarnames->insert(v->exoncomb);
+
+	double fragprob = probability(v, f);
+
+	if (fragprob > 0) {
+
+	  *explained = true;
+
+	  newvaris->insert(v);
+
+	  map<Fragment*, double> probs = probabilities(v);  //update cache with all path prob for new variant
+
+	  if (fragprob > maxprob) { maxprob= fragprob; bestvar= v; }
+
+	} else {
+
+	  delete v;
+
+	}
+
+      } else {
+
+	delete v;
+
+      }
+
+    }
+
+    delete el;
+
+  }
+
+  if (*explained) bestvaris->insert(bestvar);
+
+}
+
+
 
 
 

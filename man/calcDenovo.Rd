@@ -132,12 +132,12 @@ Reads. Technical report, IRB Barcelona (2010)
   Camille Stephan-Otto Attolini, Manuel Kroiss, David Rossell
 }
 \seealso{
+\code{\link{denovoExpr}} to obtain expression estimates from the
+  \code{calcDenovo} output.
 \code{plotExpr} to produce a plot with splicing variants and estimated expression.
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+## See help(denovoExpr)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

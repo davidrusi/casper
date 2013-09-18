@@ -49,8 +49,8 @@ public:
 
 	Variant* path2Variant(Fragment* f); 	// create single variant from fragment
 
-	//create >1 variants from initvaris/fragment and add to newvaris. Proposed variants already in allvarnames are not added.
-	void path2Variants(set <Variant*, VariantCmp> *newvaris, set <string> *allvarnames, bool *explained, set <Variant*, VariantCmp> *initvaris, Fragment* f); 
+	//create >1 variants from initvaris/fragment and add to newvaris. Return best in bestvar. Proposed variants already in allvarnames are not added.
+	void path2Variants(set <Variant*, VariantCmp> *newvaris, set <Variant*, VariantCmp> *bestvar, set <string> *allvarnames, bool *explained, set <Variant*, VariantCmp> *initvaris, Fragment* f); 
 
 
 

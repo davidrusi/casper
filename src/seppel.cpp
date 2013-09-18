@@ -610,12 +610,13 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 }
 
 
-void Seppel::exploreSubmodels(Model* model, int maxdropit) {
- //Exhaustively consider all submodels of a given model, up to a certain depth controlled by maxdropit. 
+void Seppel::exploreSubmodels(Model* model, int maxdropit, int maxmodels) {
+ //Exhaustively consider all submodels of a given model, up to a certain depth controlled by maxdropit.
  //Uses an iterative scheme so that for any submodel with 0 prob, no further submodels are considered.
  //Input
  // - model: model for which we want to consider all possible submodels
  // - maxdropit: max number of iterations in the scheme. For maxdropit=1 submodels dropping 1 variant are considered, else up to 2^(maxdropit-1) variants are dropped
+ // - maxmodels: if at any iterations more than maxmodels would be considered, the iterative scheme stops. Defaults to 2^20
 
   int i, j, nvars= model->count();
   double nlike;
@@ -655,8 +656,9 @@ void Seppel::exploreSubmodels(Model* model, int maxdropit) {
   }
 
   //Iterate: drop combinations of variables
-  i=0;
-  while ((i<maxdropit) && (dropvars->size()>1)) {
+  i=0; int ncomb= dropvars->size() * (dropvars->size() - 1) / 2;
+
+  while ((i<maxdropit) && (dropvars->size()>1) && (ncomb <= maxmodels) ) {
     tmp= dropvars->combinations();
     delete dropvars;
     dropvars= tmp;
@@ -682,7 +684,10 @@ void Seppel::exploreSubmodels(Model* model, int maxdropit) {
 	mi++;
       }
     }
+
     i++;
+    ncomb= dropvars->size() * (dropvars->size() - 1) / 2;
+
   }
 
   delete dropvars;

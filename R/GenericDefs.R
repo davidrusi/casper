@@ -10,3 +10,4 @@ setGeneric("procBam", function(bam, stranded, seed, verbose=FALSE, rname, keep.j
 setGeneric("procGenome", function(genDB, genome, mc.cores=1) standardGeneric("procGenome"))
 setGeneric("rangesPlot",function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, ...) standardGeneric("rangesPlot"))
 setGeneric("transcripts", function(entrezid, islandid, genomeDB) standardGeneric("transcripts"))
+setGeneric("variants", function(object) standardGeneric("variants"))

@@ -81,6 +81,34 @@ setMethod("txLength", signature(islandid='missing', txid='character', genomeDB='
 }
 )
 
+
+setMethod("txLength", signature(islandid='missing', txid='data.frame', genomeDB='annotatedGenome'), function(islandid, txid, genomeDB) {
+  if(length(genomeDB@txLength)==0){
+    tx <- unlist(genomeDB@transcripts,recursive=FALSE)
+    names(tx) <- sapply(strsplit(names(tx),'\\.'),'[[',2)
+    tx <- tx[txid]
+    tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
+    ans <- txLengthBase(tx=tx, genomeDB=genomeDB)
+  } else ans <- genomeDB@txLength[txid]
+  return(ans)
+}
+)
+
+txLengthBase <- function(tx, genomeDB) {
+  #Get exon id & width into data.frame
+  w <- unlist(width(genomeDB@islands))
+  r <- unlist(ranges(genomeDB@islands))
+  names(w) <- sapply(strsplit(names(r),'\\.'),'[[',2)
+  w <- data.frame(exon=as.integer(names(w)), width=w)
+  #Merge and by
+  exonw <- merge(tx,w,by='exon',all.x=TRUE)
+  txw <- by(exonw$width, INDICES=factor(exonw$tx), FUN=sum)
+  ans <- as.integer(txw); names(ans) <- names(txw)
+  return(ans)
+}
+
+
+
 setGeneric("subsetGenome", function(islands, chr, genomeDB) standardGeneric("subsetGenome"))
 setMethod("subsetGenome", signature(islands='character', chr='missing', genomeDB='annotatedGenome'), function(islands, chr, genomeDB) {
   islands <- unique(islands)

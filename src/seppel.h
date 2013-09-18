@@ -34,7 +34,7 @@ public:
 
   void exploreSmart(Model* startmodel, int runs); // Metropolis-Hastings MCMC with random walk (uses SeppelSmartDist as proposal)
 
-  void exploreSubmodels(Model* model, int maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
+  void exploreSubmodels(Model* model, int maxdropit, int maxmodels=1048576); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
 
 
 	map<Model*, double*, ModelCmp> resultModes();

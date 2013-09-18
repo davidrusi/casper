@@ -944,42 +944,57 @@ extern "C"
       seppl = new Seppel(df, &knownVars, REAL(nvarPriorR), REAL(nexonPriorR), INTEGER(integrateMethodR)[0]);
      
     }
-     
-    if (method == 1 || (method == 0 && df->exons.size() <= 4)) {
-     
-      seppl->exploreExactFast(initvars);
-      //seppl->exploreExact(initvars);
-     			
-      resProbs = seppl->resultPPIntegral();
-     
-    } else {
-     
-      if (method == 3) {
-     
-        seppl->exploreUnif(niter,initvars);
-     
-        if (exactMarginal) { resProbs= seppl->resultPPIntegral(); } else { resProbs = seppl->resultPPMCMC(); }
-     
-      } else if (method ==4 ) {
-     
+
+    if (method == 0) {   //method='auto'
+
+      if (df->exons.size() <= 4) { 
+
+	seppl->exploreExactFast(initvars); 
+
+      } else { 
+
         int maxdropit= 3;  //all models dropping up to 2^(maxdropit-1) variants
         Model* startmodel = new Model(initvars);
         seppl->exploreSubmodels(startmodel, maxdropit);
-     
-        resProbs= seppl->resultPPIntegral();
-     
-      } else {
-     
-        Model* startmodel = new Model(initvars);
-        seppl->exploreSmart(startmodel, niter);
-     
-        if (exactMarginal) { resProbs= seppl->resultPPIntegral(); } else { resProbs = seppl->resultPPMCMC(); }
-     
+
       }
 
-  }
+      resProbs= seppl->resultPPIntegral();
 
-  resModes = seppl->resultModes();
+    } else if (method == 1) {  //method=='exact'
+     
+      seppl->exploreExactFast(initvars); //seppl->exploreExact(initvars);
+     			
+      resProbs = seppl->resultPPIntegral();
+     
+    } else if (method ==2) {  //method=='rwmcmc'
+
+      Model* startmodel = new Model(initvars);
+      seppl->exploreSmart(startmodel, niter);
+     
+      if (exactMarginal) { resProbs= seppl->resultPPIntegral(); } else { resProbs = seppl->resultPPMCMC(); }
+     
+    } else if (method == 3) {  //independent proposal mcmc
+     
+      seppl->exploreUnif(niter,initvars);
+     
+      if (exactMarginal) { resProbs= seppl->resultPPIntegral(); } else { resProbs = seppl->resultPPMCMC(); }
+     
+    } else if (method == 4) {  //method='submodels'
+     
+      int maxdropit= 3;  //all models dropping up to 2^(maxdropit-1) variants
+      Model* startmodel = new Model(initvars);
+      seppl->exploreSubmodels(startmodel, maxdropit);
+     
+      resProbs= seppl->resultPPIntegral();
+     
+    } else {
+
+      Rf_error("Specified value for argument method was not recognized\n");
+
+    }
+
+    resModes = seppl->resultModes();
 
 
 	  //FILTER MODELS TO BE REPORTED
@@ -1050,7 +1065,7 @@ extern "C"
 	   
 	   		resProbsR[i+nx]= resProbs[m];
 	   
-	   		resProbsR[i+2*nx]= exp(seppl->calculatePrior(m));
+	   		resProbsR[i+2*nx]= min_xy(exp(seppl->calculatePrior(m)),1.0);
 	   
 	   		nrowpi+= m->count();
 	   

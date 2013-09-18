@@ -31,7 +31,6 @@ setMethod("posprob", signature(object="denovoGeneExpr"), function(object) {
 }
 )
 
-setGeneric("variants", function(object) standardGeneric("variants"))
 setMethod("variants", signature(object="denovoGeneExpr"), function(object) {
   object@variants
 }
@@ -43,7 +42,7 @@ setReplaceMethod("variants", "denovoGeneExpr", function(object, value) { object@
 
 
 #Class denovoGenomeExpr
-setClass("denovoGenomeExpr", representation(islands = "list"))
+setClass("denovoGenomeExpr", representation(islands = "list", txLength = "numeric", priorq = "numeric"))
 
 valid_denovoGenomeExpr <- function(object) {
   msg <- NULL
@@ -54,14 +53,26 @@ valid_denovoGenomeExpr <- function(object) {
 setValidity("denovoGenomeExpr", valid_denovoGenomeExpr)
 
 setMethod("show", signature(object="denovoGenomeExpr"), function(object) {
-  cat("denovoGenomeExpr object with",length(object@islands),"gene islands\n")
+  cat("denovoGenomeExpr object with",length(object@islands),"gene islands\n\n")
+  cat("Individual islands can be accessed via '[[' and '['\n")
+  cat("Use relativeExpr() to obtain expression estimates; variants() to see exons in each variant\n")
 }
 )
 
 setMethod("[", signature(x="denovoGenomeExpr"), function(x, i, ...) { new("denovoGenomeExpr", islands=x@islands[i]) })
 setMethod("[[", signature(x="denovoGenomeExpr"), function(x, i, j, ...) { x@islands[[i]] } )
 setMethod("as.list", signature(x="denovoGenomeExpr"), function(x) {x@islands})
-                            
+setMethod("names", signature(x="denovoGenomeExpr"), function(x) names(as.list(x)))
+
+setMethod("variants", signature(object="denovoGenomeExpr"), function(object) {
+  ans <- lapply(as.list(object), 'variants')
+  data.frame(islandid= rep(names(object), sapply(ans,nrow)), do.call(rbind,ans))
+}
+)
+
+
+
+
 
 #########################################################################
 ## Function calcDenovo
@@ -156,13 +167,9 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
   formatZeroExpr <- function(ids){
     isl <- genomeDB@islands[ids]
     txs <- genomeDB@transcripts[ids]
-    spa <- lapply(txs, function(x) rep(names(x), unlist(lapply(x, length))))
-      #exo <- lapply(names(txs), function(x) {  tmp <- genomeDB@islands[[x]][as.character(unlist(txs[[x]]))]; names(tmp) <- sub("\\..*", "", names(tmp)); tmp})
-    #names(exo) <- names(txs)
-    exo <- isl
-    expr <- lapply(ids, function(x) data.frame(model=rep(0, length(exo[[x]])), expr=rep(0, length(exo[[x]])), varName=names(exo[[x]])))
-    names(expr) <- ids
-    posprob <- lapply(ids, function(x) data.frame(model=0, posprob=NA, modelid=0))
+    exo <- lapply(txs, function(z) { ans <- cbind(names(z), sapply(z, paste, collapse=',')); colnames(ans) <- c('varName','exons'); rownames(ans) <- NULL; ans })
+    expr <- lapply(exo, function(x) data.frame(model=rep(0, nrow(x)), expr=rep(1/nrow(x), nrow(x)), varName=x[,'varName']))
+    posprob <- lapply(ids, function(x) data.frame(model=0, posprob=NA, priorprob=NA))
     names(posprob) <- ids
     res <- lapply(ids, function(x) new("denovoGeneExpr", variants=exo[[x]], expression=expr[[x]], posprob=posprob[[x]]))
     names(res) <- ids
@@ -230,7 +237,16 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     ans[islandidUnknown[sel]] <- ansforw[sel]; ans[islandidUnknown[!sel]] <- ansrev[!sel]
   }
   if (verbose==1) cat("\n")
-  new("denovoGenomeExpr", islands=ans)
+  ans <- new("denovoGenomeExpr", islands=ans, priorq=priorq)
+  #compute tx length
+  fdata <- variants(ans)
+  names(fdata)[1:2] <- c('gene','transcript')
+  rownames(fdata) <- as.character(fdata$transcript)
+  tx <- strsplit(as.character(fdata$exons),split=',')
+  tx <- data.frame(tx=rep(fdata$transcript, sapply(tx,length)) , exon=unlist(tx))
+  txLength <- txLengthBase(tx=tx, genomeDB=genomeDB)
+  ans@txLength <- txLength
+  return(ans)
 }
 
 
@@ -252,44 +268,5 @@ calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandi
   return(ans)
 }
 
-
-
-variantMargExpr <- function(x,minProbExpr=0.5, minExpr=0.05) {
-  #Marginal expression for each variant (obtained via model averaging) and marginal post prob of being expressed
-  # - minProbExpr: variants with marginal post prob < minProbExpr are not reported
-  # - minExpr: variants with expression < minExpr are not reported
-  # Note: at least one variant is always reported. If no variants satisfy minProbExpr and minExpr, the variant with largest expression is reported
-  pospr <- x@posprob$posprob/sum(x@posprob$posprob)
-  names(pospr) <- x@posprob$model
-  pospr <- pospr[as.character(x@expression$model)]
-  ans <- by(data.frame(pospr*x@expression$expr,pospr),INDICES=list(var=x@expression$varName),FUN=colSums,simplify=FALSE)
-  n <- names(ans)
-  ans <- matrix(unlist(ans),ncol=2,byrow=TRUE)
-  colnames(ans) <- c('expr','probExpressed')
-  rownames(ans) <- n
-  sel <- ans[,'probExpressed']>minProbExpr & ans[,'expr']>minExpr
-  if (any(sel)) ans <- ans[sel,,drop=FALSE] else ans <- ans[which.max(ans[,'expr']),,drop=FALSE]
-  ans[,'expr'] <- ans[,'expr']/sum(ans[,'expr'])
-  return(ans)
-}
-
-relativeExpr <- function(expr, summarize='modelAvg', minProbExpr=0.5, minExpr=0.05){
-  if (class(expr)!='denovoGenomeExpr') stop("expr must be of class 'denovoGenomeExpr'")
-  if (!(summarize %in% c("bestModel", "modelAvg"))) stop("summarize must be one of 'bestModel' or 'modelAvg'")
-  if (summarize=='bestModel'){
-    ans <- lapply(as.list(expr), function(x){
-      best <- x@posprob$model[which.max(x@posprob$posprob)]
-      exp <- x@expression[x@expression$model==best,]
-      res <- exp$expr
-      names(res) <- exp$varName
-      res
-    })
-    ans <- do.call(c, unname(ans))
-  } else {
-    ans <- lapply(as.list(expr), variantMargExpr, minProbExpr=minProbExpr, minExpr=minExpr)
-    ans <- do.call("rbind", unname(ans))
-  }
-  ans
-}
 
 
