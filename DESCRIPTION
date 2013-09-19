@@ -2,7 +2,7 @@ Package: casper
 Version: 1.2.1
 Date: 2013-09-17
 Title: Characterization of Alternative Splicing based on Paired-End Reads
-Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss
+Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda Stobbe
 Maintainer: David Rossell <rosselldavid@gmail.org>
 Depends: R (>= 2.14.1), Biobase, IRanges, methods, gtools, GenomicRanges, Rsamtools, plyr, gaga
 Imports: VGAM, mgcv, GenomicFeatures, survival, sqldf
