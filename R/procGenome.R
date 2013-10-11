@@ -64,7 +64,10 @@ setMethod("txLength", signature(islandid='character', txid='missing', genomeDB='
 setMethod("txLength", signature(islandid='missing', txid='character', genomeDB='annotatedGenome'), function(islandid, txid, genomeDB) {
   if(length(genomeDB@txLength)==0){
     tx <- unlist(genomeDB@transcripts,recursive=FALSE)
-    names(tx) <- sapply(strsplit(names(tx),'\\.'),'[[',2)
+    nn <- strsplit(names(tx),'\\.')
+    nn <- sapply(nn, function(z) paste(z[-1],collapse='.'))
+    names(tx) <- nn
+    #names(tx) <- sapply(strsplit(names(tx),'\\.'),'[[',2)
     tx <- tx[txid]
     tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
     #Get exon id & width into data.frame
@@ -291,6 +294,8 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
   } else {
     stop("Columns named 'gene_id' and 'transcript_id' not found")
   }
+  if (any(is.na(genDB$gene_id))) stop("Missing values in geneDB$gene_id are not allowed")
+  if (any(is.na(genDB$transcript_id))) stop("Missing values in geneDB$transcript_id are not allowed")
   chroms <- unique(tables[["transcripts"]][["tx_chrom"]])
   chrominfo <- data.frame(chrom = chroms, length = rep(NA,length(chroms)))
   #Eliminate transcripts with unknown strands (usually transcripts with 1 exon)
@@ -303,6 +308,12 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
   txdb <- makeTranscriptDb(transcripts=tables[["transcripts"]], splicings=tables[["splicings"]], genes=tables[["genes"]], chrominfo=chrominfo, reassign.ids=TRUE, )
   txs <- GenomicFeatures::transcripts(txdb,columns=c("tx_id","tx_name","gene_id","exon_id"))
   Exons <- exonsBy(txdb, by="tx")
+  #Remove transcripts with no exons
+  noexons <- sapply(txs$exon_id,length)==0
+  if (any(noexons)) {  
+    warning('Some of the specified transcripts had no exons. They were removed')
+    txs <- txs[!noexons,]
+  }
   ans <- createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores)
   return(ans)
 }
