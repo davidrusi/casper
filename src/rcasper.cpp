@@ -118,7 +118,7 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	}
 	
 	char* item;
-	
+	int countNotInIsland=0;
 	
 
 	item = strtok(left, ".");  //split string
@@ -126,7 +126,7 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	for (int j = 0; item != NULL; j++) {
 	  
 	  int eid = atoi(item);
-	  
+	  if (df->id2exon.count(eid)==0) countNotInIsland=1;
 	  if(strand==1) f->left[j] = eid;
 	  
 	  else f->left[leftc-j-1] = eid;
@@ -138,9 +138,9 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	item = strtok(right, ".");
 	
 	for (int j = 0; item != NULL; j++) {
-	  
+
 	  int eid = atoi(item);
-			  
+	  if (df->id2exon.count(eid)==0) {printf("Discarded counts with exon %d\n", eid); countNotInIsland=1;}			  
 	  if(strand==1) f->right[j] = eid;
 	  
 	  else f->right[rightc-j-1] = eid;
@@ -159,11 +159,11 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	  
 	  if(inv==0) {
 
-	    df->addData(f);
+	    if(countNotInIsland==0) df->addData(f);
 
 	  } else {
 
-	    df->addDataM(f);
+	    if(countNotInIsland==0) df->addDataM(f);
 
 	  }
 	
@@ -223,7 +223,7 @@ DataFrame* importDataFrame(SEXP exonsR, SEXP exonwidthR, SEXP pathCountsR, SEXP 
       Exon *ex= new Exon(exons[i], exonwidth[i]);
 
       df->addExon(ex);
-
+      
     }
 
 
