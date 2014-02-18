@@ -562,7 +562,7 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
 
   for (itvarset = initvaris->begin(); itvarset != initvaris->end(); itvarset++) {
 
-    int eid=0, curvarex; Exon *ex; Variant *curvar= (*itvarset);
+    int eid=0, curvarex, strand=1; Exon *ex; Variant *curvar= (*itvarset);
 
     vector<Exon*>::iterator itexon;
 
@@ -570,50 +570,105 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
 
     curvarex = 0; ex= (curvar->exons)[0];
 
-    while ((curvarex < curvar->exonCount) && (ex->id < (f->left[0]))) {
+    if(f->left[0] > f->right[0] | ex->id > (curvar->exons)[curvar->exonCount-1]->id) strand=-1;
 
-      el->push_back(ex);
+    if(strand==1){
+      while ((curvarex < curvar->exonCount) && (ex->id < (f->left[0]))) {
 
-      curvarex++;
+	el->push_back(ex);
+	
+	curvarex++;
+	
+	ex= (curvar->exons)[curvarex];
+	
+      }
 
-      ex= (curvar->exons)[curvarex];
-		
-    }
-
-    for (int i=0; i< f->leftc; i++) {
-
-      eid = f->left[i];
-
-      if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
-
-      el->push_back(ex);
-
-    }
-
-    for (int i=0; i< f->rightc; i++) {
-
-      eid = f->right[i];
-
-      if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
-
-      if (eid > f->left[f->leftc -1]) el->push_back(ex);
-
-    }
-
-    if (eid < ((curvar->exons)[curvar->exonCount -1])->id) {
-
-      ex= (curvar->exons)[curvarex];
-
-      while (ex->id <= eid) { curvarex++; ex= (curvar->exons)[curvarex]; }
+      for (int i=0; i< f->leftc; i++) {
+	
+	eid = f->left[i];
+	
+	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+	
+	el->push_back(ex);
+	
+      }
+      
+      for (int i=0; i< f->rightc; i++) {
+	
+	eid = f->right[i];
+	
+	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+	
+	if (eid > f->left[f->leftc -1]) el->push_back(ex);
+	
+      }
+      
+      if (eid < ((curvar->exons)[curvar->exonCount -1])->id) {
+	
+	ex= (curvar->exons)[curvarex];
+	
+	while (ex->id <= eid) { curvarex++; ex= (curvar->exons)[curvarex]; }
+	
+	while ( curvarex < curvar->exonCount ) {
+	  
+	  el->push_back(ex);
        
-      while ( curvarex < curvar->exonCount ) {
-       		
-        el->push_back(ex);
-       
-        curvarex++;
-       
+	  curvarex++;
+	  
+	  ex= (curvar->exons)[curvarex];
+	  
+	}
+	
+      } 
+    } else {
+
+      while ((curvarex < curvar->exonCount) && (ex->id > (f->left[0]))) {
+
+	el->push_back(ex);
+
+	curvarex++;
+
+	ex= (curvar->exons)[curvarex];
+
+      }
+
+      for (int i=0; i< f->leftc; i++) {
+
+	eid = f->left[i];
+
+	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+
+	el->push_back(ex);
+
+      }
+
+
+      for (int i=0; i< f->rightc; i++) {
+
+	eid = f->right[i];
+
+	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+
+        if (eid > f->left[f->leftc -1]) el->push_back(ex);
+
+      }
+
+      if (eid > ((curvar->exons)[curvar->exonCount -1])->id) {
+
         ex= (curvar->exons)[curvarex];
-       
+
+        while (ex->id >= eid) { curvarex++; ex= (curvar->exons)[curvarex]; }
+
+        while ( curvarex < curvar->exonCount ) {
+
+          el->push_back(ex);
+
+          curvarex++;
+
+          ex= (curvar->exons)[curvarex];
+
+        }
+	
       }
 
     }

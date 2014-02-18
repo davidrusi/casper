@@ -181,7 +181,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     if (verbose==1) cat("Note: Islands with transcripts from both strands will not be processed at the moment\n")
     all <- islandid
     islandid <- islandid[sel]
-    if(sum(sel)==0) stop("Not islands left to process due to strand or lack of path counts\n")
+    if(sum(sel)==0) stop("No islands left to process due to strand or lack of path counts\n")
     if (mc.cores>1 && length(islandid)>mc.cores) {
       require(parallel)
       if ('parallel' %in% loadedNamespaces()) {

@@ -52,7 +52,6 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
       
 
       //Set counts
-
       int count = pathCounts[i];
       
       
@@ -634,20 +633,20 @@ extern "C"
   SEXP calcKnownSingle(double *paccept, SEXP exonsR, SEXP exonwidthR, SEXP transcriptsR, SEXP pathCountsR, SEXP fragstaR, SEXP fraglenR, SEXP lenvalsR, SEXP readLengthR, SEXP priorqR, SEXP strandR, SEXP citypeR, SEXP niterR, SEXP burninR)
 
 	{
-
+	  printf("I'm here 0\n");
 		DataFrame* df = importDataFrame(exonsR, exonwidthR, pathCountsR, fragstaR, fraglenR, lenvalsR, readLengthR, strandR);
 
-
+		printf("I'm here 1\n");
 		set<Variant*, VariantCmp> *initvars = new set<Variant*, VariantCmp>();
 
 		importTranscripts(initvars, df, transcriptsR, strandR);
 
 		std::map<Variant*,std::string> varshortnames;
-
+		printf("I'm here 2\n");
 		int geneid;
 
 		df->fixUnexplFrags(initvars, &varshortnames, &geneid, 0); // Discard fragments that are unexplained by know variants
-
+		printf("I'm here 3\n");
 		double priorq = REAL(priorqR)[0];
 
 		int totC=0;
