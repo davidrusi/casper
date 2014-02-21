@@ -31,11 +31,13 @@ setMethod("mergeBatches", signature(x='ExpressionSet',y='ExpressionSet'), functi
 )
 
 ### AUXILIZARY FUNCTIONS: QUANTILE NORMALIZATION & ANOVA ADJUSTMENT
-quantileNorm <- function(x) { UseMethod("quantileNorm") }
+setMethod("quantileNorm", signature(x="ExpressionSet"), function(x) {
+    exprs(x) <- quantileNorm(exprs(x))
+    return(x)
+}
+)
 
-quantileNorm.ExpressionSet <- function(x) { exprs(x) <- quantileNorm(exprs(x)); return(x) }
-
-quantileNorm.matrix <- function(x) {
+setMethod("quantileNorm", signature(x="matrix"), function(x) {
   probsx <- seq(0,1,length=nrow(x))
   qx <- quantile(x,probs=probsx)
   f <- approxfun(probsx,qx)
@@ -45,6 +47,7 @@ quantileNorm.matrix <- function(x) {
   }
   return(x)
 }
+)
 
 
 anovaAdjustment <- function(x,adjustmentVariable,na.rm=FALSE) {

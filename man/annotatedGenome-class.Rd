@@ -38,6 +38,9 @@
       indicates that new exons/islands were added based on the data
       observed in a particular RNA-seq experiment.}
     \item{txLength}{Numeric vector storing transcript lengths.}
+    \item{knownVars}{List where each element corresponds to an island,
+      and contains a character vector with names of isoforms that should be considered as known
+      (i.e. always included in the model)}
   }
 }
 \section{Methods}{

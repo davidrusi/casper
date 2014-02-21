@@ -64,8 +64,8 @@ dinvgammaVec <- function(x, alpha, beta, logscale=TRUE) {
 
 probNonEquiv2 <- function(x, groups, logfc=log(2), minCount) {
   #same as postProb, uses quantile integration
-  require(gaga)
-  require(plyr)
+  #require(gaga)
+  #require(plyr)
   if (missing(groups)) stop('groups must be specified')
   if (is.null(pData(x)[,groups])) stop(paste('Variable',groups,'not found in pData(x)'))
   if (!missing(minCount)) sel <- fData(x)$readCount >= minCount else sel <- rep(TRUE,nrow(x))

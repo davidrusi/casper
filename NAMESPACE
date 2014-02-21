@@ -1,6 +1,7 @@
 useDynLib(casper)
 
-import(IRanges, graphics)
+import(Biobase, IRanges, graphics, GenomicRanges, gtools, methods, Rsamtools, plyr)
+importFrom(gaga, fitNNSingleHyp, getpar)
 importFrom(GenomicFeatures, transcripts, exonsBy, makeTranscriptDb)
 importFrom(mgcv,gam,predict.gam,s)
 importFrom(sqldf, sqldf)
@@ -9,7 +10,7 @@ importClassesFrom(GenomicFeatures, TranscriptDb)
 importFrom(survival,Surv,survfit)
 
 #export regular functions
-export(calcDenovo, calcExp, createDenovoGenome, denovoExpr, getDistrs, getIsland, genePlot, getRoc, mergeBatches, mergeExp, modelPrior, pathCounts, plotPriorAS, posprob, probNonEquiv, procBam, procGenome, relativeExpr, rmShortInserts, simMultSamples, simReads, transcripts, variants, "variants<-", getReads, getNreads, getChr, getIsland, subsetGenome, txLength, wrapKnown)
+export(calcDenovo, calcExp, createDenovoGenome, denovoExpr, getDistrs, getIsland, genePlot, getRoc, mergeBatches, mergeExp, modelPrior, pathCounts, plotPriorAS, posprob, probNonEquiv, procBam, procGenome, quantileNorm, relativeExpr, rmShortInserts, simMultSamples, simReads, transcripts, variants, "variants<-", getReads, getNreads, getChr, getIsland, subsetGenome, txLength, wrapKnown)
 
 exportClasses(annotatedGenome, simulatedSamples, pathCounts, procBam)
 #export general methods

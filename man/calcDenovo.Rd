@@ -16,7 +16,7 @@
 \usage{
 calcDenovo(distrs, genomeDB, pc, readLength, islandid, priorq=3, mprior,
 minpp=0.001, selectBest=FALSE, method="auto", niter, exactMarginal=TRUE,
-verbose=TRUE, mc.cores=1)
+integrateMethod="plugin", verbose=TRUE, mc.cores=1)
 
 relativeExpr(expr, summarize="modelAvg", minProbExpr=0.5, minExpr=0.05)
 }

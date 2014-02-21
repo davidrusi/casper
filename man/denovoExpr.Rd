@@ -14,7 +14,7 @@
   or by selecting the model with highest posterior probability. See details.
 }
 \usage{
-denovoExpr(x, pc, rpkm = TRUE, summarize = "modelAvg", minProbExpr = 0.5, minExpr = 0) 
+denovoExpr(x, pc, rpkm = TRUE, summarize = "modelAvg", minProbExpr = 0.5, minExpr = 0.05) 
 }
 \arguments{
 \item{x}{ \code{denovoGenomeExpr} object returned by \code{calcExp} }

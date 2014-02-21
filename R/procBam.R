@@ -209,7 +209,7 @@ mergePbam <- function(ans, fixNames=FALSE){
 
     
 procBamF<-function(bam, stranded=FALSE, seed=1,  verbose=FALSE, rname='null', keep.junx, keep.flag){
-  require(IRanges)
+  #require(IRanges)
   if(stranded) {
     minus <- bam$tag$XS=='-'
     if(keep.junx) mjunx <- GRanges(IRanges(0,0), seqnames=1)

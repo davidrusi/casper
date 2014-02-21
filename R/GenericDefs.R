@@ -8,6 +8,7 @@ setGeneric("mergeBatches", function(x,y,mc.cores=1) standardGeneric("mergeBatche
 setGeneric("plotExpr", function(gene, minProbExpr=.5, minExpr=.1, xlab='(kb)', ylab='', xlim, cex=1, yaxt='n', col, ...) standardGeneric("plotExpr"))
 setGeneric("procBam", function(bam, stranded, seed, verbose=FALSE, rname, keep.junx=FALSE, keep.flag=FALSE, ...) standardGeneric("procBam"))
 setGeneric("procGenome", function(genDB, genome, mc.cores=1) standardGeneric("procGenome"))
+setGeneric("quantileNorm", function(x) standardGeneric("quantileNorm"))
 setGeneric("rangesPlot",function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, ...) standardGeneric("rangesPlot"))
 setGeneric("transcripts", function(entrezid, islandid, genomeDB) standardGeneric("transcripts"))
 setGeneric("variants", function(object) standardGeneric("variants"))

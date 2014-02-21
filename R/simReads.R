@@ -54,7 +54,7 @@ splitPaths <- function(paths, DB, mc.cores, stranded, geneid){
     tmp <- split(sel, isl)
     if(mc.cores>1) {
       require(parallel)
-      tmp1 <- parallel:::mclapply(names(tmp), function(x){
+      tmp1 <- parallel::mclapply(names(tmp), function(x){
         n <- sapply(tmp[[x]], length)
         nn <- unlist(tmp[[x]])
         names(nn) <- rep(names(splCounts[[x]]), n)
