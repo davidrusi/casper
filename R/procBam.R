@@ -83,7 +83,7 @@ procB <- function(bam, strnd, seed=1, verbose=FALSE, rname='null', keep.junx=FAL
   if(keep.junx) njunx <- nreads['tjunx']
   nreads <- nreads['treads']+10
   
-  if(verbose) cat("done.\nProcessing cigars and building read's object...\n")
+  if(verbose) cat("Processing cigars and building read's object...\n")
   len=vector(mode="integer", length=nreads)
   strs=vector(mode="integer", length=nreads)
   rid=vector(mode="integer", length=nreads)
