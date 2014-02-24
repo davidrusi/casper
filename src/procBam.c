@@ -117,9 +117,11 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 		  }
 		}
 		cigs = procCigar(m_strdup(CHAR(STRING_ELT(cigar, frags[tmp].strand_2))), cigs);
-		frags[tmp].len_2=p_start[frags[tmp].strand_2];
 		ini=1;
-                if(cigs[1]<0) ini=2;
+                if(cigs[1]<0) {
+		  frags[tmp].len_2=p_start[frags[tmp].strand_2] + cigs[1]*-1;
+		  ini=2;
+		} else frags[tmp].len_2=p_start[frags[tmp].strand_2];
 		for(j=ini; j<cigs[0]+1;j++) {        
 		  if(cigs[j]>0){
 		    SET_STRING_ELT(key, counter, mkChar(bucket->key));
@@ -130,6 +132,7 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 		    p_rid[counter] = 2;
 		    p_rstrand[counter] = p_strand[frags[tmp].strand_2];
 		    frags[tmp].len_2+=cigs[j];
+		    //printf("I'm here %d %d %d %d %d %d\n", frags[tmp].len_2, counter, p_strs[counter], p_len[counter], cigs[j], j);
 		    counter++;
 		  } else {
 		    if(INTEGER(totJunx)[0]>1){
@@ -149,6 +152,7 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
             }
 	  }
 	}
+
 	SEXP reads;
 	PROTECT(reads = allocVector(VECSXP, 10));
 	SET_VECTOR_ELT(reads, 0, len);
