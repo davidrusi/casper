@@ -25,27 +25,54 @@
 \maketitle
 
 
+We put a lot of time and effort in developing casper,
+if you use casper for your research please do cite
+our paper \cite{rossell:2014}.
+Our support comes from research institutions and grants,
+your citations is an easy way to ensure we continue having time to develop casper.
+
 
 \section{Quick start}
 \label{sec:quickstart}
 
-In order to analyze a single sample with the suggested pipeline we have included the function \texttt{wrapKnown}, which takes a BAM file and reference genome database as argument (plus arguments for the different functions) and
-executes all necesary steps to find expression estimates. This function returns processed reads (procBam object), path counts (pathCounts object),
-read start and fragment length distributions (readDistrs object) and estimated expressions (expressionSet object).
+The function \texttt{wrapKnown} runs the whole analysis pipeline for a single sample, 
+starting from a sorted and indexed BAM file and reference transcriptome and
+returning estimated log-expression in an ExpressionSet object.
+\texttt{wrapKnown} also returns the following secondary output,
+which may be ignored for routine analyses: processed reads (procBam object), path counts (pathCounts object)
+and read start and fragment length distributions (readDistrs object).
 
-The \texttt{wrapKnown} function needs a genome database generated with the following code:
+The \texttt{wrapKnown} function needs an annotated transcriptome,
+which can either come from the UCSC or any user-specified gtf file
+({\it e.g.} as provided by the Gencode project or returned by the Cufflinks
+RABT module).
+To generate a transcriptome from the UCSC database you may use the following code,
+changing \texttt{'hg19'} for your desired genome.
 
+\small
 \begin{verbatim}
 library(GenomicFeatures)
 genome='hg19'
 genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename=''refGene'')
 hg19DB <- procGenome(genDB=genDB, genome=genome, mc.cores=6)
 \end{verbatim}
+\normalsize
 
-It is also necessary that the BAM file to be analyzed is indexed, and that this index is placed in the same directory as the corresponding BAM. (the \texttt{samtools} ''index'' function 
-can be used to generate such an index).
+To generate a transcriptome from a gtf file use the following code,
+changing the file name for your gtf file (including the full path).
 
-To call \texttt{wrapKnown} simply use:
+\small
+\begin{verbatim}
+genDB <- import('gencode.v18.annotation.gtf')
+gencode18DB <- procGenome(genDB, genome='gencode18')
+\end{verbatim}
+\normalsize
+
+Recall that the input BAM file should be indexed and sorted, and that this index is placed in the same directory as the corresponding BAM. 
+The \texttt{samtools} ''index'' function can be used to generate such an index.
+
+To call \texttt{wrapKnown} use the code below
+(for information on the parameters please refer to the man page of the function).
 
 \begin{verbatim}
   bamFile="/path_to_bam/sorted.bam"
@@ -54,7 +81,37 @@ To call \texttt{wrapKnown} simply use:
   head(exprs(ans\$exp))
 \end{verbatim}
 
-For information on the parameters please refer to the man page of the function. The following sections explain in detail the model, functions and classes included in the package.
+After you run \texttt{wrapKnown} on all your bam files, you can easily combine
+the expressions from all samples into a single \texttt{ExpressionSet} using
+function \texttt{mergeExp}.
+The code below contains an example to combine four samples.
+Adding \texttt{'explCnts'} to the \texttt{keep} argument results in the number
+of counts for each gene and each sample to be saved in the \texttt{fData}
+of the combined \texttt{ExpressionSet}
+(by default, only the total count across all samples is stored).
+The function \texttt{quantileNorm} performs quantile normalization,
+which is typically needed to take into account the different sequencing depth
+in each sample.
+
+\small
+\begin{verbatim}
+sampleNames <- c('A1','A2','B1','B2')
+x <- mergeExp(A1$exp,A2$exp,B1$exp,B2$exp,sampleNames=sampleNames, keep=c('transcript','gene','explCnts'))
+x$group <- c('A','A','B','B')
+xnorm <- quantileNorm(x)
+boxplot(exprs(x))
+boxplot(exprs(xnorm))
+\end{verbatim}
+\normalsize
+
+
+The remaining sections explain in more detail the model, functions and classes included in the package.
+They are intended to help you obtain a better understanding of the methodology
+underlying \texttt{casper} by obtaining expression estimates step-by-step.
+However, in practice we recommend that you use \texttt{wrapKnown}, as it is
+more efficiently implemented both in terms of memory requirements and
+computational speed.
+
 
 
 \section{Introduction}
@@ -62,7 +119,7 @@ For information on the parameters please refer to the man page of the function. 
 
 The package \texttt{casper} implements statistical methodology to infer
 gene alternative splicing from paired-end
-RNA-seq data \citep{rossell:2012}.
+RNA-seq data \citep{rossell:2014}.
 In this section we overview the methodology
 and highlight its advantages.
 For further details, please see the paper.
@@ -78,7 +135,7 @@ The fact that only pairwise connections between exons are considered disregards 
 namely that numerous read pairs visit more than 2 exons.
 While this was not a big issue with older sequencing technologies,
 it has become relevant with current protocols which produce longer sequences.
-For instance, in a 2012 ENCODE Illumina Hi-Seq dataset \cite{rossell:2012} found that roughly 2 out of 3 read pairs visited $\geq 3$ exons.
+For instance, in a 2012 ENCODE Illumina Hi-Seq dataset \cite{rossell:2014} found that roughly 2 out of 3 read pairs visited $\geq 3$ exons.
 
 \texttt{casper} summarizes the data by recording the {\it exon path} followed by each pair,
 and subsequently counts the number of exons following each path.
@@ -137,7 +194,7 @@ and read starts (e.g. read non-uniformity due to 3' biases).
 These quantities are in general not known, and in our experience reports from sequencing facilities are oftentimes inaccurate.
 Further, these distributions may differ substantially from simple parametric forms that are usually assumed
 ({\it e.g.} the fragment length distribution is not well approximated by a Normal or Poisson distribution).
-Instead, \cite{rossell:2012} proposed estimating these distributions non-parametrically from the observed data.
+Instead, \cite{rossell:2014} proposed estimating these distributions non-parametrically from the observed data.
 In short, these distributions are estimated by selecting reads mapping to long exons (fragment size) 
 or to genes with a single known transcript (read start).
 There are typically millions of such reads, therefore the estimates can be obtained at a very high precision.
@@ -149,7 +206,7 @@ By default \texttt{casper} uses a prior distribution which,
 while being essentially non-informative, it pushes the estimates away from the boundaries (e.g. variants with 0 expression)
 and thus helps reduce the estimation error.
 The theoretical justification lies in the typical arguments in favor of pooling that stem from Stein's paradox and related work.
-Empirical results in \cite{rossell:2012} show that, by combining all the features described above, \texttt{casper} may reduce the estimation error by a factor of 4
+Empirical results in \cite{rossell:2014} show that, by combining all the features described above, \texttt{casper} may reduce the estimation error by a factor of 4
 when compared to another popular method.
 Currently, \texttt{casper} implements methods to estimate the expression for a set of known variants.
 We are in the process of incorporating methodology for de novo variant searches,
