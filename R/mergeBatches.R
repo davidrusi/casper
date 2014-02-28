@@ -39,7 +39,7 @@ setMethod("quantileNorm", signature(x="ExpressionSet"), function(x) {
 
 setMethod("quantileNorm", signature(x="matrix"), function(x) {
   probsx <- seq(0,1,length=nrow(x))
-  qx <- quantile(x,probs=probsx)
+  qx <- quantile(x,probs=probsx,na.rm=TRUE)
   f <- approxfun(probsx,qx)
   for (i in 1:ncol(x)) {
     probsy <- rank(x[,i])/(nrow(x)+1)
