@@ -1,14 +1,27 @@
 Package: casper
-Version: 1.5.0
+Version: 1.5.1
 Date: 2013-10-11
-Title: Characterization of Alternative Splicing based on Paired-End Reads
-Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda Stobbe
+Title: Characterization of Alternative Splicing based on Paired-End
+        Reads
+Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda
+        Stobbe
 Maintainer: David Rossell <rosselldavid@gmail.org>
-Depends: R (>= 2.14.1), Biobase, IRanges, methods, gtools, GenomicRanges, Rsamtools, plyr, gaga
+Depends: R (>= 2.14.1), Biobase, IRanges, methods, gtools,
+        GenomicRanges, Rsamtools, plyr, gaga
 Imports: VGAM, mgcv, GenomicFeatures, survival, sqldf
 Enhances: parallel
-Description: Infer alternative splicing from paired-end RNA-seq data. The model is based on counting paths across exons, rather than pairwise exon connections, and estimates the fragment size and start distributions non-parametrically, which improves estimation precision. 
+Description: Infer alternative splicing from paired-end RNA-seq data.
+        The model is based on counting paths across exons, rather than
+        pairwise exon connections, and estimates the fragment size and
+        start distributions non-parametrically, which improves
+        estimation precision.
 License: GPL (>=2)
 LazyLoad: yes
-Collate: GenericDefs.R ClassDefinitions.R calcDenovo.R calcExp.R createDenovoGenome.R genePlot.R getDistrs.R getRoc.R denovoExpr.R mergeBatches.R mergeExp.R modelPrior.R pathCounts.R probNonEquiv.R procBam.R procGenome.R rmShortInserts.R simMultSamples.R simPost.R simReads.R splitGenomeByLength.R truncnorm.R wrapKnown.R 
-biocViews: Bioinformatics, GeneExpression, DifferentialExpression, Transcription, RNASeq, HighThroughputSequencing
+Collate: GenericDefs.R ClassDefinitions.R calcDenovo.R calcExp.R
+        createDenovoGenome.R genePlot.R getDistrs.R getRoc.R
+        denovoExpr.R mergeBatches.R mergeExp.R modelPrior.R
+        pathCounts.R probNonEquiv.R procBam.R procGenome.R
+        rmShortInserts.R simMultSamples.R simPost.R simReads.R
+        splitGenomeByLength.R truncnorm.R wrapKnown.R
+biocViews: GeneExpression, DifferentialExpression, Transcription,
+        RNASeq, Sequencing
