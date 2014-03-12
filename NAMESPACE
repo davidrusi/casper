@@ -1,6 +1,6 @@
 useDynLib(casper)
 
-import(Biobase, IRanges, graphics, GenomicRanges, gtools, methods, Rsamtools)
+import(Biobase, IRanges, graphics, GenomicRanges, gtools, methods, plyr, Rsamtools)
 importFrom(gaga, fitNNSingleHyp, getpar)
 importFrom(GenomicFeatures, transcripts, exonsBy, makeTranscriptDb)
 importFrom(mgcv,gam,predict.gam,s)

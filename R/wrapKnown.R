@@ -71,26 +71,24 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
       bam[[1]] <- lapply(bam[[1]], '[', single.hit)
     }
     
-    if(verbose) cat(paste("Finished loading bam for chr", as.character(seqnames(which[i])), "\n"))
-
     bam[[1]]$qname <- as.integer(as.factor(bam[[1]]$qname))
     if(verbose) cat(paste("Replaced qname for chr", as.character(seqnames(which[i])), "\n"))
     if(keep.pbam) {
       ans <- vector("list",3); names(ans) <- c("pbam","distr","pc")
-      ans$pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=verbose, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
+      ans$pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
       #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
-      cat("Removing bam object\n")
+      #cat("Removing bam object\n")
       rm(bam); gc()
-      ans$distr <- getDistrs(DB=genomeDB, pbam=ans$pbam, verbose=verbose)
-      ans$pc <- pathCounts(reads=ans$pbam, DB=genomeDB, mc.cores=mc.cores, verbose=verbose)
+      ans$distr <- getDistrs(DB=genomeDB, pbam=ans$pbam, verbose=FALSE)
+      ans$pc <- pathCounts(reads=ans$pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
     } else {
       ans <- vector("list",2); names(ans) <- c("distr","pc")
-      pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=verbose, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
+      pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
       #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
-      cat("Removing bam object\n")
+      #cat("Removing bam object\n")
       rm(bam); gc()
-      ans$pc <- pathCounts(reads=pbam, DB=genomeDB, mc.cores=mc.cores, verbose=verbose)
-      ans$distr <- getDistrs(DB=genomeDB, pbam=pbam, verbose=verbose)
+      ans$pc <- pathCounts(reads=pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
+      ans$distr <- getDistrs(DB=genomeDB, pbam=pbam, verbose=FALSE)
       #rm(pbam); gc()
     }
     cat("Finished chromosome ", as.character(seqnames(which[i])), "\n")
@@ -109,8 +107,8 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
   gc()
    if(keep.pbam) allpbam <- lapply(ans, "[[", "pbam")
    #browser()
-  allpc <- casper:::mergePCWr(ans, genomeDB)
-  alldistr <- suppressWarnings(casper:::mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
+  allpc <- mergePCWr(ans, genomeDB)
+  alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
   exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)
   if(keep.pbam) {
     ans <- list(pc=allpc, distr=alldistr, exp=exp, pbam=allpbam)

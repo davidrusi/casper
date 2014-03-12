@@ -116,9 +116,9 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
         fdata$ci95.high <- qnorm(1-alpha/2,mean=exprsx,sd=se)
         sel <- round(fdata$ci95.low,10)<0 & !is.na(se); fdata$ci95.low[sel] <- 0
         se[sel][se[sel]==0] <- 1e-20
-        fdata$ci95.high[sel] <- unlist(mapply(function(m,s) casper:::qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
+        fdata$ci95.high[sel] <- unlist(mapply(function(m,s) qtnorm(1-alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
         sel <- round(fdata$ci95.high,10)>1 & !is.na(se); fdata$ci95.high[sel] <- 1
-        fdata$ci95.low[sel] <- unlist(mapply(function(m,s) casper:::qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
+        fdata$ci95.low[sel] <- unlist(mapply(function(m,s) qtnorm(alpha/2,mean=m,sd=s,lower=0,upper=1), as.list(exprsx[sel,1]), as.list(se[sel])))
       }
       fdata$se <- se
     }

@@ -6,6 +6,7 @@
 \alias{[,denovoGeneExpr,ANY,ANY,ANY-method}
 \alias{[[,denovoGeneExpr,ANY,ANY-method}
 \alias{[[,denovoGeneExpr,ANY,ANY,ANY-method}
+\alias{[[,denovoGenomeExpr,ANY,ANY-method}
 \alias{posprob}
 \alias{variants}
 \alias{variants<-}

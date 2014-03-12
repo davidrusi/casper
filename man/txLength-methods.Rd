@@ -3,6 +3,7 @@
 \alias{txLength-methods}
 \alias{txLength,character,missing,annotatedGenome-method}
 \alias{txLength,missing,character,annotatedGenome-method}
+\alias{txLength,missing,data.frame,annotatedGenome-method}
 \alias{txLength,missing,missing,annotatedGenome-method}
 \docType{methods}
 \title{ ~~ Methods for Function \code{txLength} in Package \pkg{casper} ~~}

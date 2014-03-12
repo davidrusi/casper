@@ -139,7 +139,7 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	for (int j = 0; item != NULL; j++) {
 
 	  int eid = atoi(item);
-	  if (df->id2exon.count(eid)==0) {printf("Discarded counts with exon %d\n", eid); countNotInIsland=1;}			  
+	  if (df->id2exon.count(eid)==0) {Rprintf("Discarded counts with exon %d\n", eid); countNotInIsland=1;}			  
 	  if(strand==1) f->right[j] = eid;
 	  
 	  else f->right[rightc-j-1] = eid;

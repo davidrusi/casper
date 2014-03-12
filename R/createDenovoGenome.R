@@ -9,7 +9,7 @@ setMethod("findNewExons", signature(pbam='list'),
             } else {
               nex <- lapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen))
             }
-            nex <- casper:::mergeGRanges(nex)
+            nex <- mergeGRanges(nex)
             names(nex) <- 1:length(nex)
             nex
           }
@@ -203,7 +203,7 @@ assignExons2GeneF <- function(exons, DB, reads, chrs, maxDist=1000, minLinks=3, 
   alljunx <- as.integer(alljunx)
   names(alljunx) <- naj
   allexs <- c(oldexs, alljunx)
-  islands <- casper:::makeIslands(allexs)
+  islands <- makeIslands(allexs)
 
   nislands <- names(islands)
   islands <- paste(unique(as.character(seqnames(exons)@values)), islands, sep='.')
@@ -295,14 +295,14 @@ createDenovoGenome <- function(reads, DB, minLinks=2,  maxLinkDist=1e+05, maxDis
 #  DBplus <- NULL
 #  DBminus <- NULL
 #  stranded <- ifelse(class(reads)=='list', reads[[1]]@stranded, reads@stranded)
-#  if(any(strand(DB@islands@unlistData)=='+')) DBplus <- casper:::genomeBystrand(DB, "+")
-#  if(any(strand(DB@islands@unlistData)=='-')) DBminus <- casper:::genomeBystrand(DB, "-")
-#  if(any(strand(DB@islands@unlistData)=='*')) DBmix <- casper:::genomeBystrand(DB, "*")
+#  if(any(strand(DB@islands@unlistData)=='+')) DBplus <- genomeBystrand(DB, "+")
+#  if(any(strand(DB@islands@unlistData)=='-')) DBminus <- genomeBystrand(DB, "-")
+#  if(any(strand(DB@islands@unlistData)=='*')) DBmix <- genomeBystrand(DB, "*")
 #  if(stranded){
 #    newexplus <- NULL
 #    newexminus <- NULL
-#    if(!is.null(DBplus)) newexplus <- findNewExons(casper:::subsetPbam(reads, "+"), DBplus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
-#    if(!is.null(DBminus)) newexminus <- findNewExons(casper:::subsetPbam(reads, "-"), DBminus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(DBplus)) newexplus <- findNewExons(subsetPbam(reads, "+"), DBplus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
+#    if(!is.null(DBminus)) newexminus <- findNewExons(subsetPbam(reads, "-"), DBminus, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
 #    if(!is.null(DBmix)) newexmix <- findNewExons(reads, DBmix, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen, mc.cores=mc.cores)
 #    if(!is.null(newexplus) | !is.null(newexminus)) somex <- 1
 #  } else {
@@ -314,7 +314,7 @@ createDenovoGenome <- function(reads, DB, minLinks=2,  maxLinkDist=1e+05, maxDis
   #    cat("Done...\nCreating denovo genome for positive strand\n")
   #    if(stranded) {
   #      chrs <- as.list(unique(as.character(seqnames(reads@pbam)@values)))
-  #      denovoplus <- assignExons2Gene(exons=newexplus, DB=DBplus, reads=casper:::subsetPbam(reads, "+"), chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
+  #      denovoplus <- assignExons2Gene(exons=newexplus, DB=DBplus, reads=subsetPbam(reads, "+"), chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
   #    } else {
   #      newexplus <- newex
   #      if(!is.null(DBminus)) {
@@ -330,7 +330,7 @@ createDenovoGenome <- function(reads, DB, minLinks=2,  maxLinkDist=1e+05, maxDis
   #    cat("Done...\nCreating denovo genome for negative strand\n")
   #    if(stranded) {
   #      chrs <- as.list(unique(as.character(seqnames(reads@pbam)@values)))
-  #      denovominus <- assignExons2Gene(exons=newexminus, DB=DBminus, reads=casper:::subsetPbam(reads, "-"), chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
+  #      denovominus <- assignExons2Gene(exons=newexminus, DB=DBminus, reads=subsetPbam(reads, "-"), chrs=chrs, maxDist=maxDist, stranded=stranded, minLinks=minLinks, maxLinkDist=maxLinkDist, mc.cores=mc.cores)
  #     } else {
  #       newexminus <- newex
  #       if(!is.null(DBplus)) {

@@ -238,7 +238,7 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
   # Make islands
   ex2tx <- unlist(newTxs)
   names(ex2tx) <- rep(names(newTxs), unlist(lapply(newTxs, length)))
-  islands <- casper:::makeIslands(ex2tx)
+  islands <- makeIslands(ex2tx)
   cat("Splitting transcripts\n")
   extxs <- unlist(lapply(newTxs, "[", 1))    
   sel <- match(extxs, names(exonsNI))

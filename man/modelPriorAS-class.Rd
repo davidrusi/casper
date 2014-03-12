@@ -4,6 +4,7 @@
 \alias{modelPriorAS-class}
 \alias{show,modelPriorAS-method}
 \alias{[,modelPriorAS,ANY,ANY,ANY-method}
+\alias{coef,modelPriorAS-method}
 \alias{coef,modelPriorAS,ANY,ANY,ANY-method}
 
 \title{Class "modelPriorAS"}

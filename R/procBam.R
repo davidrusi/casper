@@ -194,10 +194,10 @@ mergeGRanges <- function(gr, fixNames=FALSE) {
 mergePbam <- function(ans, fixNames=FALSE){
   if(!all(sapply(ans, function(x) x@stranded)) & sum(sapply(ans, function(x) x@stranded))!=0) stop("all pbams must be either stranded or non-stranded")
   if(ans[[1]]@stranded){
-    plus <- casper:::mergeGRanges(lapply(ans, function(x) slot(x, 'plus')), fixNames)
-    minus <- casper:::mergeGRanges(lapply(ans, function(x) slot(x, 'minus')), fixNames)
-    pjunx <- casper:::mergeGRanges(lapply(ans, function(x) slot(x, 'pjunx')), fixNames)
-    mjunx <- casper:::mergeGRanges(lapply(ans, function(x) slot(x, 'mjunx')), fixNames)
+    plus <- mergeGRanges(lapply(ans, function(x) slot(x, 'plus')), fixNames)
+    minus <- mergeGRanges(lapply(ans, function(x) slot(x, 'minus')), fixNames)
+    pjunx <- mergeGRanges(lapply(ans, function(x) slot(x, 'pjunx')), fixNames)
+    mjunx <- mergeGRanges(lapply(ans, function(x) slot(x, 'mjunx')), fixNames)
     new("procBam", pbam=NULL, plus=plus, minus=minus,junx=NULL, pjunx=pjunx, mjunx=mjunx, stranded=ans[[1]]@stranded)
   } else{
     pbam <- mergeGRanges(lapply(ans, function(x) slot(x, 'pbam')), fixNames)

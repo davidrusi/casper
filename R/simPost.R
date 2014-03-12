@@ -11,7 +11,7 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
     #nans <- names(ans)
     #ans <- as.integer(ans)
     #names(ans) <- nans
-      counts <- casper:::splitPaths(paths=ans, DB=genomeDB, mc.cores=mc.cores, stranded=pcs[[1]]@stranded, geneid=allisl)
+      counts <- splitPaths(paths=ans, DB=genomeDB, mc.cores=mc.cores, stranded=pcs[[1]]@stranded, geneid=allisl)
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
@@ -106,7 +106,7 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     strand[sel] <- 0
     strand <- as.list(as.integer(strand))
     pc <- pc[z]
-    ans <- casper:::calcKnownMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc,startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,priorq=priorq, strand=strand, citype=citype, niter=niter, burnin=burnin, verbose=verbose)
+    ans <- calcKnownMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc,startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,priorq=priorq, strand=strand, citype=citype, niter=niter, burnin=burnin, verbose=verbose)
     
     if(length(ans)==1) {
       trans <-  ans[[1]][[2]]

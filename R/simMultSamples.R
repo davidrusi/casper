@@ -129,8 +129,8 @@ if (is(x, "exprSet") | is(x,"ExpressionSet")) {
   x <- exprs(x)
 } else if (!is(x,"data.frame") & !is(x,"matrix")) { stop("x must be an exprSet, data.frame or matrix") } 
 patterns <- fit$patterns
-groupsr <- gaga:::groups2int(groups,patterns); K <- as.integer(max(groupsr)+1)
-groupsnewr <- gaga:::groups2int(groupsnew,patterns)
+groupsr <- groups2int(groups,patterns); K <- as.integer(max(groupsr)+1)
+groupsnewr <- groups2int(groupsnew,patterns)
 v <- fit$pp
 
 # Checks
@@ -246,8 +246,8 @@ if (is(x, "exprSet") | is(x,"ExpressionSet")) {
   x <- exprs(x)
 } else if (!is(x,"data.frame") & !is(x,"matrix")) { stop("x must be an exprSet, data.frame or matrix") } 
 patterns <- fit$patterns
-groupsr <- gaga:::groups2int(groups,patterns); K <- as.integer(max(groupsr)+1)
-groupsnewr <- gaga:::groups2int(groupsnew,patterns)
+groupsr <- groups2int(groups,patterns); K <- as.integer(max(groupsr)+1)
+groupsnewr <- groups2int(groupsnew,patterns)
 v <- fit$pp
 
 # Checks
@@ -354,4 +354,16 @@ rtruncexp <- function(n, lower.trunc) {
   p <- pexp(lower.trunc)
   u <- runif(n, p, 1)
   qexp(u)
+}
+
+
+groups2int <- function(groups,patterns) {
+#check that names in groups and patterns match
+if (is.null(colnames(patterns))) stop('You must specify colnames(patterns)')
+if (sum(unique.default(groups)[order(unique.default(groups))]==colnames(patterns)[order(colnames(patterns))])<ncol(patterns)) stop('Group names in colnames(patterns) do no match group names indicated in groups')
+#convert groups to integer vector
+groupsr <- integer(length(groups))
+for (i in 1:ncol(patterns)) { groupsr[groups==colnames(patterns)[i]] <- i-1 }
+groupsr <- as.integer(groupsr)
+return(groupsr)
 }
