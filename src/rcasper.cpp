@@ -139,7 +139,7 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 	for (int j = 0; item != NULL; j++) {
 
 	  int eid = atoi(item);
-	  if (df->id2exon.count(eid)==0) {Rprintf("Discarded counts with exon %d\n", eid); countNotInIsland=1;}			  
+	  if (df->id2exon.count(eid)==0) countNotInIsland=1; //{Rprintf("Discarded counts with exon %d\n", eid); countNotInIsland=1;}			  
 	  if(strand==1) f->right[j] = eid;
 	  
 	  else f->right[rightc-j-1] = eid;
@@ -154,15 +154,15 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 
 	bool c2= (strand== -1) && (f->left[0] >= f->right[0]) && (f->left[f->leftc -1] >= f->right[f->rightc -1]);
 	
-	if (c1 || c2) {
+	if ((c1 || c2) && countNotInIsland==0) {
 	  
 	  if(inv==0) {
 
-	    if(countNotInIsland==0) df->addData(f);
+	    df->addData(f);
 
 	  } else {
 
-	    if(countNotInIsland==0) df->addDataM(f);
+	    df->addDataM(f);
 
 	  }
 	
@@ -301,8 +301,9 @@ void importTranscripts(set<Variant*, VariantCmp> *initvars, DataFrame* df, SEXP 
 
 		v->id= i;
 
-
-		if((tvals[0] > tvals[1]) && strand==0) v->antisense=TRUE;
+		if(ntsub>1){
+		  if((tvals[0] > tvals[1]) && strand==0) v->antisense=TRUE;
+		}
 
 		int nbchar= Rf_length(STRING_ELT(tnames,i));
 

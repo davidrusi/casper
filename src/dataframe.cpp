@@ -570,6 +570,8 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
 
     curvarex = 0; ex= (curvar->exons)[0];
 
+    if(f->leftc>1 & (f->left[0]>f->left[1])) strand=-1;
+    if(f->rightc>1 & (f->right[0]>f->right[1])) strand=-1;
     if(f->left[0] > f->right[0] | ex->id > (curvar->exons)[curvar->exonCount-1]->id) strand=-1;
 
     if(strand==1){
@@ -596,7 +598,6 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
       for (int i=0; i< f->rightc; i++) {
 	
 	eid = f->right[i];
-	
 	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
 	
 	if (eid > f->left[f->leftc -1]) el->push_back(ex);
@@ -646,7 +647,6 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
       for (int i=0; i< f->rightc; i++) {
 
 	eid = f->right[i];
-
 	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
 
         if (eid > f->left[f->leftc -1]) el->push_back(ex);

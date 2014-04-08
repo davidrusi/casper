@@ -45,18 +45,22 @@ simMAE <- function(nsim, islandid=NULL, n, r, f, burnin=1000, pc, disArray, useP
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
        })
      }
-     Un <- do.call(cbind, lapply(res, "[[", "maes"))
+     tmp <- lapply(res, '[[', 'maes')
+     sel <- unlist(lapply(tmp, length))==nsim
+     tmp <- tmp[sel]
+     #Un <- do.call(cbind, lapply(res, "[[", "maes"))
+     Un <- do.call(cbind, tmp)
      df <- data.frame(MAE= colMeans(Un), Nreads=rep(n[j], nsim), ReadLength=rep(r[j], nsim), frLength=rep(f[j], nsim))
      U <- rbind(U, df)
      if(retTxsError) {
        rownames(Un) <- colnames(pis)
        txe[[j]] <- Un
-       pcs[[j]] <- lapply(res, "[[", "pc")
+       pcs[[j]] <- lapply(res[sel], "[[", "pc")
      }
    }
    if(retTxsError){
-     names(txe) <- paste(n, r, f, sep='-')
-     names(pcs) <- paste(n, r, f, sep='-')
+     names(txe) <- paste(n, r, f, sep='-')[sel]
+     names(pcs) <- paste(n, r, f, sep='-')[sel]
      return(list(txe=txe, U=U, pcs=pcs))
    }
    return(U)

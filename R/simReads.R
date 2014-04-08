@@ -149,7 +149,7 @@ casperSim <- function(genomeDB, distrs, nSimReads, pis, islandid, lr_file=NULL, 
   if(bam) write.sam.header(chrlen[names(chrlen) %in% unique(chroms)], lr_file, max(vn))
   if (verbose) cat("Simulating fragments\n")
 # insideBam deprecated, only in case it is useful in simulations, return from C all information written to the bam file
-  insideBam=integer(0)
+  insideBam=as.integer(0)
 
 
 #  dyn.load("/Volumes/biostats/cstephan/casper_bioC/casper/src/casper.so")
