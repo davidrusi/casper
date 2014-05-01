@@ -7,6 +7,7 @@ importFrom(mgcv,gam,predict.gam,s)
 importFrom(sqldf, sqldf)
 importFrom(VGAM,vglm,betabinomial.ab,Coef)
 importClassesFrom(GenomicFeatures, TranscriptDb)
+importFrom(rtracklayer, import)
 importFrom(survival,Surv,survfit)
 
 #export regular functions
