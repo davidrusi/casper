@@ -6,9 +6,8 @@ Title: Characterization of Alternative Splicing based on Paired-End
 Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda
         Stobbe
 Maintainer: David Rossell <rosselldavid@gmail.org>
-Depends: R (>= 2.14.1), Biobase, IRanges, methods, gtools,
-        GenomicRanges, Rsamtools, plyr, gaga
-Imports: VGAM, mgcv, GenomicFeatures, survival, sqldf, rtracklayer
+Depends: R (>= 2.14.1), Biobase, IRanges, methods, GenomicRanges
+Imports: BiocGenerics, EBarrays, gaga, gtools, GenomicFeatures, mgcv, Rsamtools, rtracklayer, sqldf, survival, VGAM
 Enhances: parallel
 Description: Infer alternative splicing from paired-end RNA-seq data.
         The model is based on counting paths across exons, rather than
