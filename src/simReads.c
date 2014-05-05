@@ -129,7 +129,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
     st=-1;
     //len = ldv[i];
     len = choose_len(genes[gene].vars[var].len, ldv, ldd, ldlen);
-    //if(len>genes[gene].vars[var].len) len=genes[gene].vars[var].len;
+    if(len>genes[gene].vars[var].len) { len=genes[gene].vars[var].len; }
     while(j==0){
       cnt++;
       st = choose_st(len, genes[gene].vars[var].len, sdv, sdd, sdlen, genes[gene].vars[var].strand);
