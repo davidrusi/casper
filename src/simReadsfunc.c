@@ -233,7 +233,7 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
       here=1;
       skip=1;
     }
-    if((sum<=ren) && (ren<sum+wis)) {
+    if((sum<=ren) && (ren<=sum+wis)) {
       if(pos!=i){
 	strcat(pa, ".");
 	sprintf(id, "%d", var.exid[i]);
