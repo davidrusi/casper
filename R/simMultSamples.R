@@ -1,15 +1,15 @@
 logrpkm2thpi <- function(txids, lrpkm, genomeDB) {
-  #txids: data.frame with transcript, gene
+  #txids: data.frame with transcript, island_id
   #lrpkm: matrix with expression levels measured in logrpkm. rownames must indicate tx name
   #genomeDB: annotatedGenome
   rownames(txids) <- as.character(txids$transcript)
   txids <- txids[rownames(lrpkm),]
   len <- genomeDB@txLength[rownames(lrpkm)]
-  thpi <- data.frame(txids[,c('transcript','gene')], exp(lrpkm) * len / 10^9)
+  thpi <- data.frame(txids[,c('transcript','island_id')], exp(lrpkm) * len / 10^9)
   thpi[,-1:-2] <- t(t(thpi[,-1:-2,drop=FALSE])/colSums(thpi[,-1:-2,drop=FALSE]))
-  th <- aggregate(thpi[,-1:-ncol(txids),drop=FALSE], by=list(thpi$gene), FUN=sum)
-  names(th)[1] <- 'gene'
-  thpi <- merge(thpi, th, by='gene')
+  th <- aggregate(thpi[,-1:-ncol(txids),drop=FALSE], by=list(thpi$island_id), FUN=sum)
+  names(th)[1] <- 'island_id'
+  thpi <- merge(thpi, th, by='island_id')
   pi <- thpi[,3:(2+ncol(lrpkm)),drop=FALSE] / thpi[,(3+ncol(lrpkm)):ncol(thpi),drop=FALSE]
   rownames(pi) <- thpi$transcript; colnames(pi) <- colnames(lrpkm)
   pi <- pi[rownames(lrpkm),]
@@ -18,14 +18,14 @@ logrpkm2thpi <- function(txids, lrpkm, genomeDB) {
 
 
 logrpkm <- function(txids, th, pi, genomeDB, len) {
-  #txids: data.frame with transcript, gene
-  #th: data.frame with gene and proportion/probability of reads from each gene
+  #txids: data.frame with transcript, island_id
+  #th: data.frame with island_id and proportion/probability of reads from each island_id
   #pi: matrix with relative expression of each isoform, rownames must indicate tx identifier
   #genomeDB: annotatedGenome (not needed if len is provided)
   #len: named vector with transcript lengths (not needed if genomeDB is provided)
-  txids$gene <- as.character(txids$gene)
-  th$gene <- as.character(th$gene)
-  th <- merge(txids[,c('transcript','gene')], th, by='gene')
+  txids$island_id <- as.character(txids$island_id)
+  th$island_id <- as.character(th$island_id)
+  th <- merge(txids[,c('transcript','island_id')], th, by='island_id')
   rownames(th) <- as.character(th$transcript)
   th <- th[rownames(pi),,drop=FALSE]
   if (missing(len)) { len <- genomeDB@txLength[rownames(pi)] } else { len <- len[rownames(pi)] }
@@ -62,9 +62,9 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
     featureNames(xnew) <- featureNames(x)
     # fData(xnew), simulated (phi, mu1, mu2)
     # xnew: simulated (unobservable) expressions for new individuals
-    thpi <- logrpkm2thpi(txids=fData(x)[,c('transcript','gene')], lrpkm=exprs(xnew), genomeDB=genomeDB)
+    thpi <- logrpkm2thpi(txids=fData(x)[,c('transcript','island_id')], lrpkm=exprs(xnew), genomeDB=genomeDB)
     N <- apply(thpi$th[,-1], 2, function(x) rmultinom(size=nreads, n=1, prob=x))
-    rownames(N) <- as.character(thpi$th$gene)
+    rownames(N) <- as.character(thpi$th$island_id)
     if (mc.cores>1) {
       if ('parallel' %in% loadedNamespaces()) {
         sim.exp <- parallel::mclapply(1:ncol(xnew), simOneExp, distrs=distrs, N=N, pis=thpi$pi, readLength=readLength, genomeDB=genomeDB, featnames=featureNames(xnew), seed=seed, verbose=verbose, mc.cores=mc.cores, mc.preschedule=FALSE)
