@@ -55,7 +55,7 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
   groupsnew <- rep(unique(pData(x)[,groups]), nsamples)
   nnfit <- fitNNSingleHyp(x, groups=groups, B=5, trace=FALSE)
   ans <- vector("list",B)
-  if (verbose) cat(paste("Obtaining ",B," simulations (",sum(nsamples)," samples with ",nreads," reads each)\n",sep=''))
+  if (verbose) cat(paste("Obtaining ",B," simulations (",sum(nsamples)," samples with ",nreads," reads each -- some will be non-mappable depending on readLength)\n",sep=''))
   for (k in 1:B) {
     xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
     sampleNames(xnew) <- paste("Sample",1:ncol(xnew))
@@ -90,9 +90,35 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
 } 
 
 
+probNonMappable <- function(readLength) {
+  #Proportion of non-mappable reads
+  #Read length vs mappability following log-log law, taken from Li, Freudenberg & Miramontes (BMC Bioinformatics, 2014)
+  #Note: this is for a single sequence of length readLength. For paired-ends set 2*readLength as an approx
+  r <- c(20,50,80,100,150,400,500,1000)
+  p <- c(0.2835,0.0816,0.0426,0.034,0.0244,0.0133,0.0118,0.0082)
+  if ((readLength>=r[1]) && (readLength<=r[length(r)])) {
+    sel <- which(r>readLength)[1]
+    rlow <- r[sel-1]; rup <- r[sel] 
+    plow <- p[sel-1]; pup <- p[sel] 
+  } else if (readLength>r[length(r)]) {
+    rlow <- r[length(r)-1]; rup <- r[length(r)]
+    plow <- p[length(r)-1]; pup <- p[length(r)]
+  } else {
+    rlow <- r[1]; rup <- r[2]
+    plow <- p[1]; pup <- p[2]
+  }
+  ans <- exp(log(plow) + (log(readLength)-log(rlow)) * (log(pup)-log(plow))/(log(rup)-log(rlow)))
+  if (ans<0) { ans <- 0 } else if (ans>1) { ans <- 1 }
+  return(ans)
+}
+
 simOneExp <- function(i, distrs, N, pis, readLength, genomeDB, featnames, seed, verbose) {
   #Simulate a single sample
   if (is.list(distrs)) distrsCur <- sample(distrs, 1)[[1]] else distrsCur <- distrs
+  readYield <- runif(1,0.8,1.2) #actual reads produced +/- 20% within target
+  pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #proportion mapped reads 60%-90% of mappable reads
+  N <- round(N*readYield*pmapped)
+  
   nSimReads <- N[which(N[,i] != 0),i]
   islandid <- names(nSimReads)
   curpis <- pis[,i]; names(curpis) <- rownames(pis)
