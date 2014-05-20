@@ -127,7 +127,7 @@ int choose_len(int varlen, double *ldv, double *ldd, int ldlen) {
       return(varlen); //variant shorter than shortest possible fragment
     }
   }
- 
+  
   ran = (rand() / ( RAND_MAX + 1.0 )) *maxp;
   if(ran<ldv[0]) return(ldd[0]);
   for(i=1; i<ldlen; i++) if((ldv[i-1]<=ran) && (ran < ldv[i])) return(ldd[i]);
@@ -174,7 +174,8 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
 
   pa = malloc((40 * var.nex) * sizeof(char));
   strcpy(pa, ".");
-  if ((2*rl) > var.len) rl= var.len/2; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
+  //if ((2*rl) > var.len) rl= var.len/2; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
+  if ((rl) > var.len) rl= var.len-1; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
   if(strand==1) {
     rst = st + len - rl;
     en = st + rl - 1;
@@ -190,66 +191,74 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
 
   here=0;
   sum=1;
-  //  int chk=0;
-  for(i=0; i<var.nex; i++) {
-    skip=0;
-    //   chk=0;
-    wis = abs(var.exen[i] - var.exst[i])+1;
-    if((sum<=st) && (st<sum+wis)) {
-      sprintf(id, "%d", var.exid[i]);
-      strcat(pa, id);
-      pos=i;
-      here=1;
-      skip=1;
-    }
-    if((sum<=en) && (en<sum+wis)) {
-      if(pos!=i){
-	strcat(pa, ".");
-	sprintf(id, "%d", var.exid[i]);
-	strcat(pa, id);
-      }
-      break;
-    }
-    if((skip==0) && (here>0)) {
-      strcat(pa, ".");
-      sprintf(id, "%d", var.exid[i]);
-      strcat(pa, id);
-    }
-    sum+=wis;
-  }
 
-  strcat(pa, "-");
-  sum=1;
-  here=0;
-  // chk=0;
-  for(i=0; i<var.nex; i++) {
-    skip=0;
-    //  chk=0;
-    wis = abs(var.exen[i] - var.exst[i]) + 1;
-    if((sum<=rst) && (rst<sum+wis)){
-      sprintf(id, "%d", var.exid[i]);
-      strcat(pa, id);
-      pos=i;
-      here=1;
-      skip=1;
-    }
-    if((sum<=ren) && (ren<=sum+wis)) {
-      if(pos!=i){
+  if(var.nex!=1){
+    for(i=0; i<var.nex; i++) {
+      skip=0;
+      wis = abs(var.exen[i] - var.exst[i])+1;
+      if((sum<=st) && (st<sum+wis)) {
+	sprintf(id, "%d", var.exid[i]);
+	strcat(pa, id);
+	pos=i;
+	here=1;
+	skip=1;
+      }
+      if((sum<=en) && (en<sum+wis)) {
+	if(pos!=i){
+	  strcat(pa, ".");
+	  sprintf(id, "%d", var.exid[i]);
+	  strcat(pa, id);
+	}
+	break;
+      }
+      if((skip==0) && (here>0)) {
 	strcat(pa, ".");
 	sprintf(id, "%d", var.exid[i]);
 	strcat(pa, id);
       }
-      strcat(pa, ".");
-      break;
+      sum+=wis;
     }
-    if((skip==0) && (here>0)) {
-      strcat(pa, ".");
-      sprintf(id, "%d", var.exid[i]);
-      strcat(pa, id);
+    strcat(pa, "-");
+    sum=1;
+    here=0;
+  // chk=0;
+    for(i=0; i<var.nex; i++) {
+      skip=0;
+    //  chk=0;
+      wis = abs(var.exen[i] - var.exst[i]) + 1;
+      if((sum<=rst) && (rst<sum+wis)){
+	sprintf(id, "%d", var.exid[i]);
+	strcat(pa, id);
+	pos=i;
+	here=1;
+	skip=1;
+      }
+      if((sum<=ren) && (ren<=sum+wis)) {
+	if(pos!=i){
+	  strcat(pa, ".");
+	  sprintf(id, "%d", var.exid[i]);
+	  strcat(pa, id);
+	}
+	strcat(pa, ".");
+	break;
+      }
+      if((skip==0) && (here>0)) {
+	strcat(pa, ".");
+	sprintf(id, "%d", var.exid[i]);
+	strcat(pa, id);
+      }
+      sum+=wis;
     }
-    sum+=wis;
+  } else {
+    sprintf(id, "%d", var.exid[0]);
+    strcat(pa, id);
+    strcat(pa, "-");
+    sprintf(id, "%d", var.exid[0]);
+    strcat(pa, id);
+    strcat(pa, ".");
   }
   starts[2]=0;
+  
   
   l=hash_lookup(path, pa);
   if(l!=HASH_FAIL) hash_update(path, pa, l+1); 
