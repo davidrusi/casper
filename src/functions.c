@@ -23,7 +23,6 @@ int *procCigar(char *cigar, int *cigs){
 	//	printf("%s %d %d\n", num, pos, t);
 	pos=t+1;
 	sscanf(num, "%d", &cigs[cigs[0]+1]);
-	//printf("%d %s %s %d\n", cigs[cigs[0]+1], cigar, num, pos);
 	cigs[0]++;
 	break;
 
@@ -32,7 +31,6 @@ int *procCigar(char *cigar, int *cigs){
 	num[t-pos]='\0';
 	sscanf(num, "%d", &cigs[cigs[0]+1]);
 	cigs[cigs[0]+1]*=-1;
-	//printf("%s %d %s %s %d %d %d\n", cigar+pos, cigs[cigs[0]+1], cigar, num, pos, t, t-pos);
 	pos=t+1;
 	cigs[0]++;
         break;   
