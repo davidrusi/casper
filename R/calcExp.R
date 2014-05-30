@@ -183,7 +183,7 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
   fdata <- merge(fdata, tx2gene, by='transcript')
   rownames(fdata) <- fdata$transcript
   if(citype!=0) {
-    fdata <- fdata[rownames(exprsx),c('transcript','gene_id','island_id','explCnts', 'ci95.low', 'ci95.high')]
+    fdata <- fdata[rownames(exprsx),c('transcript','gene_id','island_id','explCnts','se','ci95.low','ci95.high')]
   } else fdata <- fdata[rownames(exprsx),c('transcript','gene_id','island_id','explCnts')]
   fdata <- new("AnnotatedDataFrame",fdata)
   ans <- new("ExpressionSet",exprs=exprsx,featureData=fdata)
