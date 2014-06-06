@@ -183,7 +183,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
 	}
       }
       if(cnt==1000) {
-	printf("Fragment lost %d %d\n", i, n);
+	Rprintf("Fragment lost %d %d\n", i, n);
 	break;
       }
     }
