@@ -19,7 +19,7 @@ LazyLoad: yes
 Collate: GenericDefs.R ClassDefinitions.R calcDenovo.R calcExp.R
         createDenovoGenome.R genePlot.R getDistrs.R getRoc.R
         denovoExpr.R makeTranscriptDbFromGFF.R mergeBatches.R mergeExp.R modelPrior.R
-        pathCounts.R probNonEquiv.R procBam.R procGenome.R
+        pathCounts.R probNonEquiv.R procBam.R procGenome.R qqnormGenomeWide.R
         relexprByGene.R rmShortInserts.R simMultSamples.R simPost.R simReads.R
         splitGenomeByLength.R truncnorm.R wrapKnown.R
 biocViews: GeneExpression, DifferentialExpression, Transcription,
