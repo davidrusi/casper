@@ -16,7 +16,7 @@ Description: Infer alternative splicing from paired-end RNA-seq data.
         estimation precision.
 License: GPL (>=2)
 LazyLoad: yes
-Collate: GenericDefs.R ClassDefinitions.R calcDenovo.R calcExp.R
+Collate: GenericDefs.R ClassDefinitions.R asymmetryCheck.R calcDenovo.R calcExp.R
         createDenovoGenome.R genePlot.R getDistrs.R getRoc.R
         denovoExpr.R makeTranscriptDbFromGFF.R mergeBatches.R mergeExp.R modelPrior.R
         pathCounts.R probNonEquiv.R procBam.R procGenome.R qqnormGenomeWide.R

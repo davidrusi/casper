@@ -1,4 +1,4 @@
-setMethod(qqnormGenomeWide, signature(x="matrix"), function(x, ngenes=min(1000,nrow(x)), ...) {
+setMethod(qqnormGenomeWide, signature(x="ExpressionSet"), function(x, ngenes=min(1000,nrow(x)), ...) {
   qqnormGenomeWide(exprs(x))
 }
 )
