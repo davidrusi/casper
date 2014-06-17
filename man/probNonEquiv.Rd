@@ -1,12 +1,19 @@
 \name{probNonEquiv}
 \alias{probNonEquiv}
+\alias{probNonEquiv,ExpressionSet-method}
+\alias{probNonEquiv,list-method}
+\alias{pvalTreat}
+\alias{pvalTreat,ExpressionSet-method}
+\alias{pvalTreat,list-method}
 \title{
-  Posterior probability that differences between group means are greater
-  than a given threshold, i.e. that groups are non-equivalent by a
-  biologically meaningful amount.
+  \code{probNonEquiv} performs a Bayesian hypothesis test for equivalence between group means.
+  It returns the posterior probability that |mu1-mu2|>logfc.
+  
+  \code{pvalTreat} is a wrapper to \code{treat} in package \code{limma},
+  which returns P-values for the same hypothesis test.
 }
 \description{
-  The function computes v_i=P(|theta_i| > logfc | data), where theta_i is
+  \code{probNonEquiv} computes v_i=P(|theta_i| > logfc | data), where theta_i is
   the difference between group means for gene i. This posterior
   probability is based on the NNGCV model from package EBarrays, which
   has a formulation similar to limma in an empirical Bayes framework.
@@ -18,10 +25,12 @@
   expected false discovery proportion (a Bayesian FDR analog) is below 0.05.
 }
 \usage{
-probNonEquiv(x, groups, logfc = log(2), minCount, method = "exact")
+probNonEquiv(x, groups, logfc = log(2), minCount, method = "plugin", mc.cores=1)
+
+pvalTreat(x, groups, logfc = log(2), minCount, p.adjust.method='none', mc.cores = 1) 
 }
 \arguments{
-\item{x}{ExpressionSet containing expression levels}
+\item{x}{ExpressionSet containing expression levels, or list of ExpressionSets}
 \item{groups}{Variable in fData(x) indicating the two groups to
   compare (the case with more than 2 groups is not implemented).}
 \item{logfc}{Biologically relevant threshold for the log fold change,
@@ -29,23 +38,36 @@ probNonEquiv(x, groups, logfc = log(2), minCount, method = "exact")
 \item{minCount}{ If specified, probabilities are only computed for rows with \code{fData(x)$readCount >= minCount}}
 \item{method}{ Set to \code{'exact'} for exact posterior probabilities
   (slower), \code{'plugin'} for plug-in approximation (much faster).
-  The latter is less conservative than the former, but typically controls
-  the FDR below alpha when setting a threshold 1-alpha on the resulting
-  posterior probabilities.}
+  Typically both give very similar results.}
+\item{mc.cores}{Number of parallel processors to use. Ignored unless
+  \code{x} is a list.}
+\item{p.adjust.method}{P-value adjustment method, passed on to \code{p.adjust}}
 }
 \value{
-  Vector with posterior probabilities (NA's are returned for rows with
-  less than \code{minCount} reads).
+  If \code{x} is a single \code{ExpressionSet}, \code{probNonEquiv}
+  returns a vector with posterior probabilities
+  (NA for rows with less than \code{minCount} reads).
+  \code{pvalTreat} returns TREAT P-values instead.
+  
+  If \code{x} is a list of \code{ExpressionSet}, the function is applied
+  to each element separately and results are returned as columns in the
+  output matrix.
+}
+\seealso{
+\code{treat} in package \code{limma}, \code{p.adjust}
 }
 \references{
-Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End
-RNA-sequencing data. COBRA (http://biostats.bepress.com/cobra/art97)
+  Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying
+  Alternative Splicing from Paired-End RNA-sequencing data. Annals of
+  Applied Statistics, 8(1):309-330
+
+  McCarthy DJ, Smyth GK. Testing significance relative to a fold-change
+  threshold is a TREAT. Bioinformatics, 25(6):765-771
 }
 \author{
   Victor Pena, David Rossell
 }
 \examples{
-
   #Simulate toy data
   p <- 50; n <- 10
   x <- matrix(rnorm(p*2*n),nrow=p)

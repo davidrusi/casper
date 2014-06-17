@@ -6,6 +6,7 @@ importFrom(gaga, fitNNSingleHyp, getpar)
 importFrom(GenomicFeatures, transcripts, exonsBy, makeTranscriptDb)
 importClassesFrom(GenomicFeatures, TranscriptDb)
 importFrom(gtools, rdirichlet)
+importFrom(limma, lmFit, contrasts.fit, treat)
 importFrom(mgcv,gam,predict.gam,s)
 importMethodsFrom(Rsamtools, scanBam, scanBamHeader, ScanBamParam)
 importFrom(Rsamtools, scanBamFlag)
@@ -16,12 +17,9 @@ importMethodsFrom(VGAM, Coef, model.matrix, predict)
 importFrom(VGAM,vglm,betabinomial.ab)
 
 #export regular functions
-export(asymmetryCheck, calcDenovo, calcExp, createDenovoGenome, denovoExpr, getDistrs, getIsland, genePlot, getRoc, mergeBatches, mergeExp, modelPrior, pathCounts, plotPriorAS, posprob, probNonEquiv, procBam, procGenome, qqnormGenomeWide, quantileNorm, relativeExpr, relexprByGene, rmShortInserts, simMultSamples, simReads, transcripts, variants, "variants<-", getReads, getNreads, getChr, getIsland, subsetGenome, txLength, wrapKnown)
+export(asymmetryCheck, calcDenovo, calcExp, createDenovoGenome, denovoExpr, getDistrs, getIsland, genePlot, getRoc, mergeBatches, mergeExp, modelPrior, pathCounts, plotPriorAS, posprob, probNonEquiv, procBam, procGenome, pvalTreat, qqnormGenomeWide, quantileNorm, relativeExpr, relexprByGene, rmShortInserts, simMultSamples, simReads, transcripts, variants, "variants<-", getReads, getNreads, getChr, getIsland, subsetGenome, txLength, wrapKnown)
 
 exportClasses(annotatedGenome, simulatedSamples, pathCounts, procBam)
 #export general methods
 exportMethods("plot","lines","coef","[","[[","as.list")
-
-
-
 
