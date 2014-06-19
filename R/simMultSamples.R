@@ -2,6 +2,7 @@ logrpkm2thpi <- function(txids, lrpkm, genomeDB) {
   #txids: data.frame with transcript, island_id
   #lrpkm: matrix with expression levels measured in logrpkm. rownames must indicate tx name
   #genomeDB: annotatedGenome
+  txids <- txids[,c('transcript','island_id')]
   rownames(txids) <- as.character(txids$transcript)
   txids <- txids[rownames(lrpkm),]
   len <- genomeDB@txLength[rownames(lrpkm)]
