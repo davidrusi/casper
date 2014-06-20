@@ -8,12 +8,12 @@
 \description{
 We downloaded the fastq files, aligned with TopHat and processed with
 \code{wrapKnown} to obtain the estimated distributions for each of the 6
-samples. \code{distrsMiSeq} is a list with the 6 corresponding elements.
+samples. \code{distrsGSE37704} is a list with the 6 corresponding elements.
 The estimated distributions for HiSeq data were very similar,
 hence these distributions can be used as defaults for Illumina MiSeq and
 HiSeq experiments.
 }
-\usage{data(distrsMiSeq)}
+\usage{data(distrsGSE37704)}
 \format{
   An \code{list} with 6 elements of class \code{readDistrs}.
   See \code{help(getDistrs)} and \code{help(readDistrs-class)} for details.
