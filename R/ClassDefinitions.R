@@ -128,6 +128,23 @@ setMethod("lines", signature(x="readDistrs"), function(x, ...) {
 )
 
 
+setGeneric("setfragLength", function(distrs, fragLength) standardGeneric("setfragLength"))
+
+setMethod(setfragLength, signature(distrs='list'), function(distrs, fragLength) {
+  if (any(sapply(distrs,'class') != 'readDistrs')) stop("All elements in the list should be of class 'readDistrs'")
+  lapply(distrs, setfragLength, fragLength=fragLength)
+}
+)
+
+setMethod(setfragLength, signature(distrs='readDistrs'), function(distrs, fragLength) {
+  l <- distrs@lenDis
+  ml <- round(sum(as.numeric(names(l))*l/sum(l)))
+  names(l) <- as.numeric(names(l)) - ml + fragLength
+  new("readDistrs",lenDis=l,stDis=distrs@stDis)
+}
+)
+
+
 
 ###############################################################
 

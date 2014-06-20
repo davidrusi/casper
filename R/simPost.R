@@ -15,7 +15,8 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
-simMAE <- function(nsim, islandid=NULL, n, r, f, burnin=1000, pc, disArray, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE, obs.distr, obs.rl) {
+simMAE <- function(nsim, islandid=NULL, nreads, readLength, fragLength, burnin=1000, pc, disArray, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE, obs.distr, obs.rl) {
+   n <- nreads; r <- readLength; f <- fragLength
    if (length(r) != length(n)) stop("length(n) not equal to length(r)")
    if(is.null(islandid)) islandid <- names(genomeDB@transcripts)
    U <- NULL

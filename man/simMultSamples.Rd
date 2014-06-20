@@ -14,11 +14,11 @@
   i.e. based on the current available data \code{x}.
 }
 \usage{
-simMultSamples(B, nsamples, nreads, readLength, x, groups='group',
-  distrs, genomeDB, verbose=TRUE, mc.cores=1)
+simMultSamples(nsim, nsamples, nreads, readLength, fragLength=300, x,
+groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
 }
 \arguments{
-  \item{B}{Number of simulations to obtain}
+  \item{nsim}{Number of simulations to obtain}
   \item{nsamples}{Vector indicating number of future samples per group,
     e.g. \code{nsamples=c(5,5)} to simulate 5 new samples for 2 groups.}
   \item{nreads}{Desired number of paired-end reads per
@@ -26,20 +26,22 @@ simMultSamples(B, nsamples, nreads, readLength, x, groups='group',
   differs from this amount, see details.}
   \item{readLength}{Read length, i.e. in an experiment with paired reads
     at 100bp each, \code{readLength=100}.}
+  \item{fragLength}{Desired average insert size (size of RNA molecules after fragmentation)}
   \item{x}{\code{ExpressionSet} containing pilot data. \code{x[[group]]} indicates groups to be compared}
   \item{groups}{Name of column in \code{pData(x)} indicating the groups}
   \item{distrs}{Fragment start and length distributions. It can be
-  either an object of class readDistrs, or a list where each element is
-  of class readDistrs. 
-  In the latter case, an element is chosen at random for each individual sample (so that uncertainty in these distributions is taken into account)}
-  \item{genomeDB}{annotatedGenome object}
+    either an object or a list of objects of class readDistrs.
+  In the latter case, an element is chosen at random for each individual
+  sample to consider uncertainty in these distributions.
+  If not specified, it defaults to data(distrsGSE37704).}
+\item{genomeDB}{annotatedGenome object}
   \item{verbose}{Set to \code{TRUE} to print progress}
   \item{mc.cores}{Number of cores to use in function.
   \code{mc.cores>1} requires package \code{parallel}}
 }
 \value{
   Object of class \code{simulatedSamples}, which extends a list
-  of length \code{B}. See the class documentation for some helpful
+  of length \code{nsim}. See the class documentation for some helpful
   methods (e.g. coef, exprs, mergeBatches).
   Each element is itself a list containing an individual simulation.
   

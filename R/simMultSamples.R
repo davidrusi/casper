@@ -35,11 +35,12 @@ logrpkm <- function(txids, th, pi, genomeDB, len) {
 }
 
 
-simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1) {
+simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x, groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1) {
 # Posterior predictive simulation for multiple samples
 # nsamples: vector w/ n. samples per group
 # nreads: nreads per sample
 # readLength: read length
+# fragLength: mean fragment length
 # x: ExpressionSet pilot data. x[[group]] indicates groups to be compared
 # groups: name of column in pData(x) indicating the groups
 # distrs: fragment start and length distributions. It can be either an object of class readDistrs, or a list where each element is of class readDistrs. In the latter case, an element is chosen at random for each individual sample (so that uncertainty in these distributions is taken into account).
@@ -50,14 +51,20 @@ simMultSamples <- function(B, nsamples, nreads, readLength, x, groups='group', d
   #} else {
   #  sigma2ErrorObs <- fData(x)[,paste(sampleNames(x),'se',sep='.'),drop=FALSE]^2
   #}
+  if (missing(distrs)) {
+    cat("distrs not specified. Using default\n")
+    data(distrsGSE37704)
+    distrs <- distrsGSE37704
+  }
+  distrs <- setfragLength(distrs, fragLength=fragLength)
   if (verbose) cat("Fitting NNGV model...\n")
   seed <- sample(1:10000, 1)
   l <- genomeDB@txLength[featureNames(x)]
   groupsnew <- rep(unique(pData(x)[,groups]), nsamples)
   nnfit <- fitNNSingleHyp(x, groups=groups, B=5, trace=FALSE)
-  ans <- vector("list",B)
-  if (verbose) cat(paste("Obtaining ",B," simulations (",sum(nsamples)," samples with ",nreads," reads each -- some will be non-mappable depending on readLength)\n",sep=''))
-  for (k in 1:B) {
+  ans <- vector("list",nsim)
+  if (verbose) cat(paste("Obtaining ",nsim," simulations (",sum(nsamples)," samples with ",nreads," reads each -- some will be non-mappable depending on readLength)\n",sep=''))
+  for (k in 1:nsim) {
     xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
     sampleNames(xnew) <- paste("Sample",1:ncol(xnew))
     featureNames(xnew) <- featureNames(x)

@@ -1,5 +1,5 @@
-\name{distrGSE37704}
-\alias{distrGSE37704}
+\name{distrsGSE37704}
+\alias{distrsGSE37704}
 \docType{data}
 \title{
   Estimated read start and insert size distributions from MiSeq data
@@ -19,9 +19,10 @@ HiSeq experiments.
   See \code{help(getDistrs)} and \code{help(readDistrs-class)} for details.
 }
 \examples{
-data(distrGSE37704)
-distrGSE37704
-plot(distrGSE37704[[1]],'readSt')
-plot(distrGSE37704[[1]],'fragLength')
+data(distrsGSE37704)
+distrsGSE37704
+plot(distrsGSE37704[[1]],'readSt')
+lines(distrsGSE37704[[2]], 'readSt', col=2)
+plot(distrsGSE37704[[1]],'fragLength')
 }
 \keyword{datasets}
