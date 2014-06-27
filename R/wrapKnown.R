@@ -39,11 +39,27 @@ mergeDisWr <- function(distrs, pcs){
   distr
 }
 
-
-
 wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) {
+  if (length(bamFile)==1) {
+    ans <- wrapKnownSingle(bamFile=bamFile,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+  } else if (length(bamFile)>1) {
+    x <- vector("list",length(bamFile))
+    for (i in 1:length(bamFile)) {
+      x[[i]] <- wrapKnownSingle(bamFile=bamFile[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+    }
+    ans <- vector("list",3); names(ans) <- c('pc','distr','exp')
+    ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=sub('.bam$','',bamFile), keep=c('transcript','island_id','gene_id','explCnts'))
+    ans$distr <- lapply(x,'[[','distr')
+    ans$pc <- lapply(x,'[[','pc')
+  } else {
+    stop("Invalid length(bamFile)")
+  }
+  return(ans)
+}
 
-   if(!exists(as.character(substitute(genomeDB)))) stop("No genomeDB found")
+wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) {
+
+  if(!exists(as.character(substitute(genomeDB)))) stop("No genomeDB found")
   what <- c('qname','strand','pos','mpos','cigar')
   #what <- scanBamWhat(); what <- what[!(what %in% c('seq','qual','qwidth','flag','mapq','mrnm','mpos','isize'))]
   if(!keep.multihits) what <- c(what, 'mapq')
@@ -54,6 +70,9 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
    } else {
      which <- which[!grepl("_",as.character(seqnames(which)))]
      which <- which[!as.character(seqnames(which))=='chrM']
+     sel <- as.vector(seqnames(which)) %in% names(seqlengths(genomeDB@islands))
+     if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
+     which <- which[sel,]
    }
    if(sum(grepl("_", as.character(seqnames(which))))>0 | sum(grepl("M", as.character(seqnames(which))))>0) cat("Warning, non standard chromosomes included in bam (it is not recommended to include mitochondrial chromosome nor random or unstable chromosomes)") 
   flag <- scanBamFlag(isPaired=TRUE,hasUnmappedMate=FALSE)

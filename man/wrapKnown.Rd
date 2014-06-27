@@ -1,12 +1,13 @@
 \name{wrapKnown}
 \alias{wrapKnown}
 \title{
-  Run all necessary steps to analyze a bam file with the casper pipeline.
+  Run all necessary steps to get expression estimates from multiple bam files with the casper pipeline.
 }
 \description{
-  Function to analyze a bam file to generate expression estimates,
+  Function to analyze bam files to generate an ExpressionSet with
+  expression estimates for all samples,
   read start and fragment length distributions, path counts and
-  processed reads.
+  optinally processed reads.
 }
 \usage{
 wrapKnown(bamFile, verbose=FALSE, seed=1, mc.cores.int=1,
@@ -16,8 +17,8 @@ keep.multihits=TRUE, chroms=NULL)
 }
 \arguments{
   \item{bamFile}{
-    Bam file with the sample to analyze. Index of bam file must be in
-    the same directory.
+    Names of bam files with the sample to analyze. These must sorted and
+    indexed, and the index must be in the same directory.
 }
   \item{verbose}{
     Set to \code{TRUE} to display progress information.
@@ -93,6 +94,9 @@ keep.multihits=TRUE, chroms=NULL)
   The function executes the functions \code{procBam}, \code{getDistrs} and \code{pathCounts}
   in parallel for each chromosome, but is much more efficient in cpu
   speed and memory usage than running these functions separately.
+  Data from multiple samples are then combined using \code{mergeExp}.
+  Note that further normalization (e.g. \code{quantileNorm})
+  may be needed preliminary to actual data analysis.
 
   When \code{rpkm} is false the function returns the estimated
   proportion of reads arising from each isoform within a gene island.
@@ -117,17 +121,17 @@ keep.multihits=TRUE, chroms=NULL)
 \item{pbam}{List of objects of class \code{procBam} with one element
   per chromosome}
 \item{pc}{Object of class \code{pathCounts}}
-\item{exp}{Object of class \code{expressionSet}}
+\item{exp}{Object of class \code{ExpressionSet}}
 }
 \author{
-  Camille Stephan-Otto Attolini
+  Camille Stephan-Otto Attolini, David Rossell
 }
 \references{
 Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End
 RNA-sequencing data. Annals of Applied Statistics, 8(1):309-330.
 }
 \seealso{
-\code{procGenome}, \code{relexprByGene}
+\code{procGenome}, \code{relexprByGene}, \code{quantileNorm}
 }
 \examples{
 ## genDB<-makeTranscriptDbFromUCSC(genome="hg19", tablename="refGene")
