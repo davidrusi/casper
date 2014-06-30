@@ -51,8 +51,8 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
     cat("\n MERGING ALL FILES...\n")
     ans <- vector("list",3); names(ans) <- c('pc','distr','exp')
     ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=sub('.bam$','',bamFile), keep=c('transcript','island_id','gene_id','explCnts'))
-    ans$distr <- lapply(x,'[[','distr')
-    ans$pc <- lapply(x,'[[','pc')
+    ans$distr <- lapply(x,'[[','distr'); names(ans$distr) <- sub('.bam$','',bamFile)
+    ans$pc <- lapply(x,'[[','pc'); names(ans$distr) <- sub('.bam$','',bamFile)
   } else {
     stop("Invalid length(bamFile)")
   }
