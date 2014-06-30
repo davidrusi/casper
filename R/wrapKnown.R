@@ -48,6 +48,7 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
       cat(paste("\n PROCESSING",bamFile[i],"\n"))
       x[[i]] <- wrapKnownSingle(bamFile=bamFile[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
     }
+    cat("\n MERGING ALL FILES...\n")
     ans <- vector("list",3); names(ans) <- c('pc','distr','exp')
     ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=sub('.bam$','',bamFile), keep=c('transcript','island_id','gene_id','explCnts'))
     ans$distr <- lapply(x,'[[','distr')
@@ -86,30 +87,34 @@ wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.c
     param <- ScanBamParam(flag=flag,what=what, which=which[i], tag='XS')
     cat("Processing chromosome: ", as.character(seqnames(which[i])), "\n")
     bam <- scanBam(file=bamFile,param=param)
-    if(!keep.multihits) {
-      single.hit <- which(bam[[1]][['mapq']]>0)
-      bam[[1]] <- lapply(bam[[1]], '[', single.hit)
-    }
+    if (length(bam[[1]]$qname)>0) {  #if some reads satisfied the criteria
+      if(!keep.multihits) {
+        single.hit <- which(bam[[1]][['mapq']]>0)
+        bam[[1]] <- lapply(bam[[1]], '[', single.hit)
+      }
     
-    bam[[1]]$qname <- as.integer(as.factor(bam[[1]]$qname))
-    if(verbose) cat(paste("Replaced qname for chr", as.character(seqnames(which[i])), "\n"))
-    if(keep.pbam) {
-      ans <- vector("list",3); names(ans) <- c("pbam","distr","pc")
-      ans$pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
-      #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
-      #cat("Removing bam object\n")
-      rm(bam); gc()
-      ans$distr <- getDistrs(DB=genomeDB, pbam=ans$pbam, verbose=FALSE)
-      ans$pc <- pathCounts(reads=ans$pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
-    } else {
-      ans <- vector("list",2); names(ans) <- c("distr","pc")
-      pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
-      #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
-      #cat("Removing bam object\n")
-      rm(bam); gc()
-      ans$pc <- pathCounts(reads=pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
-      ans$distr <- getDistrs(DB=genomeDB, pbam=pbam, verbose=FALSE)
-      #rm(pbam); gc()
+      bam[[1]]$qname <- as.integer(as.factor(bam[[1]]$qname))
+      if(verbose) cat(paste("Replaced qname for chr", as.character(seqnames(which[i])), "\n"))
+      if(keep.pbam) {
+        ans <- vector("list",3); names(ans) <- c("pbam","distr","pc")
+        ans$pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
+        #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
+        #cat("Removing bam object\n")
+        rm(bam); gc()
+        ans$distr <- getDistrs(DB=genomeDB, pbam=ans$pbam, verbose=FALSE)
+        ans$pc <- pathCounts(reads=ans$pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
+      } else {
+        ans <- vector("list",2); names(ans) <- c("distr","pc")
+        pbam <- procBam(bam=bam[[1]], stranded=FALSE, seed=as.integer(seed), verbose=FALSE, keep.junx=FALSE, rname=as.character(seqnames(which)[i]))
+        #ans$distr <- getDistrs(DB=genomeDB, bam=bam[[1]], verbose=verbose, readLength=readLength)
+        #cat("Removing bam object\n")
+        rm(bam); gc()
+        ans$pc <- pathCounts(reads=pbam, DB=genomeDB, mc.cores=mc.cores, verbose=FALSE)
+        ans$distr <- getDistrs(DB=genomeDB, pbam=pbam, verbose=FALSE)
+        #rm(pbam); gc()
+      }
+    } else {  #if no reads satisfied the criteria, return integer instead of list
+      ans <- as.integer(-1)
     }
     cat("Finished chromosome ", as.character(seqnames(which[i])), "\n")
     return(ans)
@@ -125,13 +130,18 @@ wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.c
     for(i in 1:length(which)) ans[[i]] <- procChr(i)
   }
   gc()
-   if(keep.pbam) allpbam <- lapply(ans, "[[", "pbam")
-   #browser()
-  allpc <- mergePCWr(ans, genomeDB)
-  alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
-  exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)
-  if(keep.pbam) {
-    ans <- list(pc=allpc, distr=alldistr, exp=exp, pbam=allpbam)
-  } else ans <- list(pc=allpc, distr=alldistr, exp=exp)
+  ans <- ans[sapply(ans,is.list)] #discard chromosomes with no reads
+  if (length(ans)>0) {
+    if(keep.pbam) allpbam <- lapply(ans, "[[", "pbam")
+    allpc <- mergePCWr(ans, genomeDB)
+    alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
+    exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)
+    if(keep.pbam) {
+      ans <- list(pc=allpc, distr=alldistr, exp=exp, pbam=allpbam)
+    } else ans <- list(pc=allpc, distr=alldistr, exp=exp)
+  } else {
+    ans <- list(pc=NA, distr=NA, exp=NA)
+  }
+  return(ans)
 }
 
