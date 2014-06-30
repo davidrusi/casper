@@ -45,6 +45,7 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
   } else if (length(bamFile)>1) {
     x <- vector("list",length(bamFile))
     for (i in 1:length(bamFile)) {
+      cat(paste("\n PROCESSING",bamFile[i],"\n"))
       x[[i]] <- wrapKnownSingle(bamFile=bamFile[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
     }
     ans <- vector("list",3); names(ans) <- c('pc','distr','exp')
