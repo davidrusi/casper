@@ -6,7 +6,11 @@ relexprByGene <- function(x, normbylength=FALSE, genomeDB) {
   #Output
   # ExpressionSet where expression adds up to 1 per gene_id
   if (!is(x,'ExpressionSet')) stop('x must be of class ExpressionSet')
-  if (any((exprs(x)>1) | (exprs(x)<0))) stop('Input x should contain relative expressions. Values outside [0,1] detected')
+  if (any((exprs(x)>1) | (exprs(x)<0))) {
+    cat('Input x contains values outside [0,1]. Assuming that these are log(RPKM)\n')
+    exprsx <- logrpkm2thpi(fData(x), lrpkm=exprs(x), genomeDB=genomeDB)$pi
+    exprs(x) <- as.matrix(exprsx)[featureNames(x),]
+  }
   if (normbylength) { exprs(x) <- exprs(x)/txLength(genomeDB=genomeDB)[featureNames(x)] }
   sumpi <- aggregate(exprs(x), by=list(fData(x)$gene_id), FUN=sum)
   names(sumpi)[1] <- 'gene_id'
