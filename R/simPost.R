@@ -33,7 +33,7 @@ simMAE <- function(nsim, islandid=NULL, nreads, readLength, fragLength, burnin=1
      if(mc.cores.int>1) {
        require(parallel)
        res <- parallel::mclapply(1:nsim, function(i){
-         sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+           sim.pc <-  simPostPred(islandid=islandid, nreads=n[j], pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
@@ -46,7 +46,7 @@ simMAE <- function(nsim, islandid=NULL, nreads, readLength, fragLength, burnin=1
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
        })
      }
-     Un <- do.call(cbind, lapply(res, "[[", "maes"))
+          Un <- do.call(cbind, lapply(res, "[[", "maes"))
      df <- data.frame(MAE= colMeans(Un), Nreads=rep(n[j], nsim), ReadLength=rep(r[j], nsim), frLength=rep(f[j], nsim))
      U <- rbind(U, df)
      if(retTxsError) {
@@ -121,10 +121,17 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     }
     l <- unlist(lapply(ans, function(z) length(z[[4]])))
     def <- which(l!=nsim*ntrans)
+    sel <- sapply(ans, function(z) sum(z[[1]])==0) #genes with a single variant
+    i1v <- islandid[sel]
+    sv <- unlist(lapply(genomeDB@transcripts[as.character(i1v)], names))
     for(i in def) ans[[i]][[4]] <- rep(0, length(ans[[i]][[4]])*nsim)
     ans <- lapply(ans, function(z) { res = matrix(z[[4]],nrow=nsim); res })
     ans <- do.call(cbind,ans)
     colnames(ans) <- trans
+    #sel <- elementLengths(genomeDB@islands[islandid])==1
+    
+    
+    ans[, colnames(ans) %in% sv] <- 1
     ans
 }
 

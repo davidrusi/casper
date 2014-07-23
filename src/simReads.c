@@ -127,6 +127,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
     cnt=0;
     gene = ge[i];
     var = choose_var(genes[gene]);
+    //printf("%d %d\n", var, i);
     st=-1;
     //len = ldv[i];
     len = choose_len(genes[gene].vars[var].len, ldv, ldd, ldlen);
@@ -136,6 +137,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
       if(len==genes[gene].vars[var].len) st=1; 
       else st = choose_st(len, genes[gene].vars[var].len, sdv, sdd, sdlen, genes[gene].vars[var].strand);
       if(st>=0) {        
+	//printf("%d\n", st);
 	if(bam==1){
           starts=build_cigar(genes[gene].vars[var], len, st, rl, cigars, genes[gene].vars[var].strand);
           if(genes[gene].vars[var].strand==1) vansS[i] = starts[0];

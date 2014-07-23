@@ -102,20 +102,10 @@ double cumu_fragsta(double x, double *startcdf, double lencdf)
   double y1= startcdf[idx], x1= (double) idx / (lencdf-1);
   idx++;
   double y2= startcdf[idx], x2= (double) idx / (lencdf-1);
-  //printf("%f %f %f %f %f %f %d\n", x, x1, x2, y1, y2, lencdf, idx); 
+  double caca=y1 + (x-x1) * (y2-y1)/(x2-x1);
+  //printf("%f %f %f %f %f %f %d %f\n", x, x1, x2, y1, y2, lencdf, idx, caca); 
   return y1 + (x-x1) * (y2-y1)/(x2-x1);
 }
-
-
-/*int choose_len(int varlen, double *ldv, double *ldd, int ldlen){
-  double maxp=1;
-  if(varlen<ldd[ldlen-1]) maxp=cumu_fragsta((double)varlen - ldd[0], ldd, ldlen);   //ldv[(int)(varlen-ldd[0])];
-  double ran = ((double)rand() / (double) RAND_MAX)*maxp;
-  int ret = (int) (cumu_fragsta(ran, ldv, ldlen)*(ldd[ldlen-1]-ldd[0])) + ldd[0];
-  if(ret<0) printf("%f %f %f %d %d %f %f %d\n", ran, maxp, cumu_fragsta(ran, ldv, ldlen), ret, varlen, ldd[0], ldd[ldlen-1], ldlen);
-  return(ret);
-  }*/
-
 
 int choose_len(int varlen, double *ldv, double *ldd, int ldlen) {
   int i;

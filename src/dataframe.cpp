@@ -152,7 +152,7 @@ double DataFrame::probability(Variant* v, Fragment* f)
 	if (v->contains(f))
 	  
 	  {
-	    
+	    //printf("Not discarded %d %d %d %d %d %d\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id);	    
 	    int fs = v->indexOf(f->left[0]);
 	    
 	    int fe = v->indexOf(f->left[f->leftc - 1]);
@@ -160,10 +160,11 @@ double DataFrame::probability(Variant* v, Fragment* f)
 	    int bs = v->indexOf(f->right[0]);
 	    
 	    int be = v->indexOf(f->right[f->rightc - 1]);
-	    
+
 	    p = prob(fs, fe, bs, be, v->positions, v->length);
-	    
-	  }
+	    //printf("next %d %d %d %d %d %d %0.12f\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id, p);	    
+	      
+	  } //else printf("discarded %d %d %d %d %d %d\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id);
 
 	return p;
 
@@ -185,8 +186,8 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
     lengthDist= fraglen_dist;
   }
 
-  if ((2*frag_readlen) > ((int) T)) { //if left+right read don't fit in current transcript
-    readLength= ((int) T)/2;
+  if ((frag_readlen) > ((int) T)) { //if left+right read don't fit in current transcript
+    readLength= (int) (T-1);
   } else {
     readLength= frag_readlen;
   }
@@ -195,12 +196,13 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
   double a1 = max(pos[fs], pos[fe] - readLength + 1);
   // upper bound for start of left transcript
   double b1 = min(pos[fs + 1] - 1, pos[fe + 1] - readLength);
-  // lower bound for start of right transcript
+  // lower bound for end of right transcript
   double a2 = max(pos[bs] + readLength, pos[be] + 1);
-  // upper bound for start of right transcript
+  // upper bound for end of right transcript
   double b2 = min(pos[bs + 1] + readLength - 1, pos[be + 1]);
 
   double psum = 0;
+
   for (int i=0; i< lengthDist->size; i++) { //stop before T
 
     double l= lengthDist->value(i);
@@ -208,8 +210,8 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
     double rb = min(min(b1, b2 - l) / T, mb);
     double lb = min((max(a1, a2 - l) - 1.0) / T, mb);
 
-    if (lb >= rb) { continue; }
-
+    if (lb >= rb) { continue; } //if( i== (lengthDist->size -1)) {printf("%f %f %f %f %f %f %f %f %f %d\n", lb, rb, a1, b1, a2, b2, l, T, mb, readLength); }continue; }
+      
     double punc = (fragsta_cumu(rb) - fragsta_cumu(lb)) / fragsta_cumu(mb);
     double factor = 0;
 
@@ -217,6 +219,7 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
       factor = lengthDist->probability(i);
       if ((T < fraglen_maxx) && (T > fraglen_minx)) { factor /= lengthDist->cumulativeProbability((int)(T-fraglen_minx)); }
     }
+    //printf(" %0.12f %0.12f %d\n", factor, psum, i);
 
     psum += punc * factor;
 

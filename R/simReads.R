@@ -152,10 +152,6 @@ casperSim <- function(genomeDB, distrs, nSimReads, pis, islandid, lr_file=NULL, 
   if (verbose) cat("Simulating fragments\n")
 # insideBam deprecated, only in case it is useful in simulations, return from C all information written to the bam file
   insideBam=as.integer(0)
-  #browser()
-
-  #dyn.load("/Volumes/biostats/cstephan/casper_bioC/casper/src/casper.so")
-  #source("/Volumes/biostats/cstephan/casper_bioC/casper/R/simPost.R")
   ans <- .Call("casperSimC", ge, ve, vn, as.integer(vl), en, es, ee, ei, ldv, ldd, sdv, sdd, as.integer(rl), length(ge), as.integer(tx_strand), lr_file, chroms, as.integer(seed), as.integer(bam), as.integer(insideBam), as.integer(verbose))
 
 #pdf("try.dis.pdf");plot(density(ans[[3]]), xlim=c(0,500));lines(density(ans2[[3]]), col=2);lines(density(ans3[[3]]), col=3);dev.off()
