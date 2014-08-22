@@ -15,20 +15,22 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
-simMAE <- function(nsim, islandid=NULL, nreads, readLength, fragLength, burnin=1000, pc, disArray, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE, obs.distr, obs.rl) {
+simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, pc, distr, readLength.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
    n <- nreads; r <- readLength; f <- fragLength
+   distr.pilot <- distr
    if (length(r) != length(n)) stop("length(n) not equal to length(r)")
-   if(is.null(islandid)) islandid <- names(genomeDB@transcripts)
+   if (missing(islandid)) islandid <- names(genomeDB@transcripts)
    U <- NULL
    txe <- list()
    pcs <- list()
+#   disArray <- mapply(function(x, y) casper:::transDistr(distr.pilot, x, y), f, r)
    for (j in 1:length(n)) {
      distrs <- disArray[[j]]
      #nmean <-  mean(rep(as.numeric(names(d@lenDis)), d@lenDis))
      #nmean <- f[j] - nmean
      #names(d@lenDis) <- as.numeric(names(d@lenDis)) + round(nmean)
      if(verbose) cat(paste("Generating posterior samples j =",j, "\n"))
-      pis <- simPost(islandid=islandid, nsim=nsim, distrs=obs.distr, genomeDB=genomeDB, pc=pc, readLength=obs.rl, mc.cores=mc.cores.int*mc.cores, verbose=verbose)
+     pis <- simPost(islandid=islandid, nsim=nsim, distrs=distr.pilot, genomeDB=genomeDB, pc=pc, readLength=readLength.pilot, mc.cores=mc.cores.int*mc.cores, verbose=verbose)
      if(verbose) cat(paste("Running simulations for j =",j, "\n"))
      if(mc.cores.int>1) {
        require(parallel)
