@@ -13,9 +13,9 @@
   The function is a wrapper combining functions simReads and calcExp.
 }
 \usage{simMAE(nsim, islandid, nreads, readLength, fragLength,
-burnin=1000, pc, distr, readLength.pilot, usePilot=FALSE,
-retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE)}
-
+burnin=1000, pc, distr, readLength.pilot=readLength,
+eset.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB,
+mc.cores=1, mc.cores.int=1, verbose=FALSE)}
 \arguments{
   \item{nsim}{Number of RNA-seq datasets to generate (often as little as
     \code{nsim=10} suffice)}
@@ -30,15 +30,21 @@ retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE)}
 \item{fragLength}{Vector indicating the mean insert size in each
   experimental setting}
 \item{burnin}{Number of MCMC burn-in samples (passed on to \code{calcExp})}
-\item{pc}{Observed path counts in pilot data}
+\item{pc}{Observed path counts in pilot data. When not specified, these
+  are simulated from \code{eset.pilot}}
 \item{distr}{Estimated read start and insert size distributions in pilot
   data}
 \item{readLength.pilot}{Read length in pilot data}
+\item{eset.pilot}{ExpressionSet with pilot data expression in
+  log2-RPKM, used to simulate \code{pc} when not specified by the
+  user. See details}
 \item{usePilot}{By default \code{casper} assumes that the pilot data is from a related experiment rather than the current tissue of interest (\code{usePilot=FALSE}). Hence, the pilot data is used to simulate new RNA-seq data but not to estimate its expression. However, in some cases we may be interested in re-sequencing the pilot sample at deeper length, in which case one would want to combine the pilot data with the new data to obtain more precise estimates. This can be achieved by setting \code{usePilot=TRUE}}
 \item{retTxsError}{If \code{retTxsError=TRUE}, \code{simMAE} returns posterior expected MAE
-for each individual isoform.
+for each individual isoform. This option is not available when
+\code{eset.pilot} is specified instead of \code{pc}.
 Else the output is a \code{data.frame} with overall MAE across all isoforms}
-\item{genomeDB}{\code{annotatedGenome} object, as returned by \code{procGenome}}
+\item{genomeDB}{\code{annotatedGenome} object, as returned by
+  \code{procGenome}}
 \item{mc.cores}{Number of cores to use in the expression estimation step, passed on to \code{calcExp}}
 \item{mc.cores.int}{Number of cores to simulate RNA-seq datasets in parallel}
 \item{verbose}{Set \code{verbose=TRUE} to print progress information}
@@ -49,9 +55,30 @@ to simulate what future data may look like for the current experiment of
 interest.
 The recommened way to do this is to download a .bam file from such a
 related experiment and processing it in casper with function
-\code{wrapKnown}.
+\code{wrapKnown}, as then both gene and isoform expression can be
+estimated accurately.
 The object output by \code{wrapKnown} is a list with elements
-named \code{'pc'}, \code{'distr'} which can be given as input to \code{simMAE}.
+named \code{'pc'}, \code{'distr'} which can be given as input to
+\code{simMAE}.
+
+As an alternative to specifying \code{pc},
+\code{simMAE} allows setting \code{eset.pilot} as
+pilot data. Gene and isoform expression are then simulated as follows:
+
+1. The number of reads per gene is generated from a Multinomial
+distribution with success probabilities proportional to
+\code{2^exprs{eset.pilot}}.
+
+2. Relative isoform expression within each gene are generated
+from a symmetric Dirichlet distribution with parameter 1/Ig, where
+Ig is the number of isoforms in gene g.
+
+We emphasize that relative isoform expressions are not trained from the
+pilot data, and that while the distribution of gene expression levels
+resembles that in \code{eset.pilot}, no attempt is made to match gene
+identifiers and hence the results for individual genes should not be
+trusted 
+(hence this option is only available when \code{retTxsError==FALSE}.
 }
 \value{
 If \code{retTxsError==TRUE}, \code{simMAE} returns posterior expected MAE

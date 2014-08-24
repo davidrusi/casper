@@ -15,15 +15,35 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
-simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, pc, distr, readLength.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
+simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, pc, distr, readLength.pilot=readLength, eset.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
    n <- nreads; r <- readLength; f <- fragLength
    distr.pilot <- distr
+   if (length(r)==1) r <- rep(r,length(n))
+   if (length(f)==1) f <- rep(f,length(n))
    if (length(r) != length(n)) stop("length(n) not equal to length(r)")
+   if (length(f) != length(n)) stop("length(f) not equal to length(r)")
    if (missing(islandid)) islandid <- names(genomeDB@transcripts)
    U <- NULL
    txe <- list()
    pcs <- list()
+   disArray <- vector("list", length(f))
+   for (i in 1:length(disArray)) disArray[[i]] <- setfragLength(distr, fragLength=f[i])
 #   disArray <- mapply(function(x, y) casper:::transDistr(distr.pilot, x, y), f, r)
+   if (missing(pc)) {
+     if (retTxsError) stop("Option retTxsError==TRUE is only available when argument pc is specified")
+     if (verbose) cat("Simulating pilot data...\n")
+     #Draw gene expression from eset.pilot
+     th <- exprs(eset.pilot)[sample(1:nrow(eset.pilot),length(islandid),replace=TRUE),sample(1:ncol(eset.pilot),1)]
+     th <- 2^(th-max(th)); th <- th/sum(th)
+     nSimReads <- rmultinom(n=1, size=10^7, prob=th)[,1]
+     names(nSimReads) <- islandid
+     #Draw relative isoform expression from symmetric Dir(alpha) prior, alpha=1/number txs
+     simpisDirichlet <- function(z) { if (length(z)==1) { z <- 1 } else { z <- rgamma(length(z), shape=1/length(z)); z <- z/sum(z) }; return(z) }
+     txs <- unlist(lapply(genomeDB@transcripts[islandid], names))
+     pis <- unlist(lapply(genomeDB@transcripts[islandid], simpisDirichlet))
+     names(pis) <- txs
+     pc <- simReads(islandid,nSimReads=nSimReads,pis=pis,rl=readLength.pilot,distrs=distr.pilot,genomeDB=genomeDB,writeBam=FALSE,verbose=FALSE,mc.cores=mc.cores,seed=1)
+   }
    for (j in 1:length(n)) {
      distrs <- disArray[[j]]
      #nmean <-  mean(rep(as.numeric(names(d@lenDis)), d@lenDis))
