@@ -53,7 +53,7 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x
   #}
   if (missing(distrs)) {
     cat("distrs not specified. Using default\n")
-    data(distrsGSE37704)
+    data("distrsGSE37704")
     distrs <- distrsGSE37704
   }
   distrs <- setfragLength(distrs, fragLength=fragLength)

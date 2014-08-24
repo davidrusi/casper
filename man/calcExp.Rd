@@ -85,6 +85,7 @@ esetall <- mergeExp(eset,eset2)
 
 #After merge samples are correctly matched
 head(exprs(esetall))
+head(fData(esetall))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
