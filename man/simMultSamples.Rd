@@ -94,4 +94,8 @@ groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
 \author{
 Victor Pena, David Rossell
 }
+\references{
+  Stephan-Otto Attolini C., Pena V., Rossell D. Bayesian designs for
+  personalized alternative splicing RNA-seq studies (2014)
+}
 \keyword{ datagen }

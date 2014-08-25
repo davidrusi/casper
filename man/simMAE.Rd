@@ -23,8 +23,10 @@ mc.cores=1, mc.cores.int=1, verbose=FALSE)}
   simulations only for gene islands with identifiers in
   \code{islandid}. When not specified genome-wide simulations are
   performed.}
-\item{nreads}{Vector indicating the number of read pairs for each
-  experimental setting}
+\item{nreads}{Vector indicating the target number of read pairs for each
+  experimental setting. The actual number of reads differs from
+  \code{nreads} to account for non-mappability and random read yield
+  (see details)}
 \item{readLength}{Vector indicating the read length in each experimental
   setting}
 \item{fragLength}{Vector indicating the mean insert size in each
@@ -50,6 +52,26 @@ Else the output is a \code{data.frame} with overall MAE across all isoforms}
 \item{verbose}{Set \code{verbose=TRUE} to print progress information}
 }
 \details{
+  \code{simMAE} simulates \code{nsim} datasets under each experimental
+  setting defined by \code{nreads}, \code{readLength},
+  \code{fragLength}. For each dataset the following steps are performed:
+
+  1. The number of reads is nreads * readYield * pmapped, where
+  readYield= runif(1,0.8,1.2) accounts for deviations in read yield and
+  pmapped= runif(1,0.6,0.9)*pmappable is the proportion of mapped reads
+  (60\%-90\% of the mappable reads according to the piecewise-linear
+  power law of Li et al (2014))
+
+  2. True expression levels \code{pi} are generated from their posterior
+  distribution given the pilot data.
+
+  3. Conditional on \code{pi}, RNA-seq data are generated and expression
+  estimates \code{pihat} are obtained using \code{calcExp}
+
+  4. The mean absolute estimation error \code{sum(abs(pihat-pi))} across
+  all isoforms is computed
+
+  
 Ideally \code{simMAE} should use pilot data from a relevant related experiment
 to simulate what future data may look like for the current experiment of
 interest.
@@ -86,6 +108,15 @@ If \code{retTxsError==TRUE}, \code{simMAE} returns posterior expected MAE
 Else the output is a \code{data.frame} with overall MAE across all isoforms  
 }
 \seealso{wrapKnown,simReads,calcExp}
+\references{
+  Stephan-Otto Attolini C., Pena V., Rossell D. Bayesian designs for
+  personalized alternative splicing RNA-seq studies (2014)
+
+  Li, W. and Freudenberg, J. and Miramontes, P. Diminishing return
+  for increased Mappability with longer sequencing reads: implications of
+  the k-mer distributions in the human genome. BMC Bioinformatics, 15,
+  2 (2014)
+}
 \examples{
 ## maybe str(simMAE) ; plot(simMAE) ...
 }
