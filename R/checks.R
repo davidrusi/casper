@@ -1,4 +1,5 @@
 simMAEcheck <- function(nsim, islandid, burnin=1000, pc, distr, readLength.pilot=readLength, eset.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
+  if (missing(islandid)) islandid <- names(genomeDB@transcripts)
   distr.pilot <- distr
   reads = getNreads(pc)
   n = sum(reads[islandid])
