@@ -87,13 +87,11 @@ simMAEcheck <- function(nsim, islandid, burnin=1000, pc, distr, readLength.pilot
   if(retTxsError){
     names(txe) <- paste(n, r, f, sep='-')
     names(pcs) <- paste(n, r, f, sep='-')
-    return(list(txe=txe, U=U, pcs=pcs, pis=pis))
+    ans <- list(txe=txe, U=U, pcs=pcs, pis=pis)
+  } else {
+    ## formatting output for model check
+    expected = round(length(islandid)*(nsim-1)/(nsim+1))
+    ans <- list(U=U, mod_check=data.frame(Expected=expected, Observed=s1))
   }
-  
-  
-  ## formatting output for model check ##
-  expected = round(length(islandid)*(nsim-1)/(nsim+1))
-  return(list(U=U, mod_check=data.frame(Expected=expected, Observed=s1)))
-  
-  return(U)
+  return(ans)
 }

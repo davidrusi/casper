@@ -1,5 +1,6 @@
 \name{simMultSamples}
 \alias{simMultSamples}
+\alias{casperDesign}
 \title{
   Simulate paired end reads for multiple future samples
   based on pilot data, and obtain their expression estimates via casper
@@ -93,6 +94,9 @@ groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
 }
 \author{
 Victor Pena, David Rossell
+}
+\examples{
+#Run casperDesign() to see full manual with examples
 }
 \references{
   Stephan-Otto Attolini C., Pena V., Rossell D. Bayesian designs for

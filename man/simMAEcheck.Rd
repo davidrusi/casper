@@ -62,7 +62,7 @@ distribution) and the actual number of genes for which the condition is satisfie
   2 (2014)
 }
 \examples{
-## maybe str(simMAE) ; plot(simMAE) ...
+#Run casperDesign() to see full manual with examples
 }
 \keyword{ datagen }
 
