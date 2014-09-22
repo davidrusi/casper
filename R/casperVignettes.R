@@ -3,8 +3,9 @@ casperDesign <- function(view=TRUE) {
   if (view) {
     if (.Platform$OS.type == "windows") {
        shell.exec(f)
-   } else {
+     } else {
        system(paste(Sys.getenv("R_PDFVIEWER"),f,"&"))
+     }
    }
    return(f)
 }
