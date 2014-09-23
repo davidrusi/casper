@@ -277,7 +277,7 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
 }
 
 
-setMethod("procGenome", signature(genDB="TranscriptDb"), function(genDB, genome, mc.cores=1) {
+setMethod("procGenome", signature(genDB="TxDb"), function(genDB, genome, mc.cores=1) {
 #  genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename="refGene")
   cat("Processing Exons and Transcrips\n")
   txs <- GenomicFeatures::transcripts(genDB,columns=c("tx_id","tx_name","gene_id","exon_id"))
