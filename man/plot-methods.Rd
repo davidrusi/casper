@@ -1,9 +1,7 @@
-\name{plot}
-\alias{plot}
-\alias{plot,readDistrs,ANY-method}
-\alias{lines}
-\alias{lines,readDistrs-method}
+\name{plot-methods}
 \docType{methods}
+\alias{plot,readDistrs,ANY-method}
+\alias{lines,readDistrs-method}
 \title{
 Plot estimated read start and fragment length distributions.
 }
@@ -17,11 +15,6 @@ Plot estimated read start and fragment length distributions.
   distributed (note: casper does NOT assume reads to be uniformly
   distributed, so a lack of uniformity is not a problem per se).
 }
-\usage{
-plot(x, y, ...)
-
-lines(x, ...)
-}
 \arguments{
  \item{x}{Object of type \code{readDistrs}, as returned by \code{getDistrs}.}
  \item{y}{Set to \code{"fragLength"} to plot the estimated insert size
@@ -30,7 +23,14 @@ lines(x, ...)
  \item{...}{Further arguments to be passed on to plot.}
 }
 \section{Methods}{
-\describe{
+  \describe{
+
+  \item{\code{signature(x = "readDistrs", y = "ANY")}}{
+    \code{x} is an object of type \code{readDistrs}, as returned by
+    \code{getDistrs}. The plot function allows to visualize the fragment
+    length and read start distributions.
+  }
+
   \item{\code{signature(x = "readDistrs")}}{
     \code{x} is an object of type \code{readDistrs}, as returned by
     \code{getDistrs}. The plot function allows to visualize the fragment

@@ -53,6 +53,7 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x
   #}
   if (missing(distrs)) {
     cat("distrs not specified. Using default\n")
+    distrsGSE37704 <- NULL
     data("distrsGSE37704")
     distrs <- distrsGSE37704
   }
