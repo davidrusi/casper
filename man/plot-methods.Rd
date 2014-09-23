@@ -1,7 +1,5 @@
 \name{plot}
-\alias{plot}
 \alias{plot,readDistrs,ANY-method}
-\alias{lines}
 \alias{lines,readDistrs-method}
 \docType{methods}
 \title{

@@ -1,8 +1,8 @@
 \name{procGenome}
 \alias{procGenome}
-\alias{procGenome,TranscriptDb-method}
+\alias{procGenome,TxDb-method}
 \alias{procGenome,GRanges-method}
-\alias{procGenome,TranscriptDb,ANY-method}
+\alias{procGenome,TxDb,ANY-method}
 \alias{procGenome,GRanges,ANY-method}
 \alias{createDenovoGenome}
 \title{
@@ -10,7 +10,7 @@
 }
 \description{
   \code{procGenome} processes annotations for a given transcriptome,
-  either from a \code{TranscriptDb} object created by \code{GenomicFeatures} package
+  either from a \code{TxDb} object created by \code{GenomicFeatures} package
   (e.g. from UCSC) or from a user-provided \code{GRanges} object (e.g. by
   importing a gtf file output by Cufflinks RABT module with
   \code{import} from \code{rtracklayer} package).
@@ -75,7 +75,7 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 
   If interested in quantifying expression for known transcripts
   only, one would typically use \code{procGenome} with a
-  \code{TranscriptDb} from the usual Bioconductor annotations.
+  \code{TxDb} from the usual Bioconductor annotations.
   It is also possible to provide \code{procGenome} with any desired set
   of transcripts, so that one can use other genome annotations or even
   de novo transcripts found by some third-party software. These
