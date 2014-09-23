@@ -76,7 +76,7 @@ setMethod("show", signature(object="readDistrs"), function(object) {
 }
 )
 
-setMethod("plot", signature(x="readDistrs"), function(x, y, ...) {
+setMethod("plot", signature(x="readDistrs",y="ANY"), function(x, y, ...) {
   if (missing(y)) stop("Specify type of plot: 'fragLength' or 'readSt'")
   args <- list(...)
   if ('col' %in% names(args)) col <- args$col else col <- 1
