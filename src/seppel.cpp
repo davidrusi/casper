@@ -373,17 +373,26 @@ double Seppel::calcIntegral(Model* model, bool knownVarsCheck)
 
 void Seppel::exploreExactFast(set<Variant*, VariantCmp> *initvaris) {
 
+  int maxdrops, k, nmodels;
+
   frame->allVariants(varis, initvaris);
 
   Model* m= new Model(varis);
 
   modelsSet->insert(m);
 
-  int maxdropit=1;
+  //int maxdropit=1;
+  //if (m->items.size() > 1) maxdropit = (int) ceil(log2((double) m->items.size()) + 1);
 
-  if (m->items.size() > 1) maxdropit = (int) ceil(log2((double) m->items.size()) + 1);
+  //Choose maxdrops such that max models <10,000,000, i.e. sum_{k= nvar-maxdrops}^{nvar} lchoose(nvar, k) < 10,000,000
+  nmodels= 0; k= (varis->size())+1;
+  while ((k>=1) && (nmodels < 10000000)) {
+    k--;
+    nmodels += choose((double) varis->size(), (double) k);
+  }
+  maxdrops= (varis->size() - k);
 
-  exploreSubmodels(m, maxdropit); //exhaustively consider submodels of a given model (up to a limit given by maxdropit)
+  exploreSubmodels(m, maxdrops); //exhaustively consider submodels of m by dropping up to maxdrops variables
 
 }
 
@@ -610,7 +619,67 @@ void Seppel::exploreSmart(Model* startmodel, int runs)
 }
 
 
-void Seppel::exploreSubmodels(Model* model, int maxdropit, int maxmodels) {
+void Seppel::exploreSubmodels(Model* model, int maxdrops) {
+ //Exhaustively consider all submodels of a given model obtained by dropping up to maxdrops variants from the model
+ //Uses a recursive scheme so that for any submodel with 0 prob, no further submodels are considered.
+  double nlike;
+  vector<Variant*> dropvars (model->items);
+  vector<Variant*> keepvars;
+
+  modelsSet->insert(model);
+  nlike= calcIntegral(model);
+  if (nlike != 1) {
+    exploreSubmodels(model, &keepvars, &dropvars, false, 0, maxdrops);
+  }
+
+}
+
+void Seppel::exploreSubmodels(Model* model, vector<Variant*>* keepvars, vector<Variant*>* dropvars, bool eval_pp, int dropcount, int maxdrops) {
+  //- model: current model, used to speed up calculations by giving starting value for posterior mode of submodels
+  //- keepvars: these variants are always kept in the model
+  //- dropvars: variants to be recursively dropped from the model
+  //- eval_pp: if set to true the posterior probability of the input model is evaluated
+  //- dropcount: number of variants that have been dropped in previous recursive calls
+  //- maxdrops: when dropcount >= maxdrops the algorithm stops
+  bool stopnow= false;
+
+  if (eval_pp) {
+    double pp;
+    Model* newmodel;
+    //Create model with (keepvars,dropvars)
+    vector<Variant*> newitems;
+    newitems.reserve(keepvars->size() + dropvars->size());
+    newitems.insert(newitems.end(), keepvars->begin(), keepvars->end());
+    newitems.insert(newitems.end(), dropvars->begin(), dropvars->end());
+    newmodel= new Model(&newitems);
+    modelsSet->insert(newmodel);
+    pp= calcIntegral(newmodel, model, false);
+    model= newmodel;
+    if (pp==1) { stopnow= true; }
+  }
+
+  if ((dropvars->size() == 0) || (dropvars->size()==1 && keepvars->size()==0) || (dropcount >= maxdrops)) {
+    stopnow= true;
+  }
+
+  if (!stopnow) {
+    //dnew= dropvars[-1]; knew= c(keepvars,dropvars[1])
+    vector<Variant*> dnew, knew;
+    dnew.reserve(dropvars->size() - 1);
+    dnew.insert(dnew.end(), (dropvars->begin())+1, dropvars->end());
+    knew.reserve(keepvars->size()+1);
+    knew.insert(knew.end(), keepvars->begin(), keepvars->end());
+    knew.insert(knew.end(), dropvars->begin(), dropvars->begin()+1);
+    exploreSubmodels(model, keepvars, &dnew, true, dropcount+1, maxdrops); //models without Variant 1
+    exploreSubmodels(model, &knew, &dnew, false, dropcount, maxdrops);  //models with Variant 1
+  }
+
+}
+
+/*
+OLD VERSION OF exploreSubmodels. INEFFICIENT AS IT REQUIRED ENUMERATING ONE SAME MODEL MANY TIMES
+
+void Seppel::exploreSubmodelsOld(Model* model, int maxdropit, int maxmodels) {
  //Exhaustively consider all submodels of a given model, up to a certain depth controlled by maxdropit.
  //Uses an iterative scheme so that for any submodel with 0 prob, no further submodels are considered.
  //Input
@@ -692,6 +761,7 @@ void Seppel::exploreSubmodels(Model* model, int maxdropit, int maxmodels) {
 
   delete dropvars;
 }
+*/
 
 
 map<Model*, double*, ModelCmp> Seppel::resultModes()
