@@ -105,7 +105,7 @@ modelPrior <- function(genomeDB, maxExons=40, smooth=TRUE, verbose=TRUE) {
 
   if (verbose) cat("Estimating parameters... ")
   nvarPrior <- nbVariantsDistrib(txsPerGene,maxExons=maxExons) #zero-truncated Negative Binomial fit
-  nexonPrior <- nbExonsDistrib(exonsPerGene,maxExons=maxExons) #Beta-Binomial fit
+  nexonPrior <- nbExonsDistrib(exonsPerGene,maxExons=maxExons, smooth=smooth) #Beta-Binomial fit
   if (verbose) cat("Done.\n")
   
   new("modelPriorAS",nvarPrior=nvarPrior,nexonPrior=nexonPrior)
@@ -169,7 +169,8 @@ nbExonsDistrib <- function(tab,maxExons=40,smooth=TRUE) {
     m <- bbpar[2:nrow(tab),1]/rowSums(bbpar)[2:nrow(tab)]
     m <- data.frame(logitm= log(m/(1-m)), E= as.numeric(rownames(bbpar)[2:nrow(tab)]))
     fit <- try(gam(logitm ~ s(E, sp= -1), data=m), silent=TRUE)
-    if (class(fit)!="try-error") {
+    #if (class(fit)!="try-error") {
+    if (!("try-error" %in% class(fit))) {
       msmooth <- 1/(1+exp(-predict(fit)))
       b <- data.frame(b=bbpar[2:nrow(tab),2], E= as.numeric(rownames(bbpar)[2:nrow(tab)]))
       fit <- gam(b ~ s(E, sp= -1), data=b, family=gaussian(link="log"))

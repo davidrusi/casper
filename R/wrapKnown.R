@@ -40,6 +40,12 @@ mergeDisWr <- function(distrs, pcs){
 }
 
 wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) {
+  
+  if(!exists(as.character(substitute(genomeDB)))) stop("No genomeDB found")
+  if (missing(readLength)) stop("readLength must be specified")
+  if (genomeDB@denovo) stop("genomeDB must be a known genome")
+  if(!(citype %in% c('none', 'asymp', 'exact'))) stop("citype should take the value 'none', 'asymp', or 'exact'") 
+  
   if (length(bamFile)==1) {
     ans <- wrapKnownSingle(bamFile=bamFile,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
   } else if (length(bamFile)>1) {
@@ -61,7 +67,7 @@ wrapKnown <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1
 
 wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) {
 
-  if(!exists(as.character(substitute(genomeDB)))) stop("No genomeDB found")
+
   what <- c('qname','strand','pos','mpos','cigar')
   #what <- scanBamWhat(); what <- what[!(what %in% c('seq','qual','qwidth','flag','mapq','mrnm','mpos','isize'))]
   if(!keep.multihits) what <- c(what, 'mapq')
