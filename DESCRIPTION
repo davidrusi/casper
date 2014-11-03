@@ -21,6 +21,6 @@ Collate: GenericDefs.R ClassDefinitions.R asymmetryCheck.R calcDenovo.R calcExp.
         denovoExpr.R makeTranscriptDbFromGFF.R mergeBatches.R mergeExp.R modelPrior.R
         pathCounts.R probNonEquiv.R procBam.R procGenome.R qqnormGenomeWide.R
         relexprByGene.R rmShortInserts.R simMultSamples.R simPost.R simReads.R
-        splitGenomeByLength.R truncnorm.R wrapKnown.R checks.R
+        splitGenomeByLength.R truncnorm.R wrapKnown.R checks.R wrapDenovo.R
 biocViews: GeneExpression, DifferentialExpression, Transcription,
         RNASeq, Sequencing
