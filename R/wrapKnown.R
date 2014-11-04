@@ -11,6 +11,7 @@ mergePCWr <- function(x, genomeDB){
 mergeDisWr <- function(distrs, pcs){
   lenDis <- lapply(distrs, function(x) x@lenDis)
   lenDis <- lenDis[unlist(lapply(lenDis, function(x) !any(names(x)==0)))]
+  lenDis <- lenDis[sapply(lenDis,sum)>0]
   if(length(lenDis)>1){
     minlen <- min(unlist(lapply(lenDis, function(x) min(as.numeric(names(x))))))
     maxlen <- max(unlist(lapply(lenDis, function(x) max(as.numeric(names(x))))))
@@ -26,11 +27,7 @@ mergeDisWr <- function(distrs, pcs){
   distr <- new('readDistrs', lenDis=tmp)
   th <- seq(0,1,length=10000)
   if (missing(pcs)) w <- sapply(distrs, function(z) sum(z@lenDis)) else w <- sapply(1:length(distrs), function(x) sum(getNreads(pcs[[x]])))
-  tmp <- lapply(1:length(distrs), function(x){
-    all <- distrs[[x]]@stDis(th)*w[x]
-    #all <- distrs[[x]]@stDis(th)*sum(getNreads(pcs[[x]]))
-  }
-                )
+  tmp <- lapply(1:length(distrs), function(x) { all <- distrs[[x]]@stDis(th)*w[x] } )
   tmp <- do.call(cbind, tmp)
   tmp <- rowMeans(tmp)
   tmp <- tmp/tmp[length(tmp)]
@@ -73,16 +70,16 @@ wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.c
   if(!keep.multihits) what <- c(what, 'mapq')
   t <- scanBamHeader(bamFile)[[1]][["targets"]]
   which <- GRanges(names(t), IRanges(1, unname(t)))
-   if(!is.null(chroms)) {
-     which <- which[as.character(seqnames(which)) %in% chroms]
-   } else {
-     which <- which[!grepl("_",as.character(seqnames(which)))]
-     which <- which[!as.character(seqnames(which))=='chrM']
-     sel <- as.vector(seqnames(which)) %in% names(seqlengths(genomeDB@islands))
-     if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
-     which <- which[sel,]
-   }
-   if(sum(grepl("_", as.character(seqnames(which))))>0 | sum(grepl("M", as.character(seqnames(which))))>0) cat("Warning, non standard chromosomes included in bam (it is not recommended to include mitochondrial chromosome nor random or unstable chromosomes)") 
+  if(!is.null(chroms)) {
+    which <- which[as.character(seqnames(which)) %in% chroms]
+  } else {
+    which <- which[!grepl("_",as.character(seqnames(which)))]
+    which <- which[!as.character(seqnames(which))=='chrM']
+  }
+  sel <- as.vector(seqnames(which)) %in% names(seqlengths(genomeDB@islands))
+  if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
+  which <- which[sel,]
+  if(sum(grepl("_", as.character(seqnames(which))))>0 | sum(grepl("M", as.character(seqnames(which))))>0) cat("Warning, non standard chromosomes included in bam (it is not recommended to include mitochondrial chromosome nor random or unstable chromosomes)") 
   flag <- scanBamFlag(isPaired=TRUE,hasUnmappedMate=FALSE)
 
  
