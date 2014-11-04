@@ -76,7 +76,8 @@ wrapKnownSingle <- function(bamFile, verbose=FALSE, seed=1, mc.cores.int=1, mc.c
     which <- which[!grepl("_",as.character(seqnames(which)))]
     which <- which[!as.character(seqnames(which))=='chrM']
   }
-  sel <- as.vector(seqnames(which)) %in% names(seqlengths(genomeDB@islands))
+  sel <- as.vector(seqnames(which)) %in% unique(genomeDB@exon2island$seqnames)
+  if (all(!sel)) stop("Did not find any of the specified chromosomes")
   if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
   which <- which[sel,]
   if(sum(grepl("_", as.character(seqnames(which))))>0 | sum(grepl("M", as.character(seqnames(which))))>0) cat("Warning, non standard chromosomes included in bam (it is not recommended to include mitochondrial chromosome nor random or unstable chromosomes)") 
