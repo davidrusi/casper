@@ -146,8 +146,8 @@ nbExonsDistrib <- function(tab,maxExons=40,smooth=TRUE) {
     ydf <- data.frame(succ=ydf,fail=as.numeric(n[i])-ydf-1)
     warn <- getOption("warn")
     options(warn= -1)
-    fit <- try(vglm(cbind(succ, fail) ~ 1, betabinomial.ab, data=ydf, trace=FALSE), silent=TRUE)
-    #fit <- vglm(cbind(succ,fail) ~ 1, family=betabinomial, data=y, trace=FALSE)
+    #fit <- try(vglm(cbind(succ, fail) ~ 1, family=betabinomial.ab, data=ydf, trace=FALSE), silent=TRUE)
+    fit <- try(vglm(cbind(succ, fail) ~ 1, family=betabinomial, data=ydf, trace=FALSE), silent=TRUE)
     options(warn=warn)
 
     if ('try-error' %in% class(fit) | as.numeric(n[i])<=3) {
