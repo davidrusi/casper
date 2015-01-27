@@ -77,11 +77,9 @@ setMethod("plotPriorAS",signature(object='modelPriorAS'), function(object,type='
 modelPrior <- function(genomeDB, maxExons=40, smooth=TRUE, verbose=TRUE) {
   if (class(genomeDB) != "annotatedGenome") stop("genomeDB must be of class 'annotatedGenome'")
   if(genomeDB@denovo) stop("genomeDB must be a known (not denovo) genome")
-  
   if (verbose) cat("Counting number of annotated transcripts per gene... ")
   # - Compute table txsvPerGene, which counts the nb of annotated transcripts per gene with 1,2... exons.
   #   rows correspond to nb of exons in the gene, columns to nb of annotated transcripts
-
   aliases <- genomeDB@aliases
   txs <- unlist(genomeDB@transcripts, recursive=F)
   names(txs) <- sub("[0-9]+\\.", "", names(txs))
@@ -89,25 +87,28 @@ modelPrior <- function(genomeDB, maxExons=40, smooth=TRUE, verbose=TRUE) {
   txpergene <- table(aliases$gene_id)
   nexpergene <- tapply(aliases$len, aliases$gene_id, function(x) length(unique(unlist(x))))
   txsPerGene <- table(nexpergene[names(txpergene)], txpergene)
-
   if (verbose) cat("Done.\n")
-
   if (verbose) cat("Counting number of exons contained in each variant... ")  
   # - Compute table exonsPerGene, which counts the nb of exons contained in a variant for genes with 1,2,... exons.
   #   rows correspond to nb of exons in the gene, columns to nb of exons
-
   expertx <- unlist(lapply(aliases$len, length))
   expergeneTx <- nexpergene[aliases$gene_id]
   names(expergeneTx) <- aliases$tx_name
   exonsPerGene <- table(expergeneTx[names(expertx)], expertx)
-
   if (verbose) cat("Done.\n")
-
   if (verbose) cat("Estimating parameters... ")
-  nvarPrior <- nbVariantsDistrib(txsPerGene,maxExons=maxExons) #zero-truncated Negative Binomial fit
+  #Add pseudo-count of 1
+  tab <- matrix(0,nrow=nrow(txsPerGene),ncol=max(as.numeric(colnames(txsPerGene))))
+  rownames(tab) <- rownames(txsPerGene); colnames(tab) <- 1:ncol(tab)
+  tab[,colnames(txsPerGene)] <- tab[,colnames(txsPerGene)] + txsPerGene
+  E <- as.numeric(rownames(tab)); ntx <- as.numeric(colnames(tab))
+  for (i in 1:nrow(tab)) {
+    sel <- (log2(ntx) < E[i])
+    tab[i,sel] <- tab[i,sel]+1
+  }
+  nvarPrior <- nbVariantsDistrib(tab,maxExons=maxExons) #zero-truncated Negative Binomial fit
   nexonPrior <- nbExonsDistrib(exonsPerGene,maxExons=maxExons, smooth=smooth) #Beta-Binomial fit
   if (verbose) cat("Done.\n")
-  
   new("modelPriorAS",nvarPrior=nvarPrior,nexonPrior=nexonPrior)
 }
 
@@ -162,6 +163,8 @@ nbExonsDistrib <- function(tab,maxExons=40,smooth=TRUE) {
       bbpar[n[i],] <- Coef(fit)
     }
   }
+  sel <- rowSums(bbpar<0.1,na.rm=TRUE)>0
+  bbpar[sel,] <- bbpar[sel,] + 0.1 #avoid MLE at boundary of space
 
   #smooth parameter estimates for genes with >=10 exons
   if (smooth==TRUE) {

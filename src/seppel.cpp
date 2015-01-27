@@ -981,7 +981,7 @@ double Seppel::calculatePrior(Model* model) {
 
       //Prior on nb exons per variant
 
-      if (nbVars < pow(2,E) -1) {  //when all variants were selected, prob of selected variants is 1 so this computation is skipped
+      if (nbVars < pow(2,E) -1) {  //when all variants were selected, prob of selected exons is 1 so this computation is skipped
 
         vector<int> Sk (E,0);
 
@@ -1002,6 +1002,7 @@ double Seppel::calculatePrior(Model* model) {
         for (int i=0; i< E; i++) {
 
           ans += Sk[i] * log(priorpNbExons[i]) + Fk[i] * log(1-priorpNbExons[i]);
+          //printf("i=%d, %f, %f\n", i, Sk[i] * log(priorpNbExons[i]), Fk[i] * log(1-priorpNbExons[i]));
 
         }
 

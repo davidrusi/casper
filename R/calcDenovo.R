@@ -142,6 +142,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
      niter <- as.list(as.integer(rep(niter[1],length(islandid))))
   }
   names(niter) <- islandid
+  if (length(genomeDB@knownVars)>0) warning('knownVars in genomeDB are not used by calcDenovo')
   
   #Define basic function
   f <- function(z) {
@@ -149,7 +150,8 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
     exons <- exons[z]
     exonwidth <- exonwidth[z]
     transcripts <- genomeDB@transcripts[z]
-    if (length(genomeDB@knownVars)>0) { knownVars <- genomeDB@knownVars[z] } else { knownVars <- lapply(1:length(z), function(z) character(0)) }
+    knownVars <- lapply(1:length(z), function(z) character(0))
+#    if (length(genomeDB@knownVars)>0) { knownVars <- genomeDB@knownVars[z] } else { knownVars <- lapply(1:length(z), function(z) character(0)) }
     tmp <- strand[z]
     strand <- vector(mode='integer', length=length(tmp))
     sel <- tmp=='+'
