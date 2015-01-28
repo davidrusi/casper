@@ -120,7 +120,12 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
   method <- as.integer(switch(method, auto=0, allmodels=1, rwmcmc=2, priormcmc=3, submodels=4))
   verbose <- as.integer(verbose)
   exactMarginal <- as.integer(exactMarginal)
-  if (missing(islandid) || is.null(islandid)) {
+  if (missing(islandid)) {
+    islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
+    islandid <- islandid[islandid %in% names(pc@counts[[1]])]
+  }
+  else if(is.null(islandid))
+  {
     islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
     islandid <- islandid[islandid %in% names(pc@counts[[1]])]
   }
@@ -136,7 +141,7 @@ calcDenovo <- function(distrs, genomeDB, pc, readLength, islandid, priorq=3, mpr
   strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
   names(strand) <- names(genomeDB@islands)
   
-  if (missing(niter) || is.null(niter)) {
+  if (missing(niter) | is.null(niter)) {
      niter <- as.list(as.integer(ifelse(sapply(exons,length)>20,10^3,10^4)))
   } else {
      niter <- as.list(as.integer(rep(niter[1],length(islandid))))

@@ -110,7 +110,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
           cat("Merging distributions and pathcounts\n")
       
         mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, genomeDB_known, mc.cores)    
-        mergedDistr_allSamples <- suppressWarnings(casper:::mergeDisWr(distr_all_samples, pcs_all_samples))  
+        mergedDistr_allSamples <- suppressWarnings(mergeDisWr(distr_all_samples, pcs_all_samples))  
     }
     else
     {
@@ -155,7 +155,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
      }
      else
      {
-         out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
+         out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams=pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
                                                               mc.cores=mc.cores, genomeDB=genomeDB_denovo,readLength=readLength, rpkm=rpkm, 
                                                               priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, 
                                                               burnin=burnin, keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms="chr13")  
@@ -187,13 +187,13 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
 mergePCs <- function(pcs, genomeDB, mc.cores=1)
 {
   allisl <- unique(unlist(lapply(pcs, function(x) names(x@counts[[1]]))))
-  alltxs <- mclapply(pcs, function(x) unlist(unname(x@counts[[1]])), mc.cores=mc.cores)
+  alltxs <- parallel::mclapply(pcs, function(x) unlist(unname(x@counts[[1]])), mc.cores=mc.cores)
   alltxsu <- unlist(unname(alltxs), recursive=F)
   tmp <- by(alltxsu, names(alltxsu), sum)
   tmpn <- names(tmp)
   tmp1 <- as.numeric(tmp)
   names(tmp1) <- tmpn
-  counts <- casper:::splitPaths(paths=tmp1, DB=genomeDB, mc.cores=mc.cores, stranded=pcs[[1]]@stranded, geneid=allisl)
+  counts <- splitPaths(paths=tmp1, DB=genomeDB, mc.cores=mc.cores, stranded=pcs[[1]]@stranded, geneid=allisl)
   new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
 }
 
@@ -201,7 +201,7 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1)
 constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
 {
     # build genome GRanges object to be used by procGenome    
-    genomeDB_denovo_GRanges <- do.call(c, mclapply(1:nrow(vars_info),function(x)
+    genomeDB_denovo_GRanges <- do.call(c, parallel::mclapply(1:nrow(vars_info),function(x)
                       {
                             cur_island <- as.character(vars_info[x,"islandid"])
                             
@@ -371,8 +371,8 @@ getDistrsAndPCs <- function(bamFile, verbose, seed, mc.cores.int, mc.cores, geno
        allpbam <- lapply(ans, "[[", "pbam")
        names(allpbam) <-  seqnames(which)
     }
-    allpc <- casper:::mergePCWr(ans, genomeDB)
-    alldistr <- suppressWarnings(casper:::mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
+    allpc <- mergePCWr(ans, genomeDB)
+    alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
     if(keep.pbam) {
       ans <- list(pc=allpc, distr=alldistr, pbam=allpbam)
     } else ans <- list(pc=allpc, distr=alldistr)
@@ -382,32 +382,32 @@ getDistrsAndPCs <- function(bamFile, verbose, seed, mc.cores.int, mc.cores, geno
   return(ans)
 }
 
-# If the pBams were already generated we can step this stap in wrapKnown
-wrapKnownStartFromPBam <- function(pBams, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
+# If the pBams were already generated we can skip this stap in wrapKnown
+wrapKnownStartFromPBam <- function(pbams, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
 {
-  if (length(pBams)==1) {
-    ans <- wrapKnownStartFromPBamSingle(pBam=pBams,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
-  } else if (length(pBams)>1) {
-    x <- vector("list",length(pBams))
-    for (i in 1:length(pBams)) {
-      cat(paste("\n PROCESSING",pBams[i],"\n"))
-      x[[i]] <- wrapKnownStartFromPBamSingle(pBam=pBams[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+  if (length(pbams)==1) {
+    ans <- wrapKnownStartFromPBamSingle(pbam=pbams,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+  } else if (length(pbams)>1) {
+    x <- vector("list",length(pbams))
+    for (i in 1:length(pbams)) {
+      cat(paste("\n PROCESSING",pbams[i],"\n"))
+      x[[i]] <- wrapKnownStartFromPBamSingle(pbam=pbams[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
     }
     cat("\n MERGING ALL FILES...\n")
     if(keep.pbam)
     {
       ans <- vector("list",4); names(ans) <- c('pc','distr','exp', 'pbam')
-      ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=names(pBams), keep=c('transcript','island_id','gene_id','explCnts'))
-      ans$distr <- lapply(x,'[[','distr'); names(ans$distr) <- names(pBams)
-      ans$pc <- lapply(x,'[[','pc'); names(ans$distr) <- names(pBams)
-      ans$pbam <- lapply(x,'[[','pbam'); names(ans$pbam) <- names(pBams)
+      ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=names(pbams), keep=c('transcript','island_id','gene_id','explCnts'))
+      ans$distr <- lapply(x,'[[','distr'); names(ans$distr) <- names(pbams)
+      ans$pc <- lapply(x,'[[','pc'); names(ans$distr) <- names(pbams)
+      ans$pbam <- lapply(x,'[[','pbam'); names(ans$pbam) <- names(pbams)
     }
     else
     {
       ans <- vector("list",3); names(ans) <- c('pc','distr','exp')
-      ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=names(pBams), keep=c('transcript','island_id','gene_id','explCnts'))
-      ans$distr <- lapply(x,'[[','distr'); names(ans$distr) <- names(pBams)
-      ans$pc <- lapply(x,'[[','pc'); names(ans$distr) <- names(pBams)
+      ans$exp <- mergeExp(lapply(x,'[[','exp'), sampleNames=names(pbams), keep=c('transcript','island_id','gene_id','explCnts'))
+      ans$distr <- lapply(x,'[[','distr'); names(ans$distr) <- names(pbams)
+      ans$pc <- lapply(x,'[[','pc'); names(ans$distr) <- names(pbams)
     }
   } else {
     stop("Invalid length(bamFile)")
@@ -463,8 +463,8 @@ wrapKnownStartFromPBamSingle <- function(pbam, verbose=FALSE, seed=1, mc.cores.i
        names(allpbam) <- seqnames(which)
     }
     
-    allpc <- casper:::mergePCWr(ans, genomeDB)
-    alldistr <- suppressWarnings(casper:::mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
+    allpc <- mergePCWr(ans, genomeDB)
+    alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
     
     exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)
     
