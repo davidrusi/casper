@@ -28,28 +28,28 @@
 # o <- wrapDenovo(bamFiles=bamFiles, genomeDB=pG_genDB_denovoCuff_knownCompl_ren,mc.cores.int=2, readLength=101, genomeDB_mPrior=pg_mm10known)
 # o_pbam <- wrapDenovo(bamFiles=bamFiles, genomeDB=pG_genDB_denovoCuff_knownCompl_ren,mc.cores.int=2, readLength=101, genomeDB_mPrior=pg_mm10known, output_wrapKnown=results)
 
-wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB_pred, 
+wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=1, targetGenomeDB, 
                        readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype="none", 
                        niter=10^3, burnin=100, returnPbam = FALSE, keep.multihits=TRUE, chroms=NULL,
-                       output_wrapKnown, keepPbamInMemory=FALSE, genomeDB_known,
+                       output_wrapKnown, keepPbamInMemory=FALSE, knownGenomeDB,
                        islandid, priorq_denovo=3,method="auto", niter_denovo,
                        exactMarginal=TRUE,  integrateMethod = "plugin", mc.cores_denovo=1,maxExons=40, smooth=TRUE)
 {
     # parameter checks to prevent that mistakes are noticed half way
     if(missing(bamFiles))
         stop("Please provide bam files.")
-    if(missing(genomeDB_known))
-        stop("No genomeDB_known found with current annotation")
-    if(missing(genomeDB_pred))
-        stop("No genomeDB_pred found with predicted annotation")
+    if(missing(knownGenomeDB))
+        stop("No knownGenomeDB found with current annotation")
+    if(missing(targetGenomeDB))
+        stop("No targetGenomeDB found with predicted annotation")
     if(missing(readLength))
         stop("readLength must be specified")
     if(!(citype %in% c('none', 'asymp', 'exact')))
         stop("citype should take the value 'none', 'asymp', or 'exact'")    
-    if (class(genomeDB_known)!='annotatedGenome') 
-        stop("genomeDB_known must be of class 'annotatedGenome'")
-    if (class(genomeDB_pred)!='annotatedGenome') 
-      stop("genomeDB_pred must be of class 'annotatedGenome'")
+    if (class(knownGenomeDB)!='annotatedGenome') 
+        stop("knownGenomeDB must be of class 'annotatedGenome'")
+    if (class(targetGenomeDB)!='annotatedGenome') 
+      stop("targetGenomeDB must be of class 'annotatedGenome'")
     if (!(method %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) 
         stop("method must be auto, rwmcmc, priormcmc, allmodels or submodels")
     if(missing(niter_denovo))
@@ -70,7 +70,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         for(b in 1:length(bamFiles))
         {          
             cur_distrsAndPCs <- getDistrsAndPCs(bamFiles[b], verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                 mc.cores=mc.cores, genomeDB=genomeDB_known, keep.pbam=keepPbamInMemory, 
+                                                 mc.cores=mc.cores, genomeDB=knownGenomeDB, keep.pbam=keepPbamInMemory, 
                                                  keep.multihits=keep.multihits, chroms=chroms)
             
             pcs_all_samples <- c(pcs_all_samples, cur_distrsAndPCs$pc)
@@ -109,7 +109,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         if(verbose)
           cat("Merging distributions and pathcounts\n")
       
-        mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, genomeDB_known, mc.cores)    
+        mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, knownGenomeDB, mc.cores)    
         mergedDistr_allSamples <- suppressWarnings(mergeDisWr(distr_all_samples, pcs_all_samples))  
     }
     else
@@ -124,12 +124,12 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
     
     # run calcDenovo based on the merged distributions and pathcounts of all samples and the provided genome
     # with only the current/known annotation
-    mprior <- modelPrior(genomeDB=genomeDB_known, maxExons=maxExons, smooth=smooth, verbose=verbose)            
+    mprior <- modelPrior(genomeDB=knownGenomeDB, maxExons=maxExons, smooth=smooth, verbose=verbose)            
 
     if(verbose)
       cat("Running calcDenovo\n")
     
-    out_calcDenovo <- calcDenovo(distrs=mergedDistr_allSamples, genomeDB=genomeDB_pred, pc=mergedPCs_allSamples, 
+    out_calcDenovo <- calcDenovo(distrs=mergedDistr_allSamples, targetGenomeDB=targetGenomeDB, knownGenomeDB=knownGenomeDB, pc=mergedPCs_allSamples, 
                                    readLength=readLength, priorq=priorq_denovo, mprior=mprior, minpp=0, selectBest=FALSE, 
                                    method=method, exactMarginal=exactMarginal, verbose=verbose, integrateMethod, niter=niter_denovo,
                                    mc.cores=mc.cores_denovo, islandid= islandid)
@@ -139,7 +139,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
     if(verbose)
       cat("Constructing denovo genome object\n")
     
-    genomeDB_denovo <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=genomeDB_pred, mc.cores=max(c(mc.cores_denovo, mc.cores.int, mc.cores)))
+    genomeDB_denovo <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=max(c(mc.cores_denovo, mc.cores.int, mc.cores)))
     
     # Run wrapKnown to get expression estimates, distributions and pathcounts based on the denovo genome
     

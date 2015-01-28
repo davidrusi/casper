@@ -32,67 +32,56 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
 
 
-Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, double* prioradj, int integrateMethod) 
-
-{
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, double* prioradj, int integrateMethod) {
 
   int E= frame->exons.size();
-
-  double tmp;
-
-
+  double a=nexonPrior[0], b=nexonPrior[1], tmp;
 
   this->frame = frame;
-
   this->modelUnifPrior= 0;
-
   this->knownVars= knownVars;
-
   this->integrateMethod= integrateMethod;
 
-
   varis = new vector<Variant*>();
-
   varisSet = new set<Variant*>();
-
   models = new vector<Model*>();
-
   modelsSet = new set<Model*>();
-
 
 
   //Prior on number of exons in a variant
 
+//  double offset= 0.01, dbar= prioradj[1];
+//  if (dbar < E-1.0) { //if known vars discard >1 exon (on the average), adjust prior mode to dbar/E
+// 
+//    if ((a+b)<(2.0+offset)) {
+//      double pa <- a/(a+b);
+//      double c1 <- 2.0+offset-a-b;
+//      a= a+c1*pa;
+//      b= b+c1*(1-pa);
+//    }
+//    c2= (dbar/E)*(a+b-2) -a +1;
+//    if (c2 > b-offset) { c2= b-offset; } //ensure parameters >0  
+//    a <- a+c2; b <- b-c2;
+//  }
+
   tmp = 0;
-
   for (int i=1; i<= E; i++) {
-
-    tmp = lnbeta(nexonPrior[0] +i-1, nexonPrior[1] +E-1 -(i-1)) - lnbeta(nexonPrior[0],nexonPrior[1]);
-
+    tmp = lnbeta(a +i-1, b +E-1 -(i-1)) - lnbeta(a,b);
     priorpNbExons.push_back( exp(tmp) * (i+.0)/(E+.0) );
-
     nvarsPoibin.push_back((int) (choose(E,i)+.1));
-
   }
 
 
-
   //Prior on number of variants in the model (truncated to <=1000)
-
   int imax= (int) min(pow(2, E) -1, 1000.0);
-
   double psum=0, prob= 1-nvarPrior[0]; //success probability (from R we pass failure prob)
 
   tmp = 0;
 
   for (int i=1; i<= imax; i++) {
-
     tmp = dnegbinomial(i, nvarPrior[1], prob, 0);
-
     priorpNbVars.push_back( log(tmp) );
-
     psum += tmp;
-
   }
 
   psum = log(psum);
