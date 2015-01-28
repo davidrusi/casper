@@ -32,7 +32,7 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
 
 
-Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int integrateMethod) 
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, double* prioradj, int integrateMethod) 
 
 {
 

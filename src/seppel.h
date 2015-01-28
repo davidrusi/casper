@@ -10,7 +10,7 @@ public:
 
   Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod=0);
 
-  Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int integrateMethod=0);
+  Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, double* prioradj, int integrateMethod=0);
 
   ~Seppel();
 
