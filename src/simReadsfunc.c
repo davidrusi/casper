@@ -119,7 +119,7 @@ int choose_len(int varlen, double *ldv, double *ldd, int ldlen) {
     }
   }
   
-  ran = (rand() / ( RAND_MAX + 1.0 )) *maxp;
+  ran = (unif_rand() / ( RAND_MAX + 1.0 )) *maxp;
   if(ran<ldv[0]) return(ldd[0]);
   for(i=1; i<ldlen; i++) if((ldv[i-1]<=ran) && (ran < ldv[i])) return(ldd[i]);
   Rprintf("Error: no length chosen %f %f\n", ran, maxp);
@@ -137,7 +137,7 @@ int choose_st(int fraglen, int varlen, double *sdv, double *sdd, int sdlen, int 
   if(stdlen < 0) return(-1);
   if(stdlen==0) return(1);
   double maxp=cumu_fragsta((double)stdlen/(double)varlen, sdd, sdlen);  
-  double ran = ((double)rand() / (double) RAND_MAX)*maxp;
+  double ran = ((double)unif_rand() / (double) RAND_MAX)*maxp;
   return(((int)(cumu_fragsta(ran, sdv, sdlen)*varlen))+1);
 }
 
