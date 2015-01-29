@@ -8,6 +8,7 @@
 #include "hash.h"
 #include "header.h"
 
+
 void build_genes(gene_t *genes, double *ve, int *vn, int *vl, int *en, int *es, int *ee, int *ei, int *txstr, int ngenes, SEXP chr){
   int i, j, k, varpos=0, expos=0, tmp;
   
@@ -58,7 +59,7 @@ int choose_gene(double *exp, int ngenes){
   int i;
   double ran, tmp=0;
 
-  ran = rand() / ( RAND_MAX + 1.0 );
+  ran = unif_rand();
    for(i=0; i<ngenes; i++){
      if((tmp<=ran) && (ran<tmp+exp[i])) return(i);
     tmp+=exp[i];
@@ -74,7 +75,7 @@ int choose_gene(double *exp, int ngenes){
 int choose_var(gene_t gene){
   int i;
   double ran, tmp=0;
-  ran = (double)rand() / (double)( RAND_MAX - 1);
+  ran = (double)unif_rand();  //rand() / (double)( RAND_MAX - 1);
   for(i=0; i<gene.nvar; i++){
     if((tmp<=ran) && (ran<tmp+gene.vars[i].exp)) return(i);
     tmp+=gene.vars[i].exp;
