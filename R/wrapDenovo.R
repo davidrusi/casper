@@ -1,39 +1,12 @@
-# #temp 
-# load("/Volumes/biostats/mstobbe/Kinases/RNASeq/alttranscripts/pG_genDB_denovoCuff_knownCompl_ren_2014.RData")
-# load("/Volumes/640 GB/RNASeq/deNovo/pg_mm10known.RData")
-# 
-# #test data
-# bamFiles <- "/Volumes/ga/mstobbe/RNAseq_nebreda_stracker/tophat_lane1152013/sorted_hits.bam"
-# genomeDB <- pG_genDB_denovoCuff_knownCompl_ren
-# readLength <- 101
-# citype <- "asymp"
-# runWrapKnownFirst <- TRUE
-# genomeDB_mPrior <- pg_mm10known
-# maxExons <- 40
-# smooth=TRUE
-# verbose <- TRUE
-# method <- "auto"
-# priorq_denovo <- 3
-# exactMarginal <- TRUE
-# mc.cores_denovo <- 2
-# keep.multihits <- TRUE
-# 
-# load("/Volumes/640 GB/RNASeq/deNovo/sampleForSim_knownNew2013_relExpr.RData")
-# 
-# results <- wrapKnown(bamFile=bamFiles, verbose=verbose, seed=1, mc.cores.int=1, 
-#                                         mc.cores=1, genomeDB=pG_genDB_denovoCuff_knownCompl_ren,readLength=readLength, rpkm=TRUE, 
-#                                         priorq=2, priorqGeneExpr=2, citype="none", niter=10^3, 
-#                                         burnin=100, keep.pbam=TRUE, keep.multihits=keep.multihits, chroms="chr13")  
-# 
-# o <- wrapDenovo(bamFiles=bamFiles, genomeDB=pG_genDB_denovoCuff_knownCompl_ren,mc.cores.int=2, readLength=101, genomeDB_mPrior=pg_mm10known)
-# o_pbam <- wrapDenovo(bamFiles=bamFiles, genomeDB=pG_genDB_denovoCuff_knownCompl_ren,mc.cores.int=2, readLength=101, genomeDB_mPrior=pg_mm10known, output_wrapKnown=results)
-
-wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=1, targetGenomeDB, 
-                       readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype="none", 
-                       niter=10^3, burnin=100, returnPbam = FALSE, keep.multihits=TRUE, chroms=NULL,
-                       output_wrapKnown, keepPbamInMemory=FALSE, knownGenomeDB,
-                       islandid, priorq_denovo=3,method="auto", niter_denovo,
-                       exactMarginal=TRUE,  integrateMethod = "plugin", mc.cores_denovo=1,maxExons=40, smooth=TRUE)
+wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB, readLength, 
+                       rpkm=TRUE, keep.multihits=TRUE, searchMethod="submodels", 
+                       exactMarginal=TRUE,  integrateMethod = "plugin", maxExons=40, 
+                       islandid, chroms=NULL,
+                       returnPbam = FALSE,  keepPbamInMemory=FALSE,
+                       niter=10^3,
+                       priorq=3, priorqGeneExpr=2,
+                       mc.cores.int=1, mc.cores=1,
+                       verbose=TRUE, seed=1)
 {
     # parameter checks to prevent that mistakes are noticed half way
     if(missing(bamFiles))
@@ -44,16 +17,14 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         stop("No targetGenomeDB found with predicted annotation")
     if(missing(readLength))
         stop("readLength must be specified")
-    if(!(citype %in% c('none', 'asymp', 'exact')))
-        stop("citype should take the value 'none', 'asymp', or 'exact'")    
     if (class(knownGenomeDB)!='annotatedGenome') 
         stop("knownGenomeDB must be of class 'annotatedGenome'")
     if (class(targetGenomeDB)!='annotatedGenome') 
       stop("targetGenomeDB must be of class 'annotatedGenome'")
-    if (!(method %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) 
-        stop("method must be auto, rwmcmc, priormcmc, allmodels or submodels")
-    if(missing(niter_denovo))
-        niter_denovo <- NULL
+    if (!(searchMethod %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) 
+        stop("searchMethod must be auto, rwmcmc, priormcmc, allmodels or submodels")
+    if(missing(niter))
+        niter <- NULL
     if(missing(islandid))
         islandid <- NULL
     
@@ -61,7 +32,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
     distr_all_samples <- c()
     pbams_all_samples <- c()
     
-    # Compute (or collect) distributions and pathcounts based provided genome with only the current/known annotation
+    # Compute (or collect) distributions and pathcounts based on the targetGenomeDB
     if(missing(output_wrapKnown))
     {
         if(verbose)
@@ -70,7 +41,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         for(b in 1:length(bamFiles))
         {          
             cur_distrsAndPCs <- getDistrsAndPCs(bamFiles[b], verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                 mc.cores=mc.cores, genomeDB=knownGenomeDB, keep.pbam=keepPbamInMemory, 
+                                                 mc.cores=mc.cores, genomeDB=targetGenomeDB, keep.pbam=keepPbamInMemory, 
                                                  keep.multihits=keep.multihits, chroms=chroms)
             
             pcs_all_samples <- c(pcs_all_samples, cur_distrsAndPCs$pc)
@@ -80,6 +51,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
                 pbams_all_samples <- c(pbams_all_samples, cur_distrsAndPCs$pbam)
             
             rm(cur_distrsAndPCs)
+            gc()
         }
     }
     else
@@ -101,6 +73,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         }
                 
         rm(output_wrapKnown)
+        gc()
     }
       
     # merge distributions and pathcounts
@@ -109,7 +82,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
         if(verbose)
           cat("Merging distributions and pathcounts\n")
       
-        mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, knownGenomeDB, mc.cores)    
+        mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, targetGenomeDB, mc.cores)    
         mergedDistr_allSamples <- suppressWarnings(mergeDisWr(distr_all_samples, pcs_all_samples))  
     }
     else
@@ -122,43 +95,44 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
     rm(distr_all_samples)
     gc()
     
+   
     # run calcDenovo based on the merged distributions and pathcounts of all samples and the provided genome
     # with only the current/known annotation
-    mprior <- modelPrior(genomeDB=knownGenomeDB, maxExons=maxExons, smooth=smooth, verbose=verbose)            
+    mprior <- modelPrior(genomeDB=knownGenomeDB, maxExons=maxExons, smooth=TRUE, verbose=verbose)
 
     if(verbose)
       cat("Running calcDenovo\n")
     
     out_calcDenovo <- calcDenovo(distrs=mergedDistr_allSamples, targetGenomeDB=targetGenomeDB, knownGenomeDB=knownGenomeDB, pc=mergedPCs_allSamples, 
-                                   readLength=readLength, priorq=priorq_denovo, mprior=mprior, minpp=0, selectBest=FALSE, 
-                                   method=method, exactMarginal=exactMarginal, verbose=verbose, integrateMethod, niter=niter_denovo,
-                                   mc.cores=mc.cores_denovo, islandid= islandid)
+                                   readLength=readLength, priorq=priorq, mprior=mprior, minpp=0, selectBest=FALSE, 
+                                   searchMethod=searchMethod, exactMarginal=exactMarginal, verbose=verbose, integrateMethod=integrateMethod, niter=niter,
+                                   mc.cores=mc.cores, islandid= islandid)
     
      # Build denovo genome based on the output of calcDenovo
     
     if(verbose)
       cat("Constructing denovo genome object\n")
-    
-    genomeDB_denovo <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=max(c(mc.cores_denovo, mc.cores.int, mc.cores)))
+  
+    #### NOTE: to avoid another parameter I used the maximum number of cores the user indicated ########
+    denovoGenomeDB <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=max(c(mc.cores.int, mc.cores)))
     
     # Run wrapKnown to get expression estimates, distributions and pathcounts based on the denovo genome
-    
     if(verbose)
       cat("Running wrapKnown with denovo Genome\n")
     
     if(!keepPbamInMemory)
     {
         out_wrapKnown_denovoGenome <- wrapKnown(bamFile=bamFiles, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                   mc.cores=mc.cores, genomeDB=genomeDB_denovo,readLength=readLength, rpkm=rpkm, 
-                                                   priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, 
-                                                   burnin=burnin, keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms="chr13")  
+                                                   mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
+                                                   priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
+                                                   keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
      }
      else
      {
          out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams=pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                              mc.cores=mc.cores, genomeDB=genomeDB_denovo,readLength=readLength, rpkm=rpkm, 
-                                                              priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, 
-                                                              burnin=burnin, keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms="chr13")  
+                                                              mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
+                                                              priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
+                                                              keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
      }
   
     # Prepare output
@@ -180,7 +154,7 @@ wrapDenovo <- function(bamFiles, verbose=TRUE, seed=1, mc.cores.int=1, mc.cores=
     fData(eset_denovo) <- fData(eset_denovo)[,-1]
     fData(eset_denovo) <- fData(eset_denovo)[,-grep("expr", colnames(fData(eset_denovo)))]
 
-    return(list(genomeDB_denovo=genomeDB_denovo,eset_denovo=eset_denovo, pc_denovo=pc_denovo, distr_denovo=distr_denovo,pbam_denovo=pbam_denovo))
+    return(list(denovoGenomeDB=denovoGenomeDB,eset_denovo=eset_denovo, pc_denovo=pc_denovo, distr_denovo=distr_denovo,pbam_denovo=pbam_denovo))
 }
 
 # merge pathcounts from multiple samples
@@ -201,7 +175,7 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1)
 constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
 {
     # build genome GRanges object to be used by procGenome    
-    genomeDB_denovo_GRanges <- do.call(c, parallel::mclapply(1:nrow(vars_info),function(x)
+    genomeDB_denovo_GRanges <- parallel::mclapply(1:nrow(vars_info),function(x)
                       {
                             cur_island <- as.character(vars_info[x,"islandid"])
                             
@@ -218,29 +192,35 @@ constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
                             if(vars_info[x,"varName"] %in% genomeDB@aliases[,"tx_name"])
                             {
                                 gene_id <- unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"tx_name"] == vars_info[x,"varName"]),"gene_id"]))
-                                sourceTx <- "orgAnnotation" 
+                                
+                                #### NOTE: not passed through in procGenome function and therefore not useful to include ####
+                                #sourceTx <- "orgAnnotation" 
                             }
                             else
                             {
                                 gene_id <- paste(unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"island_id"] == cur_island),"gene_id"])), collapse="__")
-                                sourceTx <- "denovo_transcript" 
+                                
+                                #### NOTE: not passed through in procGenome function and therefore not useful to include ####
+                                #sourceTx <- "denovo_transcript" 
                             }
                                               
                             mcols(exonCoor)[,"gene_id"] <- gene_id
                             mcols(exonCoor)[,"transcript_id"] <- vars_info[x,"varName"] 
-                            mcols(exonCoor)[,"source"] <- as.factor(sourceTx)
-                            mcols(exonCoor)[,"type"] <- as.factor("exon")
                             
+                            #### NOTE: not passed through in procGenome ####
+                            #mcols(exonCoor)[,"source"] <- as.factor(sourceTx)
+                            mcols(exonCoor)[,"type"] <- as.factor("exon")
+
                             return(exonCoor)
-                        }, mc.cores=mc.cores))
+                        }, mc.cores=mc.cores)
+  
+    genomeDB_denovo_GRanges <- do.call(c, genomeDB_denovo_GRanges)
              
     genomeDB_denovo_GRanges <- deduceStrandSingleExonTx(genomeDB_denovo_GRanges, vars_info)
     
     names(genomeDB_denovo_GRanges) <- NULL
-    
-    save(genomeDB_denovo_GRanges, file="genomeDB_denovo_GRanges.RData")
-    
-    genomeDB_denovo<- procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores)
+
+    genomeDB_denovo<- suppressWarnings(procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores))
     
     return(genomeDB_denovo)
 }
@@ -269,7 +249,7 @@ determineStrand <- function(exons, strand_island)
 # single exon transcrip without strand information, are on the same strand.
 deduceStrandSingleExonTx <- function(genomeDB_denovo, vars_info)
 {
-   tx_unknownStrand <- as.character(genomeDB_denovo[which(genomeDB_denovo@strand == "*"),]$transcript_id)
+  tx_unknownStrand <- as.character(genomeDB_denovo[which(genomeDB_denovo@strand == "*"),]$transcript_id)
    
    for(i in 1:length(tx_unknownStrand))
    {
@@ -312,10 +292,12 @@ getDistrsAndPCs <- function(bamFile, verbose, seed, mc.cores.int, mc.cores, geno
   } else {
     which <- which[!grepl("_",as.character(seqnames(which)))]
     which <- which[!as.character(seqnames(which))=='chrM']
-    sel <- as.vector(seqnames(which)) %in% names(seqlengths(genomeDB@islands))
-    if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
-    which <- which[sel,]
   }
+    
+  sel <- as.vector(seqnames(which)) %in% unique(genomeDB@exon2island$seqnames)
+  if (all(!sel)) stop("Did not find any of the specified chromosomes")
+  if (any(!sel)) warning(paste("Did not find in genomeDB chromosomes",paste(as.vector(seqnames(which))[!sel],collapse=' '),'. Skipping them'))
+  which <- which[sel,]
   if(sum(grepl("_", as.character(seqnames(which))))>0 | sum(grepl("M", as.character(seqnames(which))))>0) cat("Warning, non standard chromosomes included in bam (it is not recommended to include mitochondrial chromosome nor random or unstable chromosomes)") 
   flag <- scanBamFlag(isPaired=TRUE,hasUnmappedMate=FALSE)
   
@@ -383,15 +365,15 @@ getDistrsAndPCs <- function(bamFile, verbose, seed, mc.cores.int, mc.cores, geno
 }
 
 # If the pBams were already generated we can skip this stap in wrapKnown
-wrapKnownStartFromPBam <- function(pbams, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
+wrapKnownStartFromPBam <- function(pbams, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
 {
   if (length(pbams)==1) {
-    ans <- wrapKnownStartFromPBamSingle(pbam=pbams,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+    ans <- wrapKnownStartFromPBamSingle(pbam=pbams,verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype='none',keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
   } else if (length(pbams)>1) {
     x <- vector("list",length(pbams))
     for (i in 1:length(pbams)) {
       cat(paste("\n PROCESSING",pbams[i],"\n"))
-      x[[i]] <- wrapKnownStartFromPBamSingle(pbam=pbams[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype=citype,niter=niter,burnin=burnin,keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
+      x[[i]] <- wrapKnownStartFromPBamSingle(pbam=pbams[i],verbose=verbose,seed=seed,mc.cores.int=mc.cores.int,mc.cores=mc.cores,genomeDB=genomeDB,readLength=readLength,rpkm=rpkm,priorq=priorq,priorqGeneExpr=priorqGeneExpr,citype='none',keep.pbam=keep.pbam,keep.multihits=keep.multihits,chroms=chroms)
     }
     cat("\n MERGING ALL FILES...\n")
     if(keep.pbam)
@@ -415,7 +397,7 @@ wrapKnownStartFromPBam <- function(pbams, verbose=FALSE, seed=1, mc.cores.int=1,
   return(ans)
 }
 
-wrapKnownStartFromPBamSingle <- function(pbam, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
+wrapKnownStartFromPBamSingle <- function(pbam, verbose=FALSE, seed=1, mc.cores.int=1, mc.cores=1, genomeDB, readLength, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', keep.pbam=FALSE, keep.multihits=TRUE, chroms=NULL) 
 {
     
   ## Get distributions and pathcounts for one chromosome
@@ -466,7 +448,7 @@ wrapKnownStartFromPBamSingle <- function(pbam, verbose=FALSE, seed=1, mc.cores.i
     allpc <- mergePCWr(ans, genomeDB)
     alldistr <- suppressWarnings(mergeDisWr(lapply(ans, '[[', 'distr'), lapply(ans, '[[', 'pc')))
     
-    exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, niter=niter, burnin=burnin, mc.cores=mc.cores, verbose=verbose)
+    exp <- calcExp(distrs=alldistr, genomeDB=genomeDB, pc=allpc, readLength=readLength, rpkm=rpkm, priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype=citype, mc.cores=mc.cores, verbose=verbose)
     
     if(keep.pbam) 
     {

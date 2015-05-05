@@ -188,9 +188,9 @@ rmDuplicateTxs <- function(txs, txname, exid) {
   txs <- txs[match(unique(mcols(txs)[,txname]), mcols(txs)[,txname]),]
   exid <- exid[mcols(txs)[,txname]]
   txs <- txs[match(unique(exid), exid),]
-  aliases <- values(txs)[1:3]
-  aliases[,3] <- unlist(aliases[,3])
-  aliases <- as.data.frame(aliases, stringsAsFactors=FALSE)
+  aliases <- values(txs)[c('tx_id',txname,'gene_id')] #old code (specific col names to make code + robust) aliases <- values(txs)[1:3]
+  aliases[,'gene_id'] <- as.character(aliases[,'gene_id']) #old code (not working anymore): aliases[,3] <- unlist(aliases[,3])
+  aliases <- as.data.frame(aliases)
   aliases <- cbind(aliases, exid=exid[as.character(aliases[,txname])])
   alitx <- split(as.character(aliases[,2]), aliases[,4])
   names(alitx) <- unlist(lapply(alitx, function(x) ifelse(length(x)>1, x[x %in% txs@elementMetadata[,txname]], x)))
@@ -265,7 +265,7 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
   exu <- exonsNI[unlist(islandStrand[as.character(exon2island$island)]) == '*']
   strand(exu) <- "*"
   tmpu <- split(exu, islands[names(exu)])
-  exm <- exonsNI[islandStrand[as.character(exon2island$island)]=='-']
+  exm <- exonsNI[unlist(islandStrand[as.character(exon2island$island)]) == '-']
   strand(exm) <- "-"
   tmpm <- split(rev(exm), islands[names(rev(exm))])
   tmp <- c(tmp, tmpm, tmpu)

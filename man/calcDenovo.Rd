@@ -16,7 +16,7 @@
 \usage{
 calcDenovo(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
 readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE,
-method="submodels", niter, exactMarginal=TRUE,
+searchMethod="submodels", niter, exactMarginal=TRUE,
 integrateMethod="plugin", verbose=TRUE, mc.cores=1)
 
 relativeExpr(expr, summarize="modelAvg", minProbExpr=0.5, minExpr=0.05)
@@ -55,7 +55,7 @@ should be the same genome annotations used to create argument
   posterior probability is reported. While this can save memory, we do
   not recommend this option as it may ignore a substantial amount of
   uncertainty.}
-\item{method}{Method used to perform the model search. 
+\item{searchMethod}{Method used to perform the model search. 
   \code{"allmodels"} enumerates all possible models (warning:
   this is not feasible for genes with >5 exons). \code{"rwmcmc"} uses a
   random-walk MCMC scheme to focus on models with high posterior
@@ -115,7 +115,7 @@ are not reported.}
   An exhaustive enumeration of all possible models is
   not feasible unless the gene is very short (e.g. around 5 exons).
   For longer genes we use computational strategies to search a subset of
-  "interesting" models. This is controlled by the argument \code{method}
+  "interesting" models. This is controlled by the argument \code{searchMethod}
   (see above).
 
   In order to compute P(model|y) one can either use the computed

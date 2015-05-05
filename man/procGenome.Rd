@@ -51,8 +51,8 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 \describe{
   \item{\code{signature(genDB = "transcriptDb")}}{
     \code{genDB} is usually obtained with a call to
-    \code{makeTranscriptDbFromUCSC} (package \code{GenomicFeatures}),
-    e.g. genDB<-makeTranscriptDbFromUCSC(genome="hg19", tablename="refGene")
+    \code{makeTxDbFromUCSC} (package \code{GenomicFeatures}),
+    e.g. genDB<-makeTxDbFromUCSC(genome="hg19", tablename="refGene")
   }
   \item{\code{signature(genDB = "GRanges")}}{
     \code{genDB} stores information about all transcripts and their
@@ -74,9 +74,9 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
   If interested in quantifying expression for known transcripts
   only, one would typically use \code{procGenome} with a
   \code{TxDb} from the usual Bioconductor annotations,
-  e.g. genDB<-makeTranscriptDbFromUCSC(genome="hg19",tablename="refGene"),
+  e.g. genDB<-makeTxDbFromUCSC(genome="hg19",tablename="refGene"),
   or imported from a gtf file
-  e.g. genDB<-makeTranscriptDbFromGFF('transcripts.gft',format='gtf').
+  e.g. genDB<-makeTxDbFromGFF('transcripts.gft',format='gtf').
   \code{GRanges} object (e.g. genDB <- import('transcripts.gtf')).
   Package GenomicFeatures contains more info about how to create
   \code{TxDb} objects.
@@ -110,7 +110,7 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 }
 \examples{
 ##Known transcripts from UCSC
-## genDB<-makeTranscriptDbFromUCSC(genome="hg19", tablename="refGene")
+## genDB<-makeTxDbFromUCSC(genome="hg19", tablename="refGene")
 ## hg19DB <- procGenome(genDB, "hg19")
 
 ##Transcripts inferred by Cufflinks-RABT module

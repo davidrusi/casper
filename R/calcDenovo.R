@@ -78,7 +78,7 @@ setMethod("variants", signature(object="denovoGenomeExpr"), function(object) {
 ## Function calcDenovo
 #########################################################################
 
-calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc, readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE, method='submodels', niter, exactMarginal=TRUE, integrateMethod='plugin', verbose=TRUE, mc.cores=1) {
+calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc, readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE, searchMethod='submodels', niter, exactMarginal=TRUE, integrateMethod='plugin', verbose=TRUE, mc.cores=1) {
   if (integrateMethod=='plugin') {
       integrateMethod <- as.integer(0)
   } else if (integrateMethod=='Laplace') {
@@ -97,7 +97,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   #nvarPrior <- list(nbpar=matrix(c(0,0),nrow=1),obs=NA,pred=NA)
   #nexonPrior <- list(bbpar=matrix(c(0,0),nrow=1),obs=NA,pred=NA)
   #modelUnifPrior <- as.integer(1)
-  if (!(method %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) stop("method must be auto, rwmcmc, priormcmc, allmodels or submodels")
+  if (!(searchMethod %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) stop("searchMethod must be auto, rwmcmc, priormcmc, allmodels or submodels")
 
   #Format input
   if (verbose) cat("Formatting input...\n")
@@ -115,7 +115,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   nexonPrior <- lapply(nexonPrior,as.double)
   minpp <- as.double(minpp)
   selectBest <- as.integer(selectBest)
-  method <- as.integer(switch(method, auto=0, allmodels=1, rwmcmc=2, priormcmc=3, submodels=4))
+  searchMethod <- as.integer(switch(searchMethod, auto=0, allmodels=1, rwmcmc=2, priormcmc=3, submodels=4))
   verbose <- as.integer(verbose)
   exactMarginal <- as.integer(exactMarginal)
   if (missing(islandid)) {
@@ -166,7 +166,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
     strand[sel] <- 0
     strand <- as.list(as.integer(strand))
     #pc <- pc[z] pc's have to be subset from previous step to deal with strandedness !!!!!!
-    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,knownVars=knownVars,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,prioradj=prioradj,priorq=priorq,minpp=minpp,selectBest=selectBest,method=method,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
+    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,knownVars=knownVars,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,prioradj=prioradj,priorq=priorq,minpp=minpp,selectBest=selectBest,searchMethod=searchMethod,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
     lapply(1:length(ans), function(y) formatDenovoOut(ans[[y]], targetGenomeDB@islands[z][[y]]))
   }
 
@@ -270,8 +270,8 @@ formatDenovoOut <- function(ans, genesel) {
   new("denovoGeneExpr",posprob=ans$posprob,expression=ans$expression,variants=ans$variants,integralSum=ans$integralSum,npathDeleted=ans$npathDeleted)
 }
 
-calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, prioradj, priorq, minpp, selectBest, method, niter, exactMarginal, verbose, integrateMethod, strand) {
-  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,knownVars,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,prioradj,priorq,minpp,selectBest,method,niter,exactMarginal,verbose,integrateMethod,strand)
+calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, prioradj, priorq, minpp, selectBest, searchMethod, niter, exactMarginal, verbose, integrateMethod, strand) {
+  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,knownVars,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,prioradj,priorq,minpp,selectBest,searchMethod,niter,exactMarginal,verbose,integrateMethod,strand)
   return(ans)
 }
 
