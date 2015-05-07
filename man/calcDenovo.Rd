@@ -1,6 +1,5 @@
 \name{calcDenovo}
 \alias{calcDenovo}
-\alias{relativeExpr}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
   Estimate expression of gene splicing variants de novo. 
@@ -9,17 +8,12 @@
   \code{calcDenovo} estimates expression of gene splicing variants,
   considering both known variants and variants that have not been
   previously described.
-
-  \code{relativeExpr} computes relative expression estimates from
-  \code{calcDenovo} output via Bayesian model selection or averaging.
 }
 \usage{
 calcDenovo(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
 readLength, islandid, priorq=3, mprior, minpp=0.001, selectBest=FALSE,
 searchMethod="submodels", niter, exactMarginal=TRUE,
 integrateMethod="plugin", verbose=TRUE, mc.cores=1)
-
-relativeExpr(expr, summarize="modelAvg", minProbExpr=0.5, minExpr=0.05)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -80,15 +74,6 @@ computation cost very substantially.}
 Warning: using multiple processors substantially increases the memory
 requirements, so set this value carefully.}
 
-\item{expr}{Object of class denovoGenomeExpr, as returned by \code{calcDenovo}.}
-\item{summarize}{Set to \code{"modelAvg"} to average estimates across models
-according to the posterior probability of each model. Set to
-\code{"bestModel"} to report the posterior mode, i.e. the estimate under
-the model with highest posterior probabiliby.}
-\item{minProbExpr}{Variants with marginal posterior probability of being
-expressed below \code{minProbExpr} are not reported.}
-\item{minExpr}{Variants with estimated expression below \code{minExpr}
-are not reported.}
 }
 \details{
   \code{calcDenovo} explores which subset of the isoforms indicated in
@@ -125,16 +110,11 @@ are not reported.}
   precise estimates.
 }
 \value{
-  Expression set with expression estimates.
-  \code{featureNames} identify each transcript via
-  RefSeq ids, and the \code{featureData} contains Entrez identifiers
-  and the length of each transcript (in bp).
-  If \code{citype} was set to a value other than \code{"none"}, the \code{featureData} also contains the 95\% credibility intervals
-  (i.e. intervals that contain the true parameter value with 95\% posterior probability).
+  A denovoGenomeExpr object.
 }
 \references{
-Rossell D. QASPER: Quantifying Alternative Splicing from Paired End
-Reads. Technical report, IRB Barcelona (2010)
+Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End
+RNA-sequencing data. Annals of Applied Statistics, 8(1):309-330.
 }
 \author{
   Camille Stephan-Otto Attolini, Manuel Kroiss, David Rossell

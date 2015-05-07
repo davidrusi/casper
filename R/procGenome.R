@@ -187,22 +187,27 @@ genomeBystrand <- function(DB, strand){
 rmDuplicateTxs <- function(txs, txname, exid) {
   txs <- txs[match(unique(mcols(txs)[,txname]), mcols(txs)[,txname]),]
   exid <- exid[mcols(txs)[,txname]]
-  txs <- txs[match(unique(exid), exid),]
-  aliases <- values(txs)[c('tx_id',txname,'gene_id')] #old code (specific col names to make code + robust) aliases <- values(txs)[1:3]
-  aliases[,'gene_id'] <- as.character(aliases[,'gene_id']) #old code (not working anymore): aliases[,3] <- unlist(aliases[,3])
+  txs <- txs[match(unique(exid), exid),] #keep single tx per identical exon sequence
+  aliases <- values(txs)[c('tx_id',txname,'gene_id')] 
+  aliases[,'gene_id'] <- as.character(aliases[,'gene_id']) 
   aliases <- as.data.frame(aliases)
-  aliases <- cbind(aliases, exid=exid[as.character(aliases[,txname])])
-  alitx <- split(as.character(aliases[,2]), aliases[,4])
-  names(alitx) <- unlist(lapply(alitx, function(x) ifelse(length(x)>1, x[x %in% txs@elementMetadata[,txname]], x)))
-  nalitx <- rep(names(alitx), unlist(lapply(alitx, length)))
-  alitx <- unlist(alitx)
-  names(alitx) <- nalitx
-  aliases <- cbind(aliases, tx=names(alitx)[match(aliases[,2], alitx)])
+  aliases <- cbind(aliases, exid=exid[as.character(aliases[,txname])]) #add sequence of exons to aliases
+  reptxs <- tapply(names(exid), INDEX=exid, FUN=paste, collapse=',')
+  reptxs <- reptxs[as.character(aliases$exid)]
+  names(reptxs) <- aliases$exid
+  aliases <- cbind(aliases, tx=reptxs)
+  #old code
+  #alitx <- split(as.character(aliases[,2]), aliases[,4])
+  #names(alitx) <- unlist(lapply(alitx, function(x) ifelse(length(x)>1, x[x %in% txs@elementMetadata[,txname]], x)))
+  #nalitx <- rep(names(alitx), unlist(lapply(alitx, length)))
+  #alitx <- unlist(alitx)
+  #names(alitx) <- nalitx
+  #aliases <- cbind(aliases, tx=names(alitx)[match(aliases[,2], alitx)])
   return(list(txs=txs,aliases=aliases))
 }
 
 
-createGenome <- function(txs, Exons, genome, mc.cores) {
+createGenome <- function(txs, Exons, genome, mc.cores, verbose=TRUE) {
   exid <- sapply(txs@elementMetadata$exon_id, function(x) paste(unlist(x), collapse="."))
   names(exid) <- values(txs)[,'tx_name']
   txs <- rmDuplicateTxs(txs, txname='tx_name', exid=exid)
@@ -210,14 +215,14 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
   Exons<-Exons[names(Exons) %in% txs@elementMetadata$tx_id,]
   txnames<-match(names(Exons), txs@elementMetadata$tx_id)
   names(Exons)<-txs@elementMetadata$tx_name[txnames]
-  cat("Finding non-overlapping exons\n")
+  if (verbose) cat("Finding non-overlapping exons\n")
   txStrand <- as.character(strand(txs))
   names(txStrand) <- mcols(txs)[,"tx_name"] #values(txs)$tx_name
   exonsNI <- generateNOexons(Exons, startId=1, mc.cores=mc.cores)  
   exkey <- exonsNI$exkey
   exonsNI <- exonsNI$exons
   #Find transcript structure for new exons
-  cat("Remapping transcript structure to new exons\n")
+  if (verbose) cat("Remapping transcript structure to new exons\n")
   s<-ifelse(as.character(Exons@unlistData@strand)=="+", 1, -1)
   exids <- values(Exons@unlistData)$exon_id
   idx <- values(Exons@unlistData)$exon_rank
@@ -239,7 +244,7 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
   ex2tx <- unlist(newTxs)
   names(ex2tx) <- rep(names(newTxs), unlist(lapply(newTxs, length)))
   islands <- makeIslands(ex2tx)
-  cat("Splitting transcripts\n")
+  if (verbose) cat("Splitting transcripts\n")
   extxs <- unlist(lapply(newTxs, "[", 1))    
   sel <- match(extxs, names(exonsNI))
   tx2island <- islands[as.character(sel)]
@@ -277,18 +282,18 @@ createGenome <- function(txs, Exons, genome, mc.cores) {
 }
 
 
-setMethod("procGenome", signature(genDB="TxDb"), function(genDB, genome, mc.cores=1) {
+setMethod("procGenome", signature(genDB="TxDb"), function(genDB, genome, mc.cores=1, verbose=TRUE) {
 #  genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename="refGene")
-  cat("Processing Exons and Transcrips\n")
+  if (verbose) cat("Processing Exons and Transcrips\n")
   txs <- GenomicFeatures::transcripts(genDB,columns=c("tx_id","tx_name","gene_id","exon_id"))
   Exons <- exonsBy(genDB, by="tx")
-  createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores)
+  createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores, verbose=verbose)
  } 
 )
 
 
-setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.cores=1) {
-  cat("Formatting GTF table with GenomicFeatures tools...\n")
+setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.cores=1, verbose=TRUE) {
+  if (verbose) cat("Formatting GTF table with GenomicFeatures tools...\n")
   if (all(c("gene_id", "transcript_id") %in% colnames(mcols(genDB)))) {
     tables <- .prepareGTFTables(genDB, exonRankAttributeName=NA) #function copied from GenomicFeatures
   } else {
@@ -304,7 +309,7 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
   sel <- (tables$splicings$exon_strand %in% c('+','-'))
   tables$splicings <- tables$splicings[sel,]
   tables$genes <- tables$genes[tables$genes$tx_name %in% tables$transcripts$tx_name,]
-  cat("Making TranscriptDb object...\n")
+  if (verbose) cat("Making TranscriptDb object...\n")
   txdb <- GenomicFeatures::makeTxDb(transcripts=tables[["transcripts"]], splicings=tables[["splicings"]], genes=tables[["genes"]], chrominfo=chrominfo, reassign.ids=TRUE, )
   #txdb <- makeTranscriptDb(transcripts=tables[["transcripts"]], splicings=tables[["splicings"]], genes=tables[["genes"]], chrominfo=chrominfo, reassign.ids=TRUE, )
   txs <- GenomicFeatures::transcripts(txdb,columns=c("tx_id","tx_name","gene_id","exon_id"))
@@ -315,7 +320,7 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
     warning('Some of the specified transcripts had no exons. They were removed')
     txs <- txs[!noexons,]
   }
-  ans <- createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores)
+  ans <- createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores, verbose=verbose)
   return(ans)
 }
 )

@@ -18,7 +18,7 @@
   combining UCSC annotations and observed RNA-seq data.
 }
 \usage{
-procGenome(genDB, genome, mc.cores = 1)
+procGenome(genDB, genome, mc.cores=1, verbose=TRUE)
 
 createDenovoGenome(reads, DB, minLinks=2,
 maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
@@ -31,6 +31,7 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
     "dm3")}
   \item{mc.cores}{Number of cores to use in parallel processing
     (multicore package required)}
+  \item{verbose}{Set to \code{TRUE} to print progress information}
   \item{DB}{\code{annotatedGenome} object, as returned by
     \code{procGenome}}
   \item{minLinks}{Minimum number of reads joining two

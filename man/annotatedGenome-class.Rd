@@ -27,7 +27,7 @@
       start/end and id of each exon}
     \item{aliases}{\code{data.frame} indicating the aliases for each
       known transcript, i.e. transcripts having the exact same sequence
-      of exons (as indicated in the UCSC database).}
+      of exons.}
     \item{genomeVersion}{Character indicating the genome version from
       which the object was build, e.g. "hg19"}
     \item{dateCreated}{Character indicating the date when the object was

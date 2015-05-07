@@ -83,7 +83,7 @@ modelPrior <- function(genomeDB, maxExons=40, smooth=TRUE, verbose=TRUE) {
   aliases <- genomeDB@aliases
   txs <- unlist(genomeDB@transcripts, recursive=F)
   names(txs) <- sub("[0-9]+\\.", "", names(txs))
-  aliases$len <- txs[as.character(aliases$tx)]
+  aliases$len <- txs[as.character(aliases$tx_name)]
   txpergene <- table(aliases$gene_id)
   nexpergene <- tapply(aliases$len, aliases$gene_id, function(x) length(unique(unlist(x))))
   nexpergene <- nexpergene[nexpergene>0]

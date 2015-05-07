@@ -23,10 +23,10 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
       stop("targetGenomeDB must be of class 'annotatedGenome'")
     if (!(searchMethod %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) 
         stop("searchMethod must be auto, rwmcmc, priormcmc, allmodels or submodels")
-    if(missing(niter))
-        niter <- NULL
-    if(missing(islandid))
-        islandid <- NULL
+    if(missing(niter)) niter <- NULL
+    if(missing(islandid)) islandid <- NULL
+    if (returnPbam) keepPbamInMemory <- TRUE
+    if (length(bamFiles)>1) cat(">1 input files were specified. Running calcDenovo on combined .bam.")
     
     pcs_all_samples <- c()
     distr_all_samples <- c()
@@ -35,8 +35,7 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     # Compute (or collect) distributions and pathcounts based on the targetGenomeDB
     if(missing(output_wrapKnown))
     {
-        if(verbose)
-          cat("Computing distributions and pathcounts\n")
+        if(verbose) cat("Computing distributions and pathcounts\n")
         
         for(b in 1:length(bamFiles))
         {          
@@ -47,8 +46,7 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
             pcs_all_samples <- c(pcs_all_samples, cur_distrsAndPCs$pc)
             distr_all_samples <- c(distr_all_samples, cur_distrsAndPCs$distr)
             
-            if(keepPbamInMemory)
-                pbams_all_samples <- c(pbams_all_samples, cur_distrsAndPCs$pbam)
+            if(keepPbamInMemory) pbams_all_samples <- c(pbams_all_samples, cur_distrsAndPCs$pbam)
             
             rm(cur_distrsAndPCs)
             gc()
@@ -79,8 +77,7 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     # merge distributions and pathcounts
     if(length(pcs_all_samples) > 1)
     {
-        if(verbose)
-          cat("Merging distributions and pathcounts\n")
+        if(verbose) cat("Merging distributions and pathcounts\n")
       
         mergedPCs_allSamples <- mergePCs(pcs=pcs_all_samples, targetGenomeDB, mc.cores)    
         mergedDistr_allSamples <- suppressWarnings(mergeDisWr(distr_all_samples, pcs_all_samples))  
@@ -98,63 +95,58 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
    
     # run calcDenovo based on the merged distributions and pathcounts of all samples and the provided genome
     # with only the current/known annotation
-    mprior <- modelPrior(genomeDB=knownGenomeDB, maxExons=maxExons, smooth=TRUE, verbose=verbose)
+    if (verbose) cat("Running modelPrior\n")
+    mprior <- modelPrior(genomeDB=knownGenomeDB, maxExons=maxExons, smooth=TRUE, verbose=FALSE)
 
-    if(verbose)
-      cat("Running calcDenovo\n")
+    if (verbose) cat("Running calcDenovo\n")
     
     out_calcDenovo <- calcDenovo(distrs=mergedDistr_allSamples, targetGenomeDB=targetGenomeDB, knownGenomeDB=knownGenomeDB, pc=mergedPCs_allSamples, 
                                    readLength=readLength, priorq=priorq, mprior=mprior, minpp=0, selectBest=FALSE, 
                                    searchMethod=searchMethod, exactMarginal=exactMarginal, verbose=verbose, integrateMethod=integrateMethod, niter=niter,
                                    mc.cores=mc.cores, islandid= islandid)
-    
-     # Build denovo genome based on the output of calcDenovo
-    
-    if(verbose)
-      cat("Constructing denovo genome object\n")
-  
-    #### NOTE: to avoid another parameter I used the maximum number of cores the user indicated ########
+
+    # Build denovo genome based on the output of calcDenovo
+    if(verbose) cat("Constructing denovo genome object\n")
     denovoGenomeDB <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=max(c(mc.cores.int, mc.cores)))
+    denovoGenomeDB <- transferIslandid(variants(out_calcDenovo), genDB1=targetGenomeDB, genDB2=denovoGenomeDB)
     
-    # Run wrapKnown to get expression estimates, distributions and pathcounts based on the denovo genome
-    if(verbose)
-      cat("Running wrapKnown with denovo Genome\n")
-    
-    if(!keepPbamInMemory)
-    {
-        out_wrapKnown_denovoGenome <- wrapKnown(bamFile=bamFiles, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                   mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
-                                                   priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
-                                                   keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
-     }
-     else
-     {
-         out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams=pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
-                                                              mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
-                                                              priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
-                                                              keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
-     }
-  
+    if(verbose) cat("Obtaining posterior probabilities and expression estimates\n")
+    if (!returnPbam) pbams_all_samples <- NULL
+    eset_denovo <- denovoExpr(out_calcDenovo, pc=mergedPCs_allSamples, rpkm=rpkm, summarize='modelAvg', minProbExpr=0, minExpr=0)
+
+    #  MIRANDA'S CODE: CURRENTLY NOT IMPLEMENTED
+    #  # Run wrapKnown to get expression estimates, distributions and pathcounts based on the denovo genome
+    #  if(verbose) cat("Running wrapKnown with denovo Genome\n")
+    #   
+    #  if(!keepPbamInMemory)
+    #  {
+    #      out_wrapKnown_denovoGenome <- wrapKnown(bamFile=bamFiles, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
+    #                                                 mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
+    #                                                 priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
+    #                                                 keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
+    #   }
+    #   else
+    #   {
+    #       out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams=pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
+    #                                                            mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
+    #                                                            priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
+    #                                                            keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
+    #   }
     # Prepare output
-    pc_denovo <- out_wrapKnown_denovoGenome$pc
-    distr_denovo <- out_wrapKnown_denovoGenome$distr
-    
-    if(returnPbam)
-      pbam_denovo <- out_wrapKnown_denovoGenome$pbam
-    else
-      pbam_denovo <- NULL
-    
-    eset_denovo <- out_wrapKnown_denovoGenome$exp    
-    fData(eset_denovo)[,"newTx"] <- substr(fData(eset_denovo)$transcript, start = 1, stop = nchar("CASP")) == "CASP"
+    #pc_denovo <- out_wrapKnown_denovoGenome$pc
+    #distr_denovo <- out_wrapKnown_denovoGenome$distr
+    # 
+    #eset_denovo <- out_wrapKnown_denovoGenome$exp    
+    #fData(eset_denovo)[,"newTx"] <- substr(fData(eset_denovo)$transcript, start = 1, stop = nchar("CASP")) == "CASP"
 
     # get probabilities of each variants being expressed
-    out_relExpr <- relativeExpr(out_calcDenovo, summarize="modelAvg", minProbExpr=0, minExpr=0)
-    fData(eset_denovo) <- merge(fData(eset_denovo), out_relExpr, by=0, all=TRUE, sort=FALSE)
-    rownames(fData(eset_denovo)) <- fData(eset_denovo)[,1]
-    fData(eset_denovo) <- fData(eset_denovo)[,-1]
-    fData(eset_denovo) <- fData(eset_denovo)[,-grep("expr", colnames(fData(eset_denovo)))]
+    #out_relExpr <- relativeExpr(out_calcDenovo, summarize="modelAvg", minProbExpr=0, minExpr=0)
+    #fData(eset_denovo) <- merge(fData(eset_denovo), out_relExpr, by=0, all=TRUE, sort=FALSE)
+    #rownames(fData(eset_denovo)) <- fData(eset_denovo)[,1]
+    #fData(eset_denovo) <- fData(eset_denovo)[,-1]
+    #fData(eset_denovo) <- fData(eset_denovo)[,-grep("expr", colnames(fData(eset_denovo)))]
 
-    return(list(denovoGenomeDB=denovoGenomeDB,eset_denovo=eset_denovo, pc_denovo=pc_denovo, distr_denovo=distr_denovo,pbam_denovo=pbam_denovo))
+    return(list(denovoGenomeDB=denovoGenomeDB, eset=eset_denovo, pc=mergedPCs_allSamples, distr=mergedDistr_allSamples, pbam=pbams_all_samples))
 }
 
 # merge pathcounts from multiple samples
@@ -220,10 +212,34 @@ constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
     
     names(genomeDB_denovo_GRanges) <- NULL
 
-    genomeDB_denovo<- suppressWarnings(procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores))
-    
+    genomeDB_denovo<- suppressWarnings(procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores, verbose=FALSE))
+
+    #vars_info[,1:2] contains c('island_id','transcript')
+
     return(genomeDB_denovo)
 }
+
+
+transferIslandid <- function(vars_info, genDB1, genDB2) {
+  #Transfer island ids from genDB1 to genDB2 by matching tx names. vars_info contains (transcript,island) pairs in genDB1
+  #Find correspondence between ids
+  ids1 <- vars_info[,c('varName','islandid')]; names(ids1) <- c('tx_name','island1')
+  ids2 <- genDB2@aliases[,c('tx_name','island_id')]; names(ids2)[2] <- 'island2'
+  ids1[,1] <- as.character(ids1[,1]); ids1[,2] <- as.character(ids1[,2])
+  ids2[,1] <- as.character(ids2[,1]); ids2[,2] <- as.character(ids2[,2])
+  idmap <- merge(ids1,ids2,by='tx_name')
+  idmap <- unique(idmap[,c('island1','island2')])
+  rownames(idmap) <- idmap$island2
+  #Update names in lists of islands, transcripts and knownVars
+  names(genDB2@islands) <- names(genDB2@transcripts) <- idmap[names(genDB2@islands),'island1']
+  if (length(genDB2@knownVars)) names(genDB2@knownVars) <- idmap[names(genDB2@islands),'island1']
+  #Update exon2island
+  genDB2@exon2island$island <- as.numeric(idmap[as.character(genDB2@exon2island$island),'island1'])
+  #Update aliases
+  genDB2@aliases$island_id <- idmap[as.character(genDB2@aliases$island_id),'island1']
+  return(genDB2)
+}
+
 
 # Based on the order in which exons are mentioned determine the strand 
 # if this is not possible, then use the strand of the whole island

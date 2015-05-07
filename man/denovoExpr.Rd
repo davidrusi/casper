@@ -44,7 +44,7 @@ denovoExpr(x, pc, rpkm = TRUE, summarize = "modelAvg", minProbExpr = 0.5, minExp
 }
 \references{
 Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End
-RNA-sequencing data. COBRA (http://biostats.bepress.com/cobra/art97)
+RNA-sequencing data. Annals of Applied Statistics, 8(1):309-330.
 }
 \author{
   David Rossell

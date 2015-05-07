@@ -97,7 +97,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 
 ## Helper to deduce the rankings for each set of cds and exons...
 .deduceExonRankings <- function(exs, format="gff"){
-  message("Deducing exon rank from relative coordinates provided")
+  #message("Deducing exon rank from relative coordinates provided")
   ## And a warning for later (in case they were not watching)
   warning("Infering Exon Rankings.  If this is not what you expected, then please be sure that you have provided a valid attribute for exonRankAttributeName")
    res <- .buildRanks(exs)  
@@ -269,7 +269,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 
 .prepareGFF3TXS <- function(data, useGenesAsTranscripts=FALSE){
   ## We absolutely require transcripts, genes and exons.
-  message("extracting transcript information")
+  #message("extracting transcript information")
   if(useGenesAsTranscripts){
       txs <- data[data$type=="gene",]
   }else{
@@ -299,7 +299,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 ## This function probably has too many jobs.  Also it will need a refactor
 .prepareGFF3genes <- function(data, transcripts, gffGeneIdAttributeName, gff,
                               useGenesAsTranscripts=FALSE){
-  message("Extracting gene IDs")
+  #message("Extracting gene IDs")
   gns <- data[data$type=="gene",]
   ## now decide how to get the gene ID names...
   if(!is.na(gffGeneIdAttributeName)){
@@ -371,7 +371,7 @@ matchCircularity <- function(seqnames, circ_seqs)
                                    useGenesAsTranscripts)
   names(tables)[2] = "genes"
 
-  message("Processing splicing information for gff3 file.")
+  #message("Processing splicing information for gff3 file.")
   exs <- .prepareGFF3Fragments(data,type="exon")
   cds <- .prepareGFF3Fragments(data,type="CDS")
   
@@ -434,7 +434,7 @@ matchCircularity <- function(seqnames, circ_seqs)
   ## which transcripts?
   trns <- unique(data$transcript_id)
 
-  message("Estimating transcript ranges.")
+  #message("Estimating transcript ranges.")
   ## for each transcript, we have to subset out the records and determine:
   ## start and stop based on strand using max and min.
   ## pre split the data for a substantial speedup
@@ -484,7 +484,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 
 .prepareGTFtranscripts <- function(data){
   ## We absolutely require transcripts, genes and exons.
-  message("extracting transcript information")
+  #message("extracting transcript information")
   transcripts <- data
   if(length(unique(transcripts$transcript_id)) < 1){
     stop("No Transcript information present in gtf file")
@@ -498,7 +498,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 }
 
 .prepareGTFgenes <- function(transcripts){
-  message("Extracting gene IDs")
+  #message("Extracting gene IDs")
   gns <- transcripts[,c("tx_name","gene_id")]
   if(dim(gns)[1] < 1){warning("No gene information present in gtf file")
   }
@@ -533,7 +533,7 @@ matchCircularity <- function(seqnames, circ_seqs)
   tables[[1]] <- transcripts
   names(tables)[1] <- "transcripts"
   
-  message("Processing splicing information for gtf file.")
+  #message("Processing splicing information for gtf file.")
   exs <- .prepareGTFFragments(data,type="exon")
   cds <- .prepareGTFFragments(data,type="CDS")
   
@@ -568,8 +568,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 .prepareGFFMetadata <- function(file, dataSource=NA, species=NA,
                                       miRBaseBuild=NA)
 {
-    message("Prepare the 'metadata' data frame ... ",
-            appendLF=FALSE)
+    #message("Prepare the 'metadata' data frame ... ", appendLF=FALSE)
     if (!isSingleStringOrNA(dataSource))
         stop("'dataSource' must be a a single string or NA")
     if (!isSingleStringOrNA(species))
@@ -590,7 +589,7 @@ matchCircularity <- function(seqnames, circ_seqs)
                           "miRBase build ID"),
                    value=c(dataSource, species, miRBaseBuild)
                    )
-    message("metadata: OK")
+    #message("metadata: OK")
     metadata
 }
 
@@ -664,7 +663,7 @@ makeTranscriptDbFromGFF <- function(file,
 
   ## If there is not chrominfo, then make one up best you can (no lengths)
   if(is.na(chrominfo)){
-    message("Now generating chrominfo from available sequence names. No chromosome length information is available.")
+    #message("Now generating chrominfo from available sequence names. No chromosome length information is available.")
     chroms <- unique(tables[["transcripts"]][["tx_chrom"]])
     chrominfo <- data.frame(chrom=chroms,
                             length=rep(NA,length(chroms)),

@@ -14,7 +14,7 @@ variantMargExpr <- function(x,minProbExpr=0.5, minExpr=0.05) {
       ans <- matrix(unlist(ans),ncol=2,byrow=TRUE)
       colnames(ans) <- c('expr','probExpressed')
       rownames(ans) <- n
-      sel <- ans[,'probExpressed']>minProbExpr & ans[,'expr']>minExpr
+      sel <- ans[,'probExpressed']>=minProbExpr & ans[,'expr']>=minExpr
       if (any(sel)) ans <- ans[sel,,drop=FALSE] else ans <- ans[which.max(ans[,'expr']),,drop=FALSE]
       ans[,'expr'] <- ans[,'expr']/sum(ans[,'expr'])
   }
@@ -65,6 +65,7 @@ relativeExpr <- function(expr, summarize='modelAvg', minProbExpr=0.5, minExpr=0.
 
 
 denovoExpr <- function(x, pc, rpkm=TRUE, summarize='modelAvg', minProbExpr=0.5, minExpr=0.05) {
+  if (class(x)!='denovoGenomeExpr') stop("expr must be of class 'denovoGenomeExpr'")
   sel <- sapply(as.list(x), function(z) !is.na(posprob(z)[1,'posprob']))
   if (any(sel)) {
       pis <- relativeExpr(x[sel], summarize=summarize, minProbExpr=minProbExpr, minExpr=minExpr)
