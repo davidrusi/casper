@@ -224,7 +224,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   multigene.tx <- knownGenomeDB@aliases[knownGenomeDB@aliases$island_id %in% multigene.island,'tx_name']
   multigene.island <- as.character(unique(targetGenomeDB@aliases[targetGenomeDB@aliases$tx_name %in% multigene.tx,'island_id']))
   multigene.island <- multigene.island[multigene.island %in% islandid]
-  multigene <- vector("list",length(islandid))
+  multigene <- lapply(islandid, function(z) as.integer(0))
   names(multigene) <- islandid
   multigene[multigene.island] <- as.integer(1)
 

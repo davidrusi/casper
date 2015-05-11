@@ -38,10 +38,10 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, do
   double a=nexonPrior[0], b=nexonPrior[1], tmp;
 
   this->frame = frame;
-  if (!multigene) {
-    this->modelUnifPrior= 0;  //prior uses nvar, nexon
-  } else {
+  if ((*multigene)==1) {
     this->modelUnifPrior= 2;  //prior uses only nvar
+  } else {
+    this->modelUnifPrior= 0;  //prior uses nvar, nexon
   }
   this->knownVars= knownVars;
   this->integrateMethod= integrateMethod;
