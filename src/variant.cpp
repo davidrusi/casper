@@ -70,6 +70,7 @@ Variant::Variant(vector<Exon*>* exons)
 
 		//--- Variants have by default same strand as island. This must be changed for variants in islands with mixed strands. 
 		//--- The case for known variants is solved in the importDataFrame function
+		//--- The case for unknown variants is solved in the path2Variants function (newly proposed variants inherit antisense from known variant)
 		this->antisense = FALSE;
 
 		/*int j = exon->num;

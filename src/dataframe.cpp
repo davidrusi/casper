@@ -22,10 +22,6 @@ DataFrame::DataFrame(DiscreteDF* fraglen_dist, double (*fragsta_cumu)(double))
 
         fraglen_maxx= fraglen_dist->value((fraglen_dist->size)-1);
 
-	//	for (fraglen_minx = 0; fraglen_dist->probability(fraglen_minx) == 0; fraglen_minx++) ;
-
-	//	for (fraglen_maxx = fraglen_dist->size - 1; fraglen_dist->probability(fraglen_maxx) == 0; fraglen_maxx--) ;
-
 }
 
 
@@ -78,81 +74,70 @@ void DataFrame::addExon(Exon* e)
 
 
 
-map<Fragment*, double> DataFrame::probabilities(Variant* v)
+map<Fragment*, double> DataFrame::probabilities(Variant* v) {
 
-{
-
-	if (this->cache.count(v) > 0)
-
-	{
-
-		return this->cache[v];
-
-	}
-
-
+	if (this->cache.count(v) > 0)	{ return this->cache[v]; }
 
 	list<Fragment*>::const_iterator fi;
 
-
-	if(v->antisense){
-
+	if(v->antisense) {
 	  
-	  for (fi = dataM.begin(); fi != dataM.end(); fi++)
-	    
-	    {
+	  for (fi = dataM.begin(); fi != dataM.end(); fi++) {
 	      
 	      Fragment* f = *fi;
 
-	      double p = probability(v, f);
+	      double p = probability(v, f, false);
 
-	      if (p > 0.0)
-  
-		{
-		 
-		  cache[v][f] = p;
+	      if (p > 0.0) { cache[v][f] = p; }
 
-                }
-
-	    }
+	  }
 	
 	} else {
 
-
-	  for (fi = data.begin(); fi != data.end(); fi++)
-	    
-	    {
+	  for (fi = data.begin(); fi != data.end(); fi++) {
 	      
 	      Fragment* f = *fi;
 	      
-	      double p = probability(v, f);
+	      double p = probability(v, f, false);
 
-	      if (p > 0.0)
-		
-		{
+	      if (p > 0.0) { cache[v][f] = p; }
 
-		  cache[v][f] = p;
-		  
-		}
-
-	    }
+	  }
 	}
 
 	return cache[v];
 
 }
 
-double DataFrame::probability(Variant* v, Fragment* f)
+double DataFrame::probability(Variant* v, Fragment *f) {
 
-{
+  return probability(v, f, false);
+
+}
+
+double DataFrame::probability(Variant* v, Fragment* f, bool checkFragSense) {
 
 	double p = 0.0;
 
+	if (checkFragSense) {
 
-	if (v->contains(f))
-	  
-	  {
-	    //printf("Not discarded %d %d %d %d %d %d\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id);	    
+	  list<Fragment*>::iterator it;
+	  bool found= false;
+
+	  if (v->antisense) {
+	    for (it= dataM.begin(); (it != dataM.end()) & (!found); it++) {
+	      if (f == (*it)) found= true;
+	    }
+	  } else {
+	    for (it= data.begin(); (it != data.end()) & (!found); it++) {
+	      if (f == (*it)) found= true;
+	    }
+	  }
+	  if (!found) return p;
+	}
+
+	if (v->contains(f)) {
+
 	    int fs = v->indexOf(f->left[0]);
 	    
 	    int fe = v->indexOf(f->left[f->leftc - 1]);
@@ -162,9 +147,8 @@ double DataFrame::probability(Variant* v, Fragment* f)
 	    int be = v->indexOf(f->right[f->rightc - 1]);
 
 	    p = prob(fs, fe, bs, be, v->positions, v->length);
-	    //printf("next %d %d %d %d %d %d %0.12f\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id, p);	    
 	      
-	  } //else printf("discarded %d %d %d %d %d %d\n", f->left[0], f->left[f->leftc - 1], f->right[0], f->right[f->rightc - 1], v->exons[0]->id, v->exons[v->exonCount-1]->id);
+	}
 
 	return p;
 
@@ -237,8 +221,12 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
 
 int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
 
+  bool found;
+  int fragid;
+
 	// copy all fragments
 	set<Fragment*>* queue = new set<Fragment*>(data.begin(), data.end());
+	set<Fragment*>* queueM = new set<Fragment*>(dataM.begin(), dataM.end());
 	set<Fragment*>::iterator itqueue;
 
 	// remove the fragments from the queue we can explain with our variants
@@ -254,7 +242,40 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 		  set<Fragment*>::iterator ri = queue->find(si->first);
 
-		  if (ri != queue->end()) queue->erase(ri);
+		  if (ri != queue->end()) { //if fragment found in plus strand
+
+		    queue->erase(ri);  //delete fragment from queue
+		    fragid= (*ri)->id;
+		    found= false;
+		    set<Fragment*>::iterator fi= queueM->begin();
+		    while ((fi != queueM->end()) & (!found)) {
+		      if (fragid == ((*fi)->id)) {
+			queueM->erase(*fi); //delete corresponding fragment in queueM
+			found= true;
+		      }
+		      fi++;
+		    }
+
+		  } else {
+
+		    set<Fragment*>::iterator ri = queueM->find(si->first);
+
+		    if (ri != queueM->end()) { //if fragment found in minus strand
+		     
+		      queueM->erase(ri);  //delete fragment from queueM
+		      fragid= (*ri)->id;
+		      found= false;
+		      set<Fragment*>::iterator fi= queue->begin();
+		      while ((fi != queue->end()) & (!found)) {
+		        if (fragid == ((*fi)->id)) {
+		     	  queue->erase(*fi); //delete corresponding fragment in queue
+		     	  found= true;
+		        }
+			fi++;
+		      }
+
+		    }
+		  }
 
 		}
 
@@ -283,7 +304,20 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 	      discarded++;
 	      data.remove(frag);
 	    }
- 
+
+	    //Repeat operation for fragment in dataM
+	    fragid= frag->id;
+	    found= false;
+	    set<Fragment*>::iterator fi= queueM->begin();
+	    while ((fi != queueM->end()) & (!found)) {
+	      if (fragid == ((*fi)->id)) {
+		found= true;
+		path2Variants(&newvaris, &bestvaris, &allvarnames, &explained, initvars, (*fi)); //propose new variants, add their names to allvarnames
+		if (!explained) { dataM.remove((*fi)); }
+	      }
+	      fi++;
+	    }
+
 	  }
 
 	  if ((initvars->size() + newvaris.size()) > 20) {  //if too many new variants were proposed, used only best ones
@@ -321,22 +355,24 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 	} else {  //not denovo
 
 	    // discard all unexplained fragments by known variants in known case
-
 	    while (queue->size() > 0) {
-
 	      Fragment* frag = *queue->begin();
-
               queue->erase(queue->begin());
-
 	      data.remove(frag);
-
 	      discarded++;
+	    }
 
+	    while (queueM->size() > 0) {
+	      Fragment* frag = *queueM->begin();
+              queueM->erase(queueM->begin());
+	      data.remove(frag);
+	      discarded++;
 	    }
 
 	}
 
 	delete queue;
+	delete queueM;
 
 	return discarded;
 
@@ -619,9 +655,9 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
        
        
         for (int i=0; i< f->rightc; i++) {
-       	eid = f->right[i];
-       	if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
-          if (eid > f->left[f->leftc -1]) el->push_back(ex);
+	  eid = f->right[i];
+	  if (id2exon.count(eid)>0) { ex = id2exon[eid]; } else { Rf_error("Exon %d in path counts not found in genomeDB!\n",eid); }
+	  if (eid < f->left[f->leftc -1]) el->push_back(ex);
         }
        
         if (eid > ((curvar->exons)[curvar->exonCount -1])->id) {
@@ -639,10 +675,11 @@ void DataFrame::path2Variants(set<Variant*, VariantCmp> *newvaris, set<Variant*,
       if (el->size() > 0) {
        
         Variant* v = new Variant(el);
+	v->antisense= curvar->antisense;
        
         if (allvarnames->count(v->exoncomb) == 0) {
 	  allvarnames->insert(v->exoncomb);
-	  double fragprob = probability(v, f);
+	  double fragprob = probability(v, f, true);
 	  if (fragprob > 0) {
 	    *explained = true;
 	    newvaris->insert(v);

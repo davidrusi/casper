@@ -43,7 +43,8 @@ public:
 
 	map<Fragment*, double> probabilities(Variant* v);  //uses cache if available, otherwise fills cache and returns prob
 
-	double probability(Variant* v, Fragment* f);  //does not use cache
+	double probability(Variant* v, Fragment *f); //doesn't use cache. Sets checkFragSense to false
+	double probability(Variant* v, Fragment* f, bool checkFragSense); //if checkFragSense==true it checks that direction of v and f align
 
 
 

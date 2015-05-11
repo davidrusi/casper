@@ -166,7 +166,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
     strand[sel] <- 0
     strand <- as.list(as.integer(strand))
     #pc <- pc[z] pc's have to be subset from previous step to deal with strandedness !!!!!!
-    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,knownVars=knownVars,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,prioradj=prioradj,priorq=priorq,minpp=minpp,selectBest=selectBest,searchMethod=searchMethod,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
+    ans <- calcDenovoMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,knownVars=knownVars,islandid=as.list(islandid),pc=pc@counts[[1]][z],startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,modelUnifPrior=modelUnifPrior,nvarPrior=nvarPrior,nexonPrior=nexonPrior,multigene=multigene[z],prioradj=prioradj,priorq=priorq,minpp=minpp,selectBest=selectBest,searchMethod=searchMethod,niter=niter[z],exactMarginal=exactMarginal,verbose=verbose, integrateMethod=integrateMethod, strand=strand)
     lapply(1:length(ans), function(y) formatDenovoOut(ans[[y]], targetGenomeDB@islands[z][[y]]))
   }
 
@@ -217,6 +217,16 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   islandidUnknown <- islandid[islandid %in% names(targetGenomeDB@transcripts)[sapply(targetGenomeDB@transcripts,is.null)]]
   if (length(islandidUnknown)>0) { islandidini <- islandid; islandid <- islandid[!(islandid %in% islandidUnknown)] }
 
+  #Detect multi-gene islands
+  gene2island <- unique(knownGenomeDB@aliases[,c('gene_id','island_id')])
+  tab <- table(gene2island$island_id)
+  multigene.island <- names(tab)[tab>1]
+  multigene.tx <- knownGenomeDB@aliases[knownGenomeDB@aliases$island_id %in% multigene.island,'tx_name']
+  multigene.island <- as.character(unique(targetGenomeDB@aliases[targetGenomeDB@aliases$tx_name %in% multigene.tx,'island_id']))
+  multigene.island <- multigene.island[multigene.island %in% islandid]
+  multigene <- vector("list",length(islandid))
+  names(multigene) <- islandid
+  multigene[multigene.island] <- as.integer(1)
 
   #Run
   if (verbose==1) cat("Performing model search (this may take a while)\n")
@@ -270,8 +280,8 @@ formatDenovoOut <- function(ans, genesel) {
   new("denovoGeneExpr",posprob=ans$posprob,expression=ans$expression,variants=ans$variants,integralSum=ans$integralSum,npathDeleted=ans$npathDeleted)
 }
 
-calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, prioradj, priorq, minpp, selectBest, searchMethod, niter, exactMarginal, verbose, integrateMethod, strand) {
-  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,knownVars,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,prioradj,priorq,minpp,selectBest,searchMethod,niter,exactMarginal,verbose,integrateMethod,strand)
+calcDenovoMultiple <- function(exons, exonwidth, transcripts, knownVars, islandid, pc, startcdf, lendis, lenvals, readLength, modelUnifPrior, nvarPrior, nexonPrior, multigene, prioradj, priorq, minpp, selectBest, searchMethod, niter, exactMarginal, verbose, integrateMethod, strand) {
+  ans <- .Call("calcDenovoMultiple",exons,exonwidth,transcripts,knownVars,islandid,pc,startcdf,lendis,lenvals,readLength,modelUnifPrior,nvarPrior,nexonPrior,multigene,prioradj,priorq,minpp,selectBest,searchMethod,niter,exactMarginal,verbose,integrateMethod,strand)
   return(ans)
 }
 

@@ -485,31 +485,40 @@ double Casper::LaplaceApprox(double *mode, int n)
 
 
 
-bool Casper::isValid()
+bool Casper::isValid() {
 
-{
+  list<Fragment*>::const_iterator fi;
 
-	list<Fragment*>::const_iterator fi;
+  for (fi = frame->data.begin(); fi != frame->data.end(); fi++) {
 
-	for (fi = frame->data.begin(); fi != frame->data.end(); fi++)
+    Fragment* f = *fi;
 
-	{
+    if (mempprobs.count(f) == 0 || mempprobs[f].size() == 0) {
 
-		Fragment* f = *fi;
+      if (frame->dataM.size()==0) {  //if strand is known, fragment cannot be explained
 
-		if (mempprobs.count(f) == 0 || mempprobs[f].size() == 0)
+	return false;
 
-        {
+      } else { //if strand is unknown, see if fragment is explained in reverse direction
 
-	        return false;
+        int fragid= f->id;
+        bool found= false;
+        list<Fragment*>::iterator fiM= frame->dataM.begin();
+        while ((fiM != frame->dataM.end()) & (!found)) {
+	  if (fragid == ((*fiM)->id)) {
+	    found= true;
+	    if (mempprobs.count(*fiM) == 0 || mempprobs[*fiM].size() == 0) return false;
+	  }
+	  fiM++;
+        }
 
-		}
+      }
 
-	}
+    }
 
+  }
 
-
-	return true;
+  return true;
 
 }
 

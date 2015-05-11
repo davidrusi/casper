@@ -32,13 +32,17 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
 
 
-Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, double* prioradj, int integrateMethod) {
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int* multigene, double* prioradj, int integrateMethod) {
 
   int E= frame->exons.size();
   double a=nexonPrior[0], b=nexonPrior[1], tmp;
 
   this->frame = frame;
-  this->modelUnifPrior= 0;
+  if (!multigene) {
+    this->modelUnifPrior= 0;  //prior uses nvar, nexon
+  } else {
+    this->modelUnifPrior= 2;  //prior uses only nvar
+  }
   this->knownVars= knownVars;
   this->integrateMethod= integrateMethod;
 
@@ -49,26 +53,13 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, do
 
 
   //Prior on number of exons in a variant
-
-//  double offset= 0.01, dbar= prioradj[1];
-//  if (dbar < E-1.0) { //if known vars discard >1 exon (on the average), adjust prior mode to dbar/E
-// 
-//    if ((a+b)<(2.0+offset)) {
-//      double pa <- a/(a+b);
-//      double c1 <- 2.0+offset-a-b;
-//      a= a+c1*pa;
-//      b= b+c1*(1-pa);
-//    }
-//    c2= (dbar/E)*(a+b-2) -a +1;
-//    if (c2 > b-offset) { c2= b-offset; } //ensure parameters >0  
-//    a <- a+c2; b <- b-c2;
-//  }
-
-  tmp = 0;
-  for (int i=1; i<= E; i++) {
-    tmp = lnbeta(a +i-1, b +E-1 -(i-1)) - lnbeta(a,b);
-    priorpNbExons.push_back( exp(tmp) * (i+.0)/(E+.0) );
-    nvarsPoibin.push_back((int) (choose(E,i)+.1));
+  if (modelUnifPrior==0) {
+    tmp = 0;
+    for (int i=1; i<= E; i++) {
+      tmp = lnbeta(a +i-1, b +E-1 -(i-1)) - lnbeta(a,b);
+      priorpNbExons.push_back( exp(tmp) * (i+.0)/(E+.0) );
+      nvarsPoibin.push_back((int) (choose(E,i)+.1));
+    }
   }
 
 
@@ -963,61 +954,41 @@ double Seppel::calculatePrior(Model* model) {
       double ans;
 
       //Prior on nb variants in the model
-
       ans= priorpNbVars[nbVars-1];
 
-
-
       //Prior on nb exons per variant
+      if (modelUnifPrior==0) {
 
-      if (nbVars < pow(2,E) -1) {  //when all variants were selected, prob of selected exons is 1 so this computation is skipped
+        if (nbVars < pow(2,E) -1) {  //when all variants were selected, prob of selected exons is 1 so this computation is skipped
+         
+          vector<int> Sk (E,0);
+         
+          for (int i=0; i< nbVars; i++) {  
+            Variant* v= model->get(i); 
+            Sk[v->exonCount -1]++;
+          }
+         
+          vector<int> Fk (E);
 
-        vector<int> Sk (E,0);
-
-        for (int i=0; i< nbVars; i++) {  
-
-          Variant* v= model->get(i); 
-	  
-          Sk[v->exonCount -1]++;
-
-        }
-
-        vector<int> Fk (E);
-
-        for (int i=0; i< E; i++) Fk[i]= nvarsPoibin[i] - Sk[i];
-
-
-
-        for (int i=0; i< E; i++) {
-
-          ans += Sk[i] * log(priorpNbExons[i]) + Fk[i] * log(1-priorpNbExons[i]);
-          //printf("i=%d, %f, %f\n", i, Sk[i] * log(priorpNbExons[i]), Fk[i] * log(1-priorpNbExons[i]));
-
-        }
-
-
-
-        if (E <= 20) {
-
-	  ans -= dpoissonbin(model->count(), &priorpNbExons, &nvarsPoibin, 1, &Tvector, &poibinProbs); //Poisson-Binomial
-
-        } else {
-
-	  ans -= dpoisson(model->count(), 1.0, 1); //Poisson approx (law of small numbers)
-
+          for (int i=0; i< E; i++) Fk[i]= nvarsPoibin[i] - Sk[i];
+         
+          for (int i=0; i< E; i++) {
+            ans += Sk[i] * log(priorpNbExons[i]) + Fk[i] * log(1-priorpNbExons[i]);
+          }
+         
+          if (E <= 20) {
+         	  ans -= dpoissonbin(model->count(), &priorpNbExons, &nvarsPoibin, 1, &Tvector, &poibinProbs); //Poisson-Binomial
+          } else {
+         	  ans -= dpoisson(model->count(), 1.0, 1); //Poisson approx (law of small numbers)
+          }
+         
         }
 
       }
 
-
-
       return ans;
 
-
-
     }
-
-
 
   }
 
