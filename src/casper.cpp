@@ -371,7 +371,7 @@ double Casper::calculateIntegral(double *mode, int n, int method) {
 
   if (method==0) {
 
-    ans= priorLikelihoodLn(mode); 
+    ans= priorLikelihoodLn(mode); //- 0.5 * (n+.0) * log(totCounts()+.0)
 
   } else if (method==1) {
 
