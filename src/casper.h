@@ -11,7 +11,7 @@ using namespace std;
 class Casper
 {
  public:
-  Casper(Model* model, DataFrame* frame, int integrateMethod=1);
+  Casper(Model* model, DataFrame* frame, int integrateMethod=1, int is_runs=10000);
 
   // current model (set of variants) that tries to explain the data
   Model* model;
@@ -57,7 +57,7 @@ class Casper
   static int em_maxruns;
   static double em_tol;
   int integrateMethod;  //0: plug-in post mode; 1: Laplace; 2: importance sampling with is_runs
-  static int is_runs;
+  int is_runs;
 
  private:
 

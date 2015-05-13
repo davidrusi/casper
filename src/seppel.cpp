@@ -7,9 +7,7 @@
 using namespace std;
 
 
-Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
-
-{
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod, int is_runs) {
 
   this->frame = frame;
 
@@ -19,6 +17,7 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
   this->integrateMethod= integrateMethod;
 
+  this->is_runs= is_runs;
 
   varis = new vector<Variant*>();
 
@@ -32,7 +31,7 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod)
 
 
 
-Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int* multigene, double* prioradj, int integrateMethod) {
+Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int* multigene, double* prioradj, int integrateMethod, int is_runs) {
 
   int E= frame->exons.size();
   double a=nexonPrior[0], b=nexonPrior[1], tmp;
@@ -45,6 +44,7 @@ Seppel::Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, do
   }
   this->knownVars= knownVars;
   this->integrateMethod= integrateMethod;
+  this->is_runs= is_runs;
 
   varis = new vector<Variant*>();
   varisSet = new set<Variant*>();
@@ -197,9 +197,7 @@ double Seppel::calcIntegral(Model* model, Model* similarModel) {
 }
 
 
-double Seppel::calcIntegral(Model* model, Model* similarModel, bool knownVarsCheck) 
-
-{
+double Seppel::calcIntegral(Model* model, Model* similarModel, bool knownVarsCheck) {
 
   double *mode;
 
@@ -237,13 +235,9 @@ double Seppel::calcIntegral(Model* model, Model* similarModel, bool knownVarsChe
 
   double like = 1, prior = 1;
 
-  Casper* casp = new Casper(model, frame);
-
-
+  Casper* casp = new Casper(model, frame, integrateMethod, is_runs);
 
   if (casp->isValid()) {
-
-
 
     mode = this->initMode(model,similarModel);
 
@@ -257,15 +251,11 @@ double Seppel::calcIntegral(Model* model, Model* similarModel, bool knownVarsChe
 
     like += prior;
 
-
-
   }
 
   integrals[model] = like;
 
   priorprobs[model] = prior;
-
-
 
   delete casp;
 
@@ -320,7 +310,7 @@ double Seppel::calcIntegral(Model* model, bool knownVarsCheck)
 
   double like = 1, prior = 1;
 
-  Casper* casp = new Casper(model, frame);
+  Casper* casp = new Casper(model, frame, integrateMethod, is_runs);
 
 
 
@@ -413,23 +403,19 @@ void Seppel::exploreUnif(int runs, set<Variant*, VariantCmp> *initvaris) {
 
 	vector<Model*>::const_iterator ami;
 
-	for (ami = models->begin(); ami != models->end(); ami++)
+	for (ami = models->begin(); ami != models->end(); ami++) {
 
-	{
+	  Casper* ncasp = new Casper(*ami, frame, integrateMethod, is_runs);
 
-		Casper* ncasp = new Casper(*ami, frame);
+	  if (ncasp->isValid()) {
 
-		if (ncasp->isValid())
+	    possiblemodels->push_back(ncasp->model);
 
-		{
+	    counts[ncasp->model] = 0;
 
-			possiblemodels->push_back(ncasp->model);
+	  }
 
-			counts[ncasp->model] = 0;
-
-		}
-
-		delete ncasp;
+	  delete ncasp;
 
 	}
 

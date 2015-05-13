@@ -103,7 +103,7 @@ double cumu_fragsta(double x, double *startcdf, double lencdf)
   double y1= startcdf[idx], x1= (double) idx / (lencdf-1);
   idx++;
   double y2= startcdf[idx], x2= (double) idx / (lencdf-1);
-  double caca=y1 + (x-x1) * (y2-y1)/(x2-x1);
+  //double caca=y1 + (x-x1) * (y2-y1)/(x2-x1);
   //printf("%f %f %f %f %f %f %d %f\n", x, x1, x2, y1, y2, lencdf, idx, caca); 
   return y1 + (x-x1) * (y2-y1)/(x2-x1);
 }

@@ -340,8 +340,6 @@ extern "C"
 
   SEXP lhoodGrid(SEXP gridR, SEXP exonsR, SEXP exonwidthR, SEXP transcriptsR, SEXP pathCountsR, SEXP fragstaR, SEXP fraglenR, SEXP lenvalsR, SEXP readLengthR, SEXP priorqR, SEXP strandR) {
 
-
-
     //CREATE CASPER INSTANCE
 
     int geneid=0;
@@ -364,16 +362,13 @@ extern "C"
 
     list<Fragment*>::const_iterator fi;
 
-    for (fi = df->data.begin(); fi != df->data.end(); fi++)
-
-      {
+    for (fi = df->data.begin(); fi != df->data.end(); fi++) {
 
 	Fragment* f = *fi;
 
 	totC += f->count;
 
-      }
-
+    }
 
 
     Model* model = new Model(initvars);
@@ -566,7 +561,7 @@ extern "C"
 
     SET_VECTOR_ELT(ans, 6, allocVector(REALSXP,2));
 
-    Casper::is_runs= 10000;
+    casp->is_runs= 10000; //Casper::is_runs= 10000;
 
     REAL(VECTOR_ELT(ans,6))[0]= casp->calculateIntegral(1);
 
@@ -651,29 +646,23 @@ extern "C"
 
 		list<Fragment*>::const_iterator fi;
 
-		//Fragment* f;
-
 		for (fi = df->data.begin(); fi != df->data.end(); fi++) {
-
-		    //f = *fi;
 
 		    totC++;
 
 		    break;
 
-		  }
+		}
 
 		if(INTEGER(strandR)[0]==0) {
 
 		  for (fi = df->dataM.begin(); fi != df->dataM.end(); fi++) {
   
-		      //f = *fi;
-
 		      totC++;
 
 		      break;
 
-		    }
+		  }
 
 		}
 
@@ -702,15 +691,9 @@ extern "C"
 
                 PROTECT(ans= allocVector(VECSXP, 5));
 
-
-
   		SET_VECTOR_ELT(ans, 0, allocVector(REALSXP,vc));  //stores estimated expression
 
                 SET_VECTOR_ELT(ans, 1, allocVector(STRSXP,vc)); //stores variant names	   
-
-		
-
-                
 
 		double *expr= REAL(VECTOR_ELT(ans,0));
 
@@ -936,11 +919,11 @@ extern "C"
      
     if (INTEGER(modelUnifPriorR)[0]) {
      
-      seppl= new Seppel(df, &knownVars, INTEGER(integrateMethodR)[0]);
+      seppl= new Seppel(df, &knownVars, INTEGER(integrateMethodR)[0], niter);
      
     } else {
      
-      seppl = new Seppel(df, &knownVars, REAL(nvarPriorR), REAL(nexonPriorR), INTEGER(multigeneR), REAL(prioradjR), INTEGER(integrateMethodR)[0]);
+      seppl = new Seppel(df, &knownVars, REAL(nvarPriorR), REAL(nexonPriorR), INTEGER(multigeneR), REAL(prioradjR), INTEGER(integrateMethodR)[0], niter);
      
     }
 

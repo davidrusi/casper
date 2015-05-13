@@ -8,9 +8,9 @@ class Seppel
 
 public:
 
-  Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod=0);
+  Seppel(DataFrame* frame, set<Variant*>* knownVars, int integrateMethod=0, int is_runs=10000);
 
-  Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int* multigene, double* prioradj, int integrateMethod=0);
+  Seppel(DataFrame* frame, set<Variant*>* knownVars, double* nvarPrior, double* nexonPrior, int* multigene, double* prioradj, int integrateMethod=0, int is_runs=10000);
 
   ~Seppel();
 
@@ -56,7 +56,7 @@ public:
 	double integralMax; //maximum log(integrals), i.e. log(marginal likelihood) + log(prior)
 
         int integrateMethod;  //0: plug-in post mode; 1: Laplace; 2: importance sampling with is_runs
-
+	int is_runs;          //number of importance samples
 
 
 	int modelUnifPrior; //set to 1 to assign uniform prior on model space

@@ -1,14 +1,9 @@
 #include "casper.h"
-
 #include <algorithm>
-
-
-
 using namespace std;
 
 
-
-int Casper::is_runs = 10000;
+//int Casper::is_runs = 10000;
 
 int Casper::em_maxruns = 100;
 
@@ -20,9 +15,7 @@ double Casper::priorq = 3;
 
 
 
-Casper::Casper(Model* model, DataFrame* frame, int integrateMethod)
-
-{
+Casper::Casper(Model* model, DataFrame* frame, int integrateMethod, int is_runs) {
 
 	this->model = model;
 
@@ -30,27 +23,21 @@ Casper::Casper(Model* model, DataFrame* frame, int integrateMethod)
 
 	this-> integrateMethod= integrateMethod;
 
+	this->is_runs= is_runs;
+
 	vector<Variant* >::const_iterator vi;
 
-	for (vi = model->items.begin(); vi != model->items.end(); vi++)
-
-	{
+	for (vi = model->items.begin(); vi != model->items.end(); vi++) {
 
 	  Variant *v = *vi;
 
 		map<Fragment*, double> table = this->frame->probabilities(v);
 
-
-
 		memvprobs[v] = table;
-
-        
 
 		map<Fragment*, double>::const_iterator fi;
 
-		for (fi = table.begin(); fi != table.end(); fi++)
-
-		{
+		for (fi = table.begin(); fi != table.end(); fi++) {
 
 			Fragment* f = fi->first;
 

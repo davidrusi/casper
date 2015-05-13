@@ -66,7 +66,8 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
   genes = malloc((ngenes+1) * sizeof(gene_t));
   build_genes(genes, ve, vn, vl, en, es, ee, ei, txstr, ngenes, chr);
   
-  int gene, var, len, *gansS, *vansS, *lansS, *strS, seed=INTEGER(rseed)[0], *pos, st;
+  int gene, var, len, *gansS, *vansS, *lansS, *strS, *pos, st;
+  //int seed=INTEGER(rseed)[0];
   double *sansS;
 
 
