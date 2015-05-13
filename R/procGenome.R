@@ -51,9 +51,10 @@ setMethod("transcripts", signature(genomeDB='annotatedGenome', txid='missing',is
   tx <- unlist(genomeDB@transcripts,recursive=FALSE)
   names(tx) <- unlist(sapply(genomeDB@transcripts,names))
   tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
-  txranges <- genomeDB@exonsNI[as.character(tx$exon)]
+  txranges <- genomeDB@exonsNI[tx$exon]
   names(txranges) <- NULL
-  RangedData(ranges(txranges), space=as.character(tx$tx), seqnames=seqnames(txranges))
+  ans <- RangedData(IRanges(start(txranges),end(txranges)), space=as.character(tx$tx), chr=as.character(seqnames(txranges)))
+  return(ans)
 }
 )
 
@@ -120,6 +121,46 @@ txLengthBase <- function(tx, genomeDB) {
   return(ans)
 }
 
+
+
+matchTranscripts <- function(queryDB, subjectDB, maxbp=10) {
+  #Find transcripts in queryDB matching a transcript in subjectDB. The best match for each transcript in newDB is returned, unless difference is >maxbp
+  # Ouput is data.frame with tx1, len1, tx2, len2, bpintersect. (tx2 minimizes len2-bpintersect)
+  #Format as RangedData objects
+  txnew <- transcripts(queryDB)
+  chrnew <- txnew[['chr']]; txname <- space(txnew)
+  txnew <- RangedData(IRanges(start(txnew),end(txnew)), space=chrnew, tx_id=txname)
+  #
+  txknown <- transcripts(subjectDB)
+  chrknown <- txknown[['chr']]; txname <- space(txknown)
+  txknown <- RangedData(IRanges(start(txknown),end(txknown)), space=chrknown, tx_id=txname)
+  #n <- as.character(txknown[['tx_id']]); txknown[which(n=='NM_001003919'),] #debug line
+  #Find overlaps
+  o <- as.matrix(findOverlaps(txnew, txknown))
+  match1 <- txnew[o[,'queryHits'],]
+  match2 <- txknown[o[,'subjectHits'],]
+  #Count bp in common
+  maxst <- ifelse(start(match1) <= start(match2),start(match2),start(match1))
+  minen <- ifelse(end(match1) <= end(match2),end(match1),end(match2))
+  bpintersect <- minen - maxst + 1
+  matches <- data.frame(id=paste(match1[['tx_id']], match2[['tx_id']], sep='//'), bpintersect)
+  bpintersect <- sqldf::sqldf("select id, sum(bpintersect) from matches group by id")
+  #Format output and filter based on maxbp
+  n <- strsplit(as.character(bpintersect$id), split='//')
+  n1 <- sapply(n,'[[',1); n2 <- sapply(n,'[[',2)
+  len1 <- txLength(genomeDB=queryDB)[n1]
+  len2 <- txLength(genomeDB=subjectDB)[n2]
+  ans <- data.frame(tx1=n1,len1=len1,tx2=n2,len2=len2,bpintersect=bpintersect[,'sum(bpintersect)'])
+  maxlen <- ifelse(ans$len1>ans$len2, ans$len1, ans$len2)
+  ans <- ans[ans$bpintersect >= maxlen - maxbp,]
+  #If >1 matches, return best match
+  tab <- table(as.character(ans$tx1))
+  onematch <- ans[ans$tx1 %in% names(tab)[tab==1],]
+  multimatch <- ans[ans$tx1 %in% names(tab)[tab>1],]
+  bestmatch <- do.call(rbind,by(multimatch, INDICES=as.character(multimatch$tx1), FUN= function(z) z[which.min(z$len2-z$bpintersect),]))
+  ans <- rbind(onematch,bestmatch)
+  return(ans)
+}
 
 
 setGeneric("subsetGenome", function(islands, chr, genomeDB) standardGeneric("subsetGenome"))
