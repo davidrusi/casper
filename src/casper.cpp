@@ -172,50 +172,35 @@ void Casper::IPMH(double *pi, double *paccept, double *integralIS, int niter, in
 
 void Casper::IPMH(double *pi, double *paccept, double *integralIS, int niter, int burnin, double *mode, double **Sinv) {
 
-  //Note: input parameter S is the Hessian at the mode, i.e. the inverse of the covariance matrix
-
-  double det, lold, lnew, l0;
-
-  double *thmode, *thold, *thnew, *piold, *pinew, **Gold, **Gnew, **cholS, **cholSinv;
-
-  int n = model->count();
-
-
-
-  //Pre-compute useful quantities
-
-  thmode = new double[n - 1];
-
-  mlogit(thmode, mode, n);
-
-
-
-  cholS= dmatrix(1,n-1,1,n-1);
-
-  cholSinv= dmatrix(1,n-1,1,n-1);
+  //If burnin < niter, independent proposal Metropolis-Hastings is used to obtain posterior samples
+  //If burnin >= niter, no posterior samples are returned. Instead, a fixed proposal is used to estimate integrated likelihood via Importance Sampling
 
   bool posdef;
+  int i, j, n = model->count();
+  double det, lold, lnew, plmode, plnew, lsum;
+  double *thmode, *thold, *thnew, *piold, *pinew, **Gold, **Gnew, **cholS, **cholSinv;
 
+  //Pre-compute useful quantities
+  thmode = new double[n - 1];
+  mlogit(thmode, mode, n);
+
+  cholS= dmatrix(1,n-1,1,n-1);
+  cholSinv= dmatrix(1,n-1,1,n-1);
   choldc(Sinv,n-1,cholSinv,&posdef);
 
   if (!posdef) {
-
-    int i; double lmin=0, *vals;
-
+    double lmin=0, *vals;
     vals= dvector(1,n);
-
     eigenvals(Sinv,n-1,vals);
-
     for (i=1; i<n; i++) if (vals[i]<lmin) lmin= vals[i];
-
-    lmin = -lmin + .001;
-
+    lmin = -lmin + 1;
     for (i=1; i<n; i++) Sinv[i][i] += lmin;
-
     choldc(Sinv,n-1,cholSinv,&posdef);
-
     free_dvector(vals,1,n);
-
+  } else {
+    int i;
+    for (i=1; i<n; i++) Sinv[i][i] += 1;
+    choldc(Sinv,n-1,cholSinv,&posdef);
   }
 
   choldc_inv(Sinv,n-1,cholS,&posdef); 
@@ -223,88 +208,75 @@ void Casper::IPMH(double *pi, double *paccept, double *integralIS, int niter, in
   det= choldc_det(cholSinv,n-1);
 
 
-
   //MCMC
-
   thold = new double[n - 1];
-
   thnew = new double[n - 1];
-
   piold = new double[n];
-
   pinew = new double[n];
-
   Gold = dmatrix(0,n,0,n);
-
   Gnew = dmatrix(0,n,0,n);
-
-
 
   rmvtC(thold-1, n-1, thmode-1, cholS, 3);
 
   milogit(piold, thold, n);
 
-  l0= lold= priorLikelihoodLn(piold) - dmvtC(thold-1, n-1, thmode-1, cholSinv, det, 3, 1);
-
-
+  plmode= priorLikelihoodLn(mode);
+  lold= priorLikelihoodLn(piold) - dmvtC(thold-1, n-1, thmode-1, cholSinv, det, 3, 1);
 
   vtGradG(Gold,thold, n);
 
   lold+= vtGradLogdet(Gold, n);
 
-
-
-  (*integralIS)= 0;
+  lsum= 0;
 
   (*paccept)= 0;
 
-  for (int i=0; i<niter; i++) {
+  for (i=0; i<niter; i++) {
 
     rmvtC(thnew-1, n-1, thmode-1, cholS, 3);
 
     milogit(pinew, thnew, n);
 
-    lnew= priorLikelihoodLn(pinew) - dmvtC(thnew-1, n-1, thmode-1, cholSinv, det, 3, 1);
+    plnew= priorLikelihoodLn(pinew);
+    lnew= plnew - dmvtC(thnew-1, n-1, thmode-1, cholSinv, det, 3, 1);
 
-    (*integralIS) += exp(lnew-l0);
+    if (plnew > plmode) {  //if new mode found
 
-    vtGradG(Gnew,thnew,n);
+      for (j=0; j<(n-1); j++) { thmode[j]= thnew[j]; }  //update mode
+      lsum= exp(log(lsum) + plmode - plnew);            //update integrand so that plnew becomes new offset
+      plmode= plnew;                                    //update offset
 
-    lnew+= vtGradLogdet(Gnew, n);
+    }
 
-    double p= exp(lnew - lold);
+    lsum += exp(lnew-plmode);
 
-    double u = runif();
+    if (niter > burnin) {
+      vtGradG(Gnew,thnew,n);
+       
+      lnew+= vtGradLogdet(Gnew, n);
+       
+      double p= exp(lnew - lold);
+       
+      double u = runif();
+       
+      if (u <= p)	{
+       
+        double ltemp= lnew, *thtemp, *pitemp, **Gtemp;
+       
+        (*paccept) += 1;
+        lnew = lold; lold = ltemp;
+        thtemp= thnew; thnew= thold; thold= thtemp;
+        pitemp= pinew; pinew= piold; piold= pitemp;
+        Gtemp= Gnew; Gnew= Gold; Gold= Gtemp;
+       
+      } 
 
-    if (u <= p)	{
-
-      (*paccept) += 1;
-
-      double ltemp= lnew;
-
-      lnew = lold; lold = ltemp;
-
-      double *thtemp;
-
-      thtemp= thnew; thnew= thold; thold= thtemp;
-
-      double *pitemp;
-
-      pitemp= pinew; pinew= piold; piold= pitemp;
-
-      double **Gtemp;
-
-      Gtemp= Gnew; Gnew= Gold; Gold= Gtemp;
-
-    } 
-
-
-
-    if (i>=burnin) {
-
-      int idx= i-burnin;
-
-      for (int j=0; j<n; j++) pi[idx+j*(niter-burnin)]= piold[j];
+      if (i>=burnin) {
+       
+        int idx= i-burnin;
+        for (int j=0; j<n; j++) pi[idx+j*(niter-burnin)]= piold[j];
+       
+      }
 
     }
 
@@ -312,26 +284,17 @@ void Casper::IPMH(double *pi, double *paccept, double *integralIS, int niter, in
 
   (*paccept) = (*paccept)/(niter+.0);
 
-  (*integralIS) = l0 + log(*integralIS) - log(niter+.0);
-
+  (*integralIS) = plmode + log(lsum) - log(niter+.0);
 
 
   delete [] thmode;
-
   delete [] thold;
-
   delete [] thnew;
-
   delete [] piold;
-
   delete [] pinew;
-
   free_dmatrix(Gold,0,n,0,n);
-
   free_dmatrix(Gnew,0,n,0,n);
-
   free_dmatrix(cholS,1,n-1,1,n-1);
-
   free_dmatrix(cholSinv,1,n-1,1,n-1);
 
 }
@@ -464,7 +427,7 @@ double Casper::LaplaceApprox(double *mode, int n)
   free_dmatrix(cholS, 1, n-1, 1, n-1);
 
 
-  double integral = emlk + gdet + (double)(n - 1) / 2.0 * log(2 * M_PI) - 0.5 * sdet;
+  double integral = emlk + gdet + (double)(n - 1) / 2.0 * log(2 * M_PI) - 0.5 * log(sdet);
 
 
   delete [] thmode;
@@ -502,12 +465,11 @@ bool Casper::isValid() {
       } else { //if strand is unknown, see if fragment is explained in reverse direction
 
         int fragid= f->id;
-        bool found= false;
         list<Fragment*>::iterator fiM= frame->dataM.begin();
-        while ((fiM != frame->dataM.end()) & (!found)) {
+        while (fiM != frame->dataM.end()) {
 	  if (fragid == ((*fiM)->id)) {
-	    found= true;
 	    if (mempprobs.count(*fiM) == 0 || mempprobs[*fiM].size() == 0) return false;
+	    break;
 	  }
 	  fiM++;
         }

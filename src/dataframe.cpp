@@ -194,7 +194,7 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
     double rb = min(min(b1, b2 - l) / T, mb);
     double lb = min((max(a1, a2 - l) - 1.0) / T, mb);
 
-    if (lb >= rb) { continue; } //if( i== (lengthDist->size -1)) {printf("%f %f %f %f %f %f %f %f %f %d\n", lb, rb, a1, b1, a2, b2, l, T, mb, readLength); }continue; }
+    if (lb >= rb) { continue; } 
       
     double punc = (fragsta_cumu(rb) - fragsta_cumu(lb)) / fragsta_cumu(mb);
     double factor = 0;
@@ -221,7 +221,6 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
 
 int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
 
-  bool found;
   int fragid;
 
 	// copy all fragments
@@ -237,39 +236,40 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 		map<Fragment*, double> probs = probabilities(*vi);
 
 		map<Fragment*, double>::iterator si;
+		set<Fragment*>::iterator ri;
 
 		for (si = probs.begin(); si != probs.end(); si++) {
 
-		  set<Fragment*>::iterator ri = queue->find(si->first);
+		  ri = queue->find(si->first);
 
 		  if (ri != queue->end()) { //if fragment found in plus strand
 
-		    queue->erase(ri);  //delete fragment from queue
 		    fragid= (*ri)->id;
-		    found= false;
+		    queue->erase(ri);  //delete fragment from queue
+
 		    set<Fragment*>::iterator fi= queueM->begin();
-		    while ((fi != queueM->end()) & (!found)) {
+		    while (fi != queueM->end()) {
 		      if (fragid == ((*fi)->id)) {
 			queueM->erase(*fi); //delete corresponding fragment in queueM
-			found= true;
+			break;
 		      }
 		      fi++;
 		    }
 
 		  } else {
 
-		    set<Fragment*>::iterator ri = queueM->find(si->first);
+		    ri = queueM->find(si->first);
 
 		    if (ri != queueM->end()) { //if fragment found in minus strand
 		     
-		      queueM->erase(ri);  //delete fragment from queueM
 		      fragid= (*ri)->id;
-		      found= false;
+		      queueM->erase(ri);  //delete fragment from queueM
+
 		      set<Fragment*>::iterator fi= queue->begin();
-		      while ((fi != queue->end()) & (!found)) {
+		      while (fi != queue->end()) {
 		        if (fragid == ((*fi)->id)) {
 		     	  queue->erase(*fi); //delete corresponding fragment in queue
-		     	  found= true;
+			  break;
 		        }
 			fi++;
 		      }
@@ -307,13 +307,12 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 	    //Repeat operation for fragment in dataM
 	    fragid= frag->id;
-	    found= false;
 	    set<Fragment*>::iterator fi= queueM->begin();
-	    while ((fi != queueM->end()) & (!found)) {
+	    while (fi != queueM->end()) {
 	      if (fragid == ((*fi)->id)) {
-		found= true;
 		path2Variants(&newvaris, &bestvaris, &allvarnames, &explained, initvars, (*fi)); //propose new variants, add their names to allvarnames
 		if (!explained) { dataM.remove((*fi)); }
+		break;
 	      }
 	      fi++;
 	    }

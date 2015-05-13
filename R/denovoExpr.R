@@ -74,8 +74,11 @@ denovoExpr <- function(x, pc, rpkm=TRUE, summarize='modelAvg', minProbExpr=0.5, 
   }
   if (any(!sel)) {
     pis.noreads <- do.call(rbind,lapply(as.list(x[!sel]), function(z) z@expression))
-    rownames(pis.noreads) <- pis.noreads[,'varName']
-    pis.noreads <- cbind(pis.noreads[,c('expr'),drop=FALSE],rep(NA,nrow(pis.noreads)))
+    vnames <- unique(pis.noreads[,'varName'])
+    pis.noreads <- cbind(rep(NA,length(vnames)), rep(NA,length(vnames)))
+    rownames(pis.noreads) <- vnames
+    #rownames(pis.noreads) <- pis.noreads[,'varName']
+    #pis.noreads <- cbind(pis.noreads[,c('expr'),drop=FALSE],rep(NA,nrow(pis.noreads)))
     colnames(pis.noreads) <- colnames(pis)
     pis <- rbind(pis, pis.noreads)
   }
