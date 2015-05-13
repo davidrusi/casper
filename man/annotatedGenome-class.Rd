@@ -7,8 +7,9 @@
 
 \title{Class "annotatedGenome"}
 \description{
-  Stores an annotated genome, either known or build de novo by combining
-  a known genome with observed RNA-seq data.
+  The \code{annotatedGenome} class stores info about transcripts,
+  usually created with \code{procGenome} from \code{TxDb} objects
+  or user-provided .gtf files.  
 }
 \section{Objects from the Class}{
   Objects are typically created with a call to

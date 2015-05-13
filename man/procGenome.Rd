@@ -103,20 +103,23 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 }
 \seealso{
   See \code{annotatedGenome-class} for a description of the class.
-  To obtain the island id for an entrez gene id or a transcript id see help(getIsland).
-  To extract the transcripts for a entrez or island id see
-  help(transcripts).
+  See methods \code{transcripts} to extract exons in each transcript,
+  \code{getIsland} to obtain the island id corresponding to a given transcript id
   See \code{splitGenomeByLength} for splitting an \code{annotatedGenome}
   according to gene length.
 }
 \examples{
-##Known transcripts from UCSC
+## Known transcripts from Bioconductor annotations
+## library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+## hg19DB <- procGenome(TxDb.Hsapiens.UCSC.hg19.knownGene), genome='hg19')
+
+## Alternative using makeTxDbFromUCSC
 ## genDB<-makeTxDbFromUCSC(genome="hg19", tablename="refGene")
 ## hg19DB <- procGenome(genDB, "hg19")
 
-##Transcripts inferred by Cufflinks-RABT module
-##genDB.Cuff <- import('transcripts.gtf')
-##hg19DB.Cuff <- procGenome(genDB.Cuff, genome='hg19')
+## Alternative importing .gtf file
+## genDB.Cuff <- import('transcripts.gtf')
+## hg19DB.Cuff <- procGenome(genDB.Cuff, genome='hg19')
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

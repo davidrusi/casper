@@ -96,11 +96,11 @@ ylab='', xlim, cex=1, yaxt='n', col, ...)
 data(hg19DB)
 
 #Plot an IRangesList
-txs <- transcripts(entrezid="27",genomeDB=hg19DB)
+txs <- transcripts(txid="NM_005158",genomeDB=hg19DB)
 genePlot(txs)
 
 #Equivalently, indicate islandid
-islandid <- getIsland(entrezid="27",genomeDB=hg19DB)
+islandid <- getIsland(txid="NM_005158",genomeDB=hg19DB)
 genePlot(islandid=islandid, genomeDB=hg19DB)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

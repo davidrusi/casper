@@ -36,17 +36,27 @@ setMethod("getChr",signature(entrezid='missing',txid='character',islandid='missi
 }
 )
 
-setMethod("transcripts", signature(entrezid='missing',islandid='character',genomeDB='annotatedGenome'), function(entrezid, islandid, genomeDB) {
+setMethod("transcripts", signature(genomeDB='annotatedGenome',txid='missing',islandid='character'), function(genomeDB, txid, islandid) {
   IRangesList(lapply(genomeDB@transcripts[[islandid]],function(z) ranges(genomeDB@islands[[islandid]][as.character(z)])))
 }
 )
 
-setMethod("transcripts", signature(entrezid='character',islandid='missing',genomeDB='annotatedGenome'), function(entrezid, islandid, genomeDB) {
-  txids <- rownames(genomeDB@aliases)[genomeDB@aliases$gene_id==entrezid]
-  islandid <- getIsland(entrezid=entrezid,genomeDB=genomeDB)
-  IRangesList(lapply(genomeDB@transcripts[[islandid]],function(z) ranges(genomeDB@islands[[islandid]][as.character(z)])))[txids]
+setMethod("transcripts", signature(genomeDB='annotatedGenome',txid='character',islandid='missing'), function(genomeDB, txid, islandid) {
+  islandid <- getIsland(txid=txid,genomeDB=genomeDB)
+  transcripts(genomeDB=genomeDB, islandid=islandid)[txid]
 }
 )
+
+setMethod("transcripts", signature(genomeDB='annotatedGenome', txid='missing',islandid='missing'), function(genomeDB, txid, islandid) {
+  tx <- unlist(genomeDB@transcripts,recursive=FALSE)
+  names(tx) <- unlist(sapply(genomeDB@transcripts,names))
+  tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
+  txranges <- genomeDB@exonsNI[as.character(tx$exon)]
+  names(txranges) <- NULL
+  RangedData(ranges(txranges), space=as.character(tx$tx), seqnames=seqnames(txranges))
+}
+)
+
 
 setGeneric("txLength", function(islandid, txid, genomeDB) standardGeneric("txLength"))
 setMethod("txLength", signature(islandid='missing', txid='missing', genomeDB='annotatedGenome'), function(islandid, txid, genomeDB) {
@@ -157,11 +167,8 @@ generateNOexons<-function(exByTx, startId=1, mc.cores){
   overEx <- findOverlaps(exonsNI, exByTx)
   exid <- names(exonsNI)[queryHits(overEx)]
   exkey <- split(exid, values(exByTx)$exon_id[subjectHits(overEx)])
-  if(mc.cores>1) require(parallel)
-  if(mc.cores>1) {
-    if ('parallel' %in% loadedNamespaces()) {
-      exkey<-parallel::mclapply(exkey, unique, mc.cores=mc.cores)
-    } else stop('parallel library has not been loaded!')
+  if(mc.cores>1 && requireNamespace("parallel", quietly=TRUE)) {
+    exkey<-parallel::mclapply(exkey, unique, mc.cores=mc.cores)
   }
   else {
     exkey<-lapply(exkey, unique, mc.cores=mc.cores)

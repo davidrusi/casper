@@ -25,38 +25,58 @@
 \maketitle
 
 
+casper implements methods to quantify isoform expression for a set of known
+transcripts, to quantify expressions of de novo predictions and quantify the certainty
+that these predictions are truly expressed, and to help design RNA-seq experiments
+in an optimal manner.
 We put a lot of time and effort in developing casper,
-if you use casper for your research please do cite
-our paper \cite{rossell:2014}.
-Our support comes from research institutions and grants,
-your citations is an easy way to ensure we continue having time to develop casper.
+if you use it for your research please cite the corresponding paper(s).
+Your citations ensure our being able to continue maintining and developing casper.
+\begin{enumerate}
+\item If you quantify the expression of know isoforms, please cite \cite{rossell:2014}.
+\item If you assess the existence and quantify expression for de novo predictions, please cite \cite{rossell:2015}.
+\item If you use casper to help design an RNA-seq experiment, please cite \cite{stephanotto:2015}.
+\end{enumerate}
+
+The current manual describes Tasks 1-2 above, for experimental design please see 
+\href{https://docs.google.com/viewer?a=v\&pid=sites\&srcid=ZGVmYXVsdGRvbWFpbnxyb3NzZWxsZGF2aWR8Z3g6Yzk5ZDM3MWExYWVmZTM4}{this other manual}.
 
 
 \section{Quick start}
 \label{sec:quickstart}
 
-The function \texttt{wrapKnown} runs the whole analysis pipeline for a single sample, 
-starting from a sorted and indexed BAM file and reference transcriptome and
+To quantify expression for a set of known transcripts
+the function \texttt{wrapKnown} runs the whole analysis pipeline for a single sample, 
+starting from sorted and indexed BAM files and reference transcriptome and
 returning estimated log-expression in an ExpressionSet object.
 \texttt{wrapKnown} also returns the following secondary output,
 which may be ignored for routine analyses: processed reads (procBam object), path counts (pathCounts object)
 and read start and fragment length distributions (readDistrs object).
+The function \texttt{wrapDenovo} is the analogous to \texttt{wrapDenovo} but it doesn't assume that
+all given transcripts are expressed. Instead, for each given transcript \texttt{wrapDenovo} computes
+the posterior probability that it is indeed expressed and estimates its expression via Bayesian model averaging.
+In the event that the given transcripts are unable to explain the observed data
+({\it e.g.} some reads visit exons 1-2-3 but no isoform contains these 3 exons), 
+\texttt{wrapDenovo} suggests new transcripts using the given transcripts as templates.
 
-The \texttt{wrapKnown} function needs an annotated transcriptome,
-which can either come from the UCSC or any user-specified gtf file
-({\it e.g.} as provided by the Gencode project or returned by the Cufflinks
-RABT module).
+The \texttt{wrapKnown} function needs an annotated transcriptome created by \texttt{procGenome}.
+This can either come from \texttt{TxDb} objects obtained from the Bioconductor annotations
+or any user-specified gtf file (see \texttt{help(procGenome)} for examples).
 To generate a transcriptome from the UCSC database you may use the following code,
-changing \texttt{'hg19'} for your desired genome.
+changing \texttt{hg19} for your desired genome.
 
 \small
 \begin{verbatim}
-library(GenomicFeatures)
-genome='hg19'
-genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename=''refGene'')
-hg19DB <- procGenome(genDB=genDB, genome=genome, mc.cores=6)
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+hg19DB <- procGenome(TxDb.Hsapiens.UCSC.hg19.knownGene), genome='hg19')
 \end{verbatim}
 \normalsize
+
+%Old version not using Bioconductor annotations
+%library(GenomicFeatures)
+%genome='hg19'
+%genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename=''refGene'')
+%hg19DB <- procGenome(genDB=genDB, genome=genome, mc.cores=6)
 
 To generate a transcriptome from a gtf file use the following code,
 changing the file name for your gtf file (including the full path).
@@ -104,12 +124,20 @@ boxplot(exprs(xnorm))
 \end{verbatim}
 \normalsize
 
+\texttt{wrapDenovo} proceeds in a largely analogous manner to \texttt{wrapKnown}, with the difference
+that it returns both expression estimates for each isoform (stored in exprs of the ExpressionSet)
+and the (marginal) posterior probability that
+the isoform is expressed at all (stored in the fData of the ExpressionSet).
+Currently \texttt{wrapDenovo} computes these probabilities and estimates by combining all .bam files
+into a single sample. We are currently developing the case where one wishes to obtain probabilities for each
+sample separately.
 
 The remaining sections explain in more detail the model, functions and classes included in the package.
 They are intended to help you obtain a better understanding of the methodology
 underlying \texttt{casper} by obtaining expression estimates step-by-step.
-However, in practice we recommend that you use \texttt{wrapKnown}, as it is
-more efficiently implemented both in terms of memory requirements and
+For routine analyses we strongly recommend that you use \texttt{wrapKnown} (known isoforms)
+or \texttt{wrapDenovo} (de novo);
+these are implemented more efficiently in terms of memory requirements and
 computational speed.
 
 
@@ -462,7 +490,8 @@ While in general we recommend using dedicated visualization software such as IGV
 we found useful to have some plotting capabilities within the package.
 
 We start by showing how to extract information from an \texttt{annotatedGenome} object.
-Suppose we are interested in a gene with Entrez ID$=27$.
+The function \texttt{transcripts} returns the exons contained in all transcripts,
+and it can also be used to obtain the exons for a single transcript, as shown below.
 We can obtain the known variants for that gene with the function \texttt{transcripts},
 and the chromosome with \texttt{getChr}.
 We can also find out the island identifier that \texttt{casper} assigned to that gene
@@ -470,11 +499,13 @@ We can also find out the island identifier that \texttt{casper} assigned to that
 
 \footnotesize
 <<plot1>>=
-tx <- transcripts(entrezid='27', genomeDB=hg19DB)
+transcripts(hg19DB)
+tx <- transcripts(hg19DB, txid='NM_005158')
 tx
-getChr(entrezid='27',genomeDB=hg19DB)
-islandid <- getIsland(entrezid='27',genomeDB=hg19DB)
+getChr(txid='NM_005158',genomeDB=hg19DB)
+islandid <- getIsland(txid='NM_005158',genomeDB=hg19DB)
 islandid
+transcripts(hg19DB, islandid=islandid)
 getChr(islandid=islandid,genomeDB=hg19DB)
 @ 
 \normalsize

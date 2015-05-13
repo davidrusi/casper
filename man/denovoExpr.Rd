@@ -39,8 +39,8 @@ denovoExpr(x, pc, rpkm = TRUE, summarize = "modelAvg", minProbExpr = 0.5, minExp
 \value{
   Expression set with expression estimates.
   The \code{featureData} indicates the gene island id, posterior probability
-  that each variant is expressed (column \code{"probExpressed"}), the
-  number of aligned reads per gene island (column \code{"explCnts"}) and the exons in each variant.
+  that each variant is expressed (column \code{"probExpressed"}) and the
+  number of aligned reads per gene island (column \code{"explCnts"}).
 }
 \references{
 Rossell D, Stephan-Otto Attolini C, Kroiss M, Stocker A. Quantifying Alternative Splicing from Paired-End

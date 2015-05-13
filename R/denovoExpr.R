@@ -82,8 +82,8 @@ denovoExpr <- function(x, pc, rpkm=TRUE, summarize='modelAvg', minProbExpr=0.5, 
     colnames(pis.noreads) <- colnames(pis)
     pis <- rbind(pis, pis.noreads)
   }
-  fdata <- variants(x)
-  names(fdata)[1:2] <- c('island_id','transcript')
+  fdata <- variants(x)[,1:2]
+  names(fdata) <- c('island_id','transcript')
   rownames(fdata) <- as.character(fdata$transcript)
   if (pc@stranded) {       
     nreads <- c(unlist(lapply(pc@counts$plus,sum)), unlist(lapply(pc@counts$minus,sum)))

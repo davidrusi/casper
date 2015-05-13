@@ -31,18 +31,17 @@ simMAEcheck <- function(nsim, islandid, burnin=1000, pc, distr, readLength.pilot
     if(verbose) cat(paste("Generating posterior samples j =",j, "\n"))
     pis <- simPost(islandid=islandid, nsim=nsim, distrs=distr.pilot, genomeDB=genomeDB, pc=pc, readLength=readLength.pilot, mc.cores=mc.cores.int*mc.cores, verbose=verbose)
     if(verbose) cat(paste("Running simulations for j =",j, "\n"))
-    if(mc.cores.int>1) {
-      require(parallel)
-      res <- parallel::mclapply(1:nsim, function(i){
-        readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
-        pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
-        N <- round(n[j]*readYield*pmapped)
-        sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
-        if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
-        sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
-        list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
-      }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
-    } 
+    if ((mc.cores.int>1) && requireNamespace("parallel", quietly=TRUE)) {
+        res <- parallel::mclapply(1:nsim, function(i){
+          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
+          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
+          N <- round(n[j]*readYield*pmapped)
+          sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
+          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
+          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
+        }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
+    }
     else {
       res <- lapply(1:nsim, function(i){
         readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target

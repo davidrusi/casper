@@ -62,8 +62,7 @@ procPaths <- function(reads, DB, mc.cores, verbose){
     if(DB@denovo){
       sel <- sapply(sel, "[", -1)
       tmp <- split(sel, isl)
-      if(mc.cores>1) {
-        require(parallel)
+      if(mc.cores>1 && requireNamespace("parallel", quietly=TRUE)) {
         tmp1 <- parallel::mclapply(names(tmp), function(x){
           n <- sapply(tmp[[x]], length)
           nn <- unlist(tmp[[x]])

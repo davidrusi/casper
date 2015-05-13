@@ -13,5 +13,5 @@ setGeneric("pvalTreat", function(x, groups, logfc=log(2), minCount, p.adjust.met
 setGeneric("qqnormGenomeWide", function(x, ngenes=min(1000,nrow(x)), ...) standardGeneric("qqnormGenomeWide"))
 setGeneric("quantileNorm", function(x) standardGeneric("quantileNorm"))
 setGeneric("rangesPlot",function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, ...) standardGeneric("rangesPlot"))
-setGeneric("transcripts", function(entrezid, islandid, genomeDB) standardGeneric("transcripts"))
+setGeneric("transcripts", function(genomeDB, txid, islandid) standardGeneric("transcripts"))
 setGeneric("variants", function(object) standardGeneric("variants"))

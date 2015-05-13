@@ -1,36 +1,42 @@
 \name{transcripts}
 \alias{transcripts}
-\alias{transcripts,character,missing,annotatedGenome-method}
-\alias{transcripts,missing,character,annotatedGenome-method}
+\alias{transcripts,annotatedGenome,missing,missing-method}
+\alias{transcripts,annotatedGenome,character,missing-method}
+\alias{transcripts,annotatedGenome,missing,character-method}
+
 \docType{methods}
 \title{
-Returns all transcripts associated to a given island or
-entrez id stored in an annotatedGenome object.
+  Extracts transcript information (exon start
+  and ends) from an \code{annotatedGenome} object,
+  either for all transcripts or only those corresponding
+  to a given island or transcript.
 }
 \description{
 annotatedGenome objects store information regarding genes and
 transcripts. When there's an overlap in exons between several genes,
 these genes are grouped into gene islands.
 
-The function transcripts retrieves all stored transcripts for a given
-gene or island.
+\code{transcripts} retrieves all stored transcripts for a given
+transcript or island.
 }
 \usage{
-transcripts(entrezid, islandid, genomeDB)
+transcripts(genomeDB, txid, islandid)
 }
 \arguments{
- \item{entrezid}{Character indicating single Entrez identifier. Can be
-   left missing and specify islandid instead.}
- \item{islandid}{Character indicating island identifier. Can be left
-   missing and specify entrezid instead}
- \item{genomeDB}{Object of class \code{annotatedGenome}}
+  \item{genomeDB}{Object of class \code{annotatedGenome}}
+  \item{txid}{Character indicating transcript identifier (optional)}
+  \item{islandid}{Character indicating island identifier (optional)}
 }
 \section{Methods}{
 \describe{
-  \item{\code{signature(x = "readDistrs")}}{
-    \code{x} is an object of type \code{readDistrs}, as returned by
-    \code{getDistrs}. The plot function allows to visualize the fragment
-    length and read start distributions.
+  \item{\code{signature(genomeDB = "annotatedGenome", txid="missing", islandid="missing")}}{
+    Return exons for all transcripts in \code{genomeDB}
+  }
+  \item{\code{signature(genomeDB = "annotatedGenome", txid="character", islandid="missing")}}{
+    Return exons for transcript \code{txid}
+  }
+  \item{\code{signature(genomeDB = "annotatedGenome", txid="missing", islandid="character")}}{
+    Return exons for all transcripts in island \code{islandid}
   }
 }}
 \value{
@@ -38,11 +44,11 @@ transcripts(entrezid, islandid, genomeDB)
 different transcript.
 }
 \seealso{
-genePlot to plot the resulting transcripts
+\code{genePlot} to plot the resulting transcripts
 }
 \examples{
 data(hg19DB)
-tx <- transcripts(entrezid="27",genomeDB=hg19DB)
-tx
+txs <- transcripts(txid="NM_005158",genomeDB=hg19DB)
+txs
 }
 \keyword{manip}

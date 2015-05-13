@@ -52,8 +52,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
      if(verbose) cat(paste("Generating posterior samples j =",j, "\n"))
      pis <- simPost(islandid=islandid, nsim=nsim, distrs=distr.pilot, genomeDB=genomeDB, pc=pc, readLength=readLength.pilot, mc.cores=mc.cores.int*mc.cores, verbose=verbose)
      if(verbose) cat(paste("Running simulations for j =",j, "\n"))
-     if(mc.cores.int>1) {
-       require(parallel)
+     if(mc.cores.int>1 && requireNamespace("parallel", quietly=TRUE)) {
        res <- parallel::mclapply(1:nsim, function(i){
          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads

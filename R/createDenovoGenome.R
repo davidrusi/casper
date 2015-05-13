@@ -1,11 +1,8 @@
 setGeneric("findNewExons", function(pbam, DB, cov, minConn, minJunx, minLen, mc.cores) standardGeneric("findNewExons"))
 setMethod("findNewExons", signature(pbam='list'),
           function(pbam, DB, cov, minConn, minJunx, minLen, mc.cores) {
-            if(mc.cores>1) require(parallel)
-            if(mc.cores>1) {
-              if ('parallel' %in% loadedNamespaces()) {
-                nex <- parallel::mclapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen), mc.cores=mc.cores)
-              } else stop('parallel library has not been loaded!')
+            if(mc.cores>1 && requireNamespace("parallel", quietly=TRUE)) {
+              nex <- parallel::mclapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen), mc.cores=mc.cores)
             } else {
               nex <- lapply(pbam, function(x) findNewExons(x, DB=DB, cov=cov, minConn=minConn, minJunx=minJunx, minLen=minLen))
             }

@@ -600,126 +600,84 @@ matchCircularity <- function(seqnames, circ_seqs)
 ### makeTranscriptDbFromGFF()
 ###
 
-makeTranscriptDbFromGFF <- function(file,
-                                    format=c("gff3", "gtf"),
-                                    exonRankAttributeName=NA,
-                                    gffGeneIdAttributeName=NA,
-                                    chrominfo=NA,
-                                    dataSource=NA,
-                                    species=NA,
-                                    circ_seqs=DEFAULT_CIRC_SEQS,
-                                    miRBaseBuild=NA,
-                                    useGenesAsTranscripts=FALSE)
-{
-  ## Argument checking
-  if(!file.exists(file)) stop("'file' must point to a file that exists.")
-  format <- match.arg(format)
-  
-  if(!isSingleStringOrNA(exonRankAttributeName)){
-      stop("'exonRankAttributeName' must be a single element character vector or NA.")  }
-  if(!isSingleStringOrNA(gffGeneIdAttributeName)){
-      stop("'gffGeneIdAttributeName' must be a single element character vector or NA.")  }
-  ## check chrominfo
-  if(!(is.data.frame(chrominfo) || is.na(chrominfo))){
-      stop("'chrominfo' must be a data.frame or NA.")  }
-  if(is.data.frame(chrominfo)){
-      if(dim(chrominfo)[2] != 3 ||
-         any(colnames(chrominfo)!= c("chrom","length","is_circular"))){
-          stop("'chrominfo' must have three  columns that correpspond to 'chrom', 'length', and 'is_circular' and are named accordingly")}
-  }
-  if(!isSingleStringOrNA(dataSource)){
-      stop("'dataSource' must be a single element character vector or NA.")  }
-  if(!isSingleStringOrNA(species)){
-      stop("'species' must be a single element character vector or NA.")  }
-  if(!is.character(circ_seqs))stop("'circ_seqs' must be a character vector.")
-  if(!isSingleStringOrNA(miRBaseBuild)){
-      stop("'miRBaseBuild' must be a single element character vector or NA.")  }
-  if(!isTRUEorFALSE(useGenesAsTranscripts)){
-      stop("'useGenesAsTranscripts' must be a single element character vector or NA.")  }
+#makeTranscriptDbFromGFF <- function(file,
+#                                    format=c("gff3", "gtf"),
+#                                    exonRankAttributeName=NA,
+#                                    gffGeneIdAttributeName=NA,
+#                                    chrominfo=NA,
+#                                    dataSource=NA,
+#                                    species=NA,
+#                                    circ_seqs=DEFAULT_CIRC_SEQS,
+#                                    miRBaseBuild=NA,
+#                                    useGenesAsTranscripts=FALSE)
+#{
+#  ## Argument checking
+#  if(!file.exists(file)) stop("'file' must point to a file that exists.")
+#  format <- match.arg(format)
+#  
+#  if(!isSingleStringOrNA(exonRankAttributeName)){
+#      stop("'exonRankAttributeName' must be a single element character vector or NA.")  }
+#  if(!isSingleStringOrNA(gffGeneIdAttributeName)){
+#      stop("'gffGeneIdAttributeName' must be a single element character vector or NA.")  }
+#  ## check chrominfo
+#  if(!(is.data.frame(chrominfo) || is.na(chrominfo))){
+#      stop("'chrominfo' must be a data.frame or NA.")  }
+#  if(is.data.frame(chrominfo)){
+#      if(dim(chrominfo)[2] != 3 ||
+#         any(colnames(chrominfo)!= c("chrom","length","is_circular"))){
+#          stop("'chrominfo' must have three  columns that correpspond to 'chrom', 'length', and 'is_circular' and are named accordingly")}
+#  }
+#  if(!isSingleStringOrNA(dataSource)){
+#      stop("'dataSource' must be a single element character vector or NA.")  }
+#  if(!isSingleStringOrNA(species)){
+#      stop("'species' must be a single element character vector or NA.")  }
+#  if(!is.character(circ_seqs))stop("'circ_seqs' must be a character vector.")
+#  if(!isSingleStringOrNA(miRBaseBuild)){
+#      stop("'miRBaseBuild' must be a single element character vector or NA.")  }
+#  if(!isTRUEorFALSE(useGenesAsTranscripts)){
+#      stop("'useGenesAsTranscripts' must be a single element character vector or NA.")  }
+# 
+#  ## start by importing the relevant features from the specified file
+#  feature.type <- c("gene", "mRNA", "exon", "CDS")
+#  gff <- import(file, format=format, feature.type=feature.type,
+#                asRangedData=FALSE)
+# 
+#  if(format=="gff3"){
+#    ## check that we have ID, Parent
+#    if(all(c("ID","Parent") %in% colnames(mcols(gff)))){
+#      tables <- .prepareGFF3Tables(gff, exonRankAttributeName,
+#                                   gffGeneIdAttributeName,
+#                                   useGenesAsTranscripts)
+#      ## results come back in list like: tables$transctripts etc.
+#    }
+#  }else if(format=="gtf"){
+#    ## check that we have gene_id and transcript_id
+#    if(all(c("gene_id","transcript_id")
+#           %in% colnames(mcols(gff)))){
+#      tables <- .prepareGTFTables(gff,exonRankAttributeName)
+#    }
+#  }
+#  ## TODO: verify that I have all I really need for metadata
+#  ## build up the metadata
+#  metadata <- .prepareGFFMetadata(file, dataSource, species, miRBaseBuild)
+# 
+#  ## If there is not chrominfo, then make one up best you can (no lengths)
+#  if(is.na(chrominfo)){
+#    #message("Now generating chrominfo from available sequence names. No chromosome length information is available.")
+#    chroms <- unique(tables[["transcripts"]][["tx_chrom"]])
+#    chrominfo <- data.frame(chrom=chroms,
+#                            length=rep(NA,length(chroms)),
+#                            is_circular=matchCircularity(chroms, circ_seqs))
+#  }
+#  ## call makeTranscriptDb
+#  txdb <- makeTranscriptDb(transcripts=tables[["transcripts"]],
+#                           splicings=tables[["splicings"]],
+#                           genes=tables[["genes"]],
+#                           chrominfo=chrominfo,
+#                           metadata=metadata,
+#                           reassign.ids=TRUE)
+#  txdb
+#}
 
-  ## start by importing the relevant features from the specified file
-  feature.type <- c("gene", "mRNA", "exon", "CDS")
-  gff <- import(file, format=format, feature.type=feature.type,
-                asRangedData=FALSE)
-
-  if(format=="gff3"){
-    ## check that we have ID, Parent
-    if(all(c("ID","Parent") %in% colnames(mcols(gff)))){
-      tables <- .prepareGFF3Tables(gff, exonRankAttributeName,
-                                   gffGeneIdAttributeName,
-                                   useGenesAsTranscripts)
-      ## results come back in list like: tables$transctripts etc.
-    }
-  }else if(format=="gtf"){
-    ## check that we have gene_id and transcript_id
-    if(all(c("gene_id","transcript_id")
-           %in% colnames(mcols(gff)))){
-      tables <- .prepareGTFTables(gff,exonRankAttributeName)
-    }
-  }
-  ## TODO: verify that I have all I really need for metadata
-  ## build up the metadata
-  metadata <- .prepareGFFMetadata(file, dataSource, species, miRBaseBuild)
-
-  ## If there is not chrominfo, then make one up best you can (no lengths)
-  if(is.na(chrominfo)){
-    #message("Now generating chrominfo from available sequence names. No chromosome length information is available.")
-    chroms <- unique(tables[["transcripts"]][["tx_chrom"]])
-    chrominfo <- data.frame(chrom=chroms,
-                            length=rep(NA,length(chroms)),
-                            is_circular=matchCircularity(chroms, circ_seqs))
-  }
-  ## call makeTranscriptDb
-  txdb <- makeTranscriptDb(transcripts=tables[["transcripts"]],
-                           splicings=tables[["splicings"]],
-                           genes=tables[["genes"]],
-                           chrominfo=chrominfo,
-                           metadata=metadata,
-                           reassign.ids=TRUE)
-  txdb
-}
-
-## ## TESTING GFF3
-## gffFile=system.file("extdata","a.gff3")
-## txdb <- makeTranscriptDbFromGFF(file=gffFile,
-##                                 format="gff3",
-##                                 dataSource="partial gtf file for Tomatoes
-## donated anonymously for testing",
-##                                 species="Solanum lycopersicum",
-##                                 exonRankAttributeName = "nb_exon")
-## saveDb(txdb,file="TESTGFF.sqlite")
-
-## ## TESTING GTF
-## gtfFile=system.file("extdata","Aedes_aegypti.partial.gtf")
-## txdb <- makeTranscriptDbFromGFF(file=gtfFile,
-##                                 format="gtf",
-##                                 dataSource="ftp://ftp.ensemblgenomes.org/pub/metazoa/release-13/gtf/aedes_aegypti/",
-##                                 species="Aedes aegypti")
-## saveDb(txdb,file="TESTGTF.sqlite")
-
-
-## TODO 5/3/12:
-## )  Add some checks for columns in splicing and also transcripts for missing NA values, and drop if that is allowed
-## ) Add unit tests
-## ) fix any TODOs that still lie unanswered in this document.
-## ) tidy the comments
-
-
-##  library(GenomicFeatures);example(makeTranscriptDbFromGFF)
-
-##  example(makeTranscriptDbFromGFF)
-
-
-### Testing flybase file:
-## flyFile = "dmel-4-r5.44.gff"
-## txdb3 <- makeTranscriptDbFromGFF(file=flyFile,
-##           format="gff3",
-##           dataSource="gff file from flybase",
-##           gffGeneIdAttributeName = "geneID",
-##           species="Drosophila melanogaster")
-## foo <- transcriptsBy(txdb3, by="gene")
-
-## this file will not have any proper names etc.  Use it for testing.
-## flyFile = "dmel-1000-r5.11.filtered.gff"
 
 

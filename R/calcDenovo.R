@@ -190,9 +190,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
     islandid <- islandid[sel]
     if(sum(sel)==0) stop("No islands left to process due to strand or lack of path counts\n")
     if (mc.cores>1 && length(islandid)>mc.cores) {
-      require(parallel)
-      if ('parallel' %in% loadedNamespaces()) {
-        #ans <- mclapply(islandid, f, mc.cores=mc.cores)
+      if (requireNamespace("parallel", quietly=TRUE)) {
         #split into smaller jobs
         nsplit <- ceiling(max(length(islandid), mc.cores)/mc.cores)
         islandidList <- lapply(1:min(length(islandid), mc.cores), function(z) islandid[seq(z,length(islandid),by=mc.cores)])
