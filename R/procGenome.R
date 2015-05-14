@@ -51,7 +51,7 @@ setMethod("transcripts", signature(genomeDB='annotatedGenome', txid='missing',is
   tx <- unlist(genomeDB@transcripts,recursive=FALSE)
   names(tx) <- unlist(sapply(genomeDB@transcripts,names))
   tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
-  txranges <- genomeDB@exonsNI[tx$exon]
+  txranges <- genomeDB@exonsNI[as.character(tx$exon)]
   names(txranges) <- NULL
   ans <- RangedData(IRanges(start(txranges),end(txranges)), space=as.character(tx$tx), chr=as.character(seqnames(txranges)))
   return(ans)

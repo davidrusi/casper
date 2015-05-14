@@ -55,7 +55,7 @@ setValidity("denovoGenomeExpr", valid_denovoGenomeExpr)
 setMethod("show", signature(object="denovoGenomeExpr"), function(object) {
   cat("denovoGenomeExpr object with",length(object@islands),"gene islands\n\n")
   cat("Individual islands can be accessed via '[[' and '['\n")
-  cat("Use relativeExpr() to obtain expression estimates; variants() to see exons in each variant\n")
+  cat("Use denovoExpr() to obtain expression estimates; variants() to see exons in each variant\n")
 }
 )
 

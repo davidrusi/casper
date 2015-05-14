@@ -3,6 +3,7 @@
 \alias{transcripts,annotatedGenome,missing,missing-method}
 \alias{transcripts,annotatedGenome,character,missing-method}
 \alias{transcripts,annotatedGenome,missing,character-method}
+\alias{matchTranscripts}
 
 \docType{methods}
 \title{
@@ -18,14 +19,25 @@ these genes are grouped into gene islands.
 
 \code{transcripts} retrieves all stored transcripts for a given
 transcript or island.
+
+\code{matchTranscripts} finds transcripts in queryDB matching a
+transcript in subjectDB. The best match for each transcript
+in subjectDB is returned, unless difference in bp is >maxbp
 }
 \usage{
 transcripts(genomeDB, txid, islandid)
+
+matchTranscripts(queryDB, subjectDB, maxbp=10) 
 }
 \arguments{
   \item{genomeDB}{Object of class \code{annotatedGenome}}
   \item{txid}{Character indicating transcript identifier (optional)}
   \item{islandid}{Character indicating island identifier (optional)}
+
+  \item{queryDB}{\code{annotatedGenome} with query transcripts}
+  \item{subjectDB}{\code{annotatedGenome} with potentially matching
+    transcripts}
+  \item{maxbp}{Maximum difference in bp for transcripts to be matched}
 }
 \section{Methods}{
 \describe{
