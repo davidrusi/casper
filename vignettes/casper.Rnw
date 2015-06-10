@@ -38,8 +38,9 @@ Your citations ensure our being able to continue maintining and developing caspe
 \item If you use casper to help design an RNA-seq experiment, please cite \cite{stephanotto:2015}.
 \end{enumerate}
 
-The current manual describes Tasks 1-2 above, for experimental design please see 
-\href{https://docs.google.com/viewer?a=v\&pid=sites\&srcid=ZGVmYXVsdGRvbWFpbnxyb3NzZWxsZGF2aWR8Z3g6Yzk5ZDM3MWExYWVmZTM4}{this other manual}.
+The current manual describes Tasks 1-2 above, for experimental design please type
+\texttt{casperDesign()} at the command prompt to load the corresponding manual.
+%\href{https://docs.google.com/viewer?a=v\&pid=sites\&srcid=ZGVmYXVsdGRvbWFpbnxyb3NzZWxsZGF2aWR8Z3g6Yzk5ZDM3MWExYWVmZTM4}{this other manual}.
 
 
 \section{Quick start}
