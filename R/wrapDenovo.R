@@ -1,15 +1,15 @@
-wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB, readLength, 
+wrapDenovo <- function(bamFile, output_wrapKnown, knownGenomeDB, targetGenomeDB, readLength, 
                        rpkm=TRUE, keep.multihits=TRUE, searchMethod="submodels", 
                        exactMarginal=TRUE,  integrateMethod = "plugin", maxExons=40, 
                        islandid, chroms=NULL,
-                       returnPbam = FALSE,  keepPbamInMemory=FALSE,
+                       keep.pbam = FALSE,  keepPbamInMemory=FALSE,
                        niter=10^3,
                        priorq=3, priorqGeneExpr=2,
                        mc.cores.int=1, mc.cores=1,
                        verbose=TRUE, seed=1)
 {
     # parameter checks to prevent that mistakes are noticed half way
-    if(missing(bamFiles))
+    if(missing(bamFile))
         stop("Please provide bam files.")
     if(missing(knownGenomeDB))
         stop("No knownGenomeDB found with current annotation")
@@ -25,8 +25,8 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
         stop("searchMethod must be auto, rwmcmc, priormcmc, allmodels or submodels")
     if(missing(niter)) niter <- NULL
     if(missing(islandid)) islandid <- NULL
-    if (returnPbam) keepPbamInMemory <- TRUE
-    if (length(bamFiles)>1) cat(">1 input files were specified. Running calcDenovo on combined .bam.")
+    if (keep.pbam) keepPbamInMemory <- TRUE
+    if (length(bamFile)>1) cat(">1 input files were specified. Running calcDenovo on combined .bam.")
     
     pcs_all_samples <- c()
     distr_all_samples <- c()
@@ -37,9 +37,9 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     {
         if(verbose) cat("Computing distributions and pathcounts\n")
         
-        for(b in 1:length(bamFiles))
+        for(b in 1:length(bamFile))
         {          
-            cur_distrsAndPCs <- getDistrsAndPCs(bamFiles[b], verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
+            cur_distrsAndPCs <- getDistrsAndPCs(bamFile[b], verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
                                                  mc.cores=mc.cores, genomeDB=targetGenomeDB, keep.pbam=keepPbamInMemory, 
                                                  keep.multihits=keep.multihits, chroms=chroms)
             
@@ -111,7 +111,7 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     denovoGenomeDB <- transferIslandid(variants(out_calcDenovo), genDB1=targetGenomeDB, genDB2=denovoGenomeDB)
     
     if(verbose) cat("Obtaining posterior probabilities and expression estimates\n")
-    if (!returnPbam) pbams_all_samples <- NULL
+    if (!keep.pbam) pbams_all_samples <- NULL
     eset_denovo <- denovoExpr(out_calcDenovo, pc=mergedPCs_allSamples, rpkm=rpkm, summarize='modelAvg', minProbExpr=0, minExpr=0)
 
     #  MIRANDA'S CODE: CURRENTLY NOT IMPLEMENTED
@@ -120,17 +120,17 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     #   
     #  if(!keepPbamInMemory)
     #  {
-    #      out_wrapKnown_denovoGenome <- wrapKnown(bamFile=bamFiles, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
+    #      out_wrapKnown_denovoGenome <- wrapKnown(bamFile=bamFile, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
     #                                                 mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
     #                                                 priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
-    #                                                 keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
+    #                                                 keep.pbam=keep.pbam, keep.multihits=keep.multihits, chroms=chroms)  
     #   }
     #   else
     #   {
     #       out_wrapKnown_denovoGenome <- wrapKnownStartFromPBam(pbams=pbams_all_samples, verbose=verbose, seed=seed, mc.cores.int=mc.cores.int, 
     #                                                            mc.cores=mc.cores, genomeDB=denovoGenomeDB,readLength=readLength, rpkm=rpkm, 
     #                                                            priorq=priorq, priorqGeneExpr=priorqGeneExpr, citype='none',  
-    #                                                            keep.pbam=returnPbam, keep.multihits=keep.multihits, chroms=chroms)  
+    #                                                            keep.pbam=keep.pbam, keep.multihits=keep.multihits, chroms=chroms)  
     #   }
     # Prepare output
     #pc_denovo <- out_wrapKnown_denovoGenome$pc
@@ -146,7 +146,7 @@ wrapDenovo <- function(bamFiles, output_wrapKnown, knownGenomeDB, targetGenomeDB
     #fData(eset_denovo) <- fData(eset_denovo)[,-1]
     #fData(eset_denovo) <- fData(eset_denovo)[,-grep("expr", colnames(fData(eset_denovo)))]
 
-    return(list(denovoGenomeDB=denovoGenomeDB, eset=eset_denovo, pc=mergedPCs_allSamples, distr=mergedDistr_allSamples, pbam=pbams_all_samples))
+    return(list(denovoGenomeDB=denovoGenomeDB, exp=eset_denovo, pc=mergedPCs_allSamples, distr=mergedDistr_allSamples, pbam=pbams_all_samples))
 }
 
 # merge pathcounts from multiple samples
