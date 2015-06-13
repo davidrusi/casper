@@ -15,8 +15,8 @@
   i.e. based on the current available data \code{x}.
 }
 \usage{
-simMultSamples(nsim, nsamples, nreads, readLength, fragLength=300, x,
-groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
+simMultSamples(nsim, nsamples, nreads, readLength, fragLength, x,
+groups='group', distrs, genomeDB, model='LNNMV', verbose=TRUE, mc.cores=1)
 }
 \arguments{
   \item{nsim}{Number of simulations to obtain}
@@ -27,7 +27,8 @@ groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
   differs from this amount, see details.}
   \item{readLength}{Read length, i.e. in an experiment with paired reads
     at 100bp each, \code{readLength=100}.}
-  \item{fragLength}{Desired average insert size (size of RNA molecules after fragmentation)}
+  \item{fragLength}{Desired average insert size (size of RNA molecules
+  after fragmentation). If missing, insert sizes are as obtained from \code{distrs}}
   \item{x}{\code{ExpressionSet} containing pilot data. \code{x[[group]]} indicates groups to be compared}
   \item{groups}{Name of column in \code{pData(x)} indicating the groups}
   \item{distrs}{Fragment start and length distributions. It can be
@@ -36,6 +37,10 @@ groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
   sample to consider uncertainty in these distributions.
   If not specified, it defaults to data(distrsGSE37704).}
 \item{genomeDB}{annotatedGenome object}
+  \item{model}{Set to \code{'LNNMV'} to simulate from log-normal normal
+    with modified variance model (Yuan and Kendsiorski, 2006),
+    or to \code{'GaGa'} to simulate from the
+    GaGa model (Rossell, 2009). See details.}
   \item{verbose}{Set to \code{TRUE} to print progress}
   \item{mc.cores}{Number of cores to use in function.
   \code{mc.cores>1} requires package \code{parallel}}
@@ -63,7 +68,10 @@ groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1)
   Below are some more details.
 
   1. Simulate true mean expression in each group and residual variance
-  for each gene. This is based on the NNGCV model in package EBarrays,
+  for each gene. If model=='LNNMV' this is based on the log-normal
+  normal with modified variance model in package EBarrays
+  (Yuan & Kendziorski 2006), if model=='GaGa' this is based on the GaGa
+  model (Rossell, 2009).
   adapted to take into account that the expression estimates in the
   pilot data \code{x} are noisy (which is why \code{simMultSamples} requires the
   SE / posterior SD associated to \code{exprs(x)}).
@@ -99,7 +107,14 @@ Victor Pena, David Rossell
 #Run casperDesign() to see full manual with examples
 }
 \references{
+  Rossell D. (2009) GaGa: a Parsimonious and Flexible Model for
+  Differential Expression Analysis. Annals of Applied Statistics, 3,
+  1035-1051.
+
   Stephan-Otto Attolini C., Pena V., Rossell D. Bayesian designs for
-  personalized alternative splicing RNA-seq studies (2014)
+  personalized alternative splicing RNA-seq studies (2015)
+
+  Yuan, M. and Kendziorski, C. (2006). A unified approach for simultaneous gene
+  clustering and differential expression identification. Biometrics, 62, 1089-1098.
 }
 \keyword{ datagen }

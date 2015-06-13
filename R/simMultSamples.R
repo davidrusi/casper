@@ -35,7 +35,7 @@ logrpkm <- function(txids, th, pi, genomeDB, len) {
 }
 
 
-simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x, groups='group', distrs, genomeDB, verbose=TRUE, mc.cores=1) {
+simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength, x, groups='group', distrs, genomeDB, model='LNNMV', verbose=TRUE, mc.cores=1) {
 # Posterior predictive simulation for multiple samples
 # nsamples: vector w/ n. samples per group
 # nreads: nreads per sample
@@ -45,6 +45,7 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x
 # groups: name of column in pData(x) indicating the groups
 # distrs: fragment start and length distributions. It can be either an object of class readDistrs, or a list where each element is of class readDistrs. In the latter case, an element is chosen at random for each individual sample (so that uncertainty in these distributions is taken into account).
 # genomeDB: annotatedGenome object
+  if (!(model %in% c('LNNMV','GaGa'))) stop("model must be 'LNNMV' or 'GaGa'")
   sigma2ErrorObs <- NA
   #if (!all(paste(sampleNames(x),'se',sep='.') %in% names(fData(x)))) {
   #  stop("Estimate SE cannot be found in fData(x). Please run calcExp with citype='asymp'")
@@ -57,16 +58,44 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength=300, x
     data("distrsGSE37704")
     distrs <- distrsGSE37704
   }
-  distrs <- setfragLength(distrs, fragLength=fragLength)
-  if (verbose) cat("Fitting NNGV model...\n")
+  if (!missing(fragLength)) distrs <- setfragLength(distrs, fragLength=fragLength)
+  if (verbose) cat(paste("Fitting ",model," model...\n",collapse=''))
   seed <- sample(1:10000, 1)
   l <- genomeDB@txLength[featureNames(x)]
   groupsnew <- rep(unique(pData(x)[,groups]), nsamples)
-  nnfit <- fitNNSingleHyp(x, groups=groups, B=5, trace=FALSE)
+  if (model=='LNNMV') {
+    nnfit <- fitNNSingleHyp(x, groups=groups, B=5, trace=FALSE)
+  } else {
+    offset <- min(exprs(x))
+    if (offset<0) exprs(x) <- exprs(x) - offset + 1.0
+    patterns <- matrix(1:length(unique(pData(x)[,groups])),nrow=1); colnames(patterns) <- unique(pData(x)[,groups])
+    ggfit <- fitGG(x, groups=groups, patterns=patterns, B=5, trace=FALSE)
+    ggfit <- parest(ggfit, x=x, groups=groups)
+  }
   ans <- vector("list",nsim)
   if (verbose) cat(paste("Obtaining ",nsim," simulations (",sum(nsamples)," samples with ",nreads," reads each -- some will be non-mappable depending on readLength)\n",sep=''))
   for (k in 1:nsim) {
-    xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
+    if (model=='LNNMV') {
+      xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
+    } else {
+      xnew <- simnewsamples(ggfit, groupsnew=groupsnew, x=x, groups=groups)
+      exprs(xnew) <- as.matrix(exprs(xnew))
+      #Avoid outliers (simulated exprs within 10*IQR of mean expression in corresponding group)
+      g <- as.character(unique(xnew[[groups]]))
+      z <- vector("list",length(g))
+      for (i in 1:length(g)) {
+        m <- rowMeans(exprs(x)[,x[[groups]]==g[i]]) #mean expression in group i
+        z[[i]] <- as.matrix(exprs(xnew)[,xnew[[groups]]==g[i]])
+        d <- z[[i]] - m  #difference between simulated value & observed mean
+        q <- quantile(d, probs=c(.25,.5,.75))
+        sel <- d> (q[2] + 10*(q[3]-q[1]))
+        z[[i]][sel] <- matrix(rep(m,ncol(z[[i]])),ncol=ncol(z[[i]]))[sel] + q[2] + 10*(q[3]-q[1])
+        sel <- d< (q[2] - 10*(q[3]-q[1]))
+        z[[i]][sel] <- matrix(rep(m,ncol(z[[i]])),ncol=ncol(z[[i]]))[sel] - q[2] - 10*(q[3]-q[1])
+        exprs(xnew)[,x[[groups]]==g[i]] <- z[[i]]
+      }
+      if (offset<0) exprs(xnew) <- exprs(xnew) + offset - .01
+    }
     sampleNames(xnew) <- paste("Sample",1:ncol(xnew))
     featureNames(xnew) <- featureNames(x)
     # fData(xnew), simulated (phi, mu1, mu2)

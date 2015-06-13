@@ -7,7 +7,7 @@ Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda
         Stobbe, Victor Pena
 Maintainer: David Rossell <rosselldavid@gmail.com>
 Depends: R (>= 2.14.1), Biobase, IRanges, methods, GenomicRanges
-Imports: BiocGenerics, EBarrays, gaga, gtools, GenomeInfoDb, GenomicFeatures, limma, mgcv, Rsamtools, rtracklayer, S4Vectors, sqldf, survival, VGAM
+Imports: BiocGenerics, coda, EBarrays, gaga, gtools, GenomeInfoDb, GenomicFeatures, limma, mgcv, Rsamtools, rtracklayer, S4Vectors, sqldf, survival, VGAM
 Enhances: parallel
 Description: Infer alternative splicing from paired-end RNA-seq data.
         The model is based on counting paths across exons, rather than
