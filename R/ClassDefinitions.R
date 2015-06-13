@@ -76,33 +76,86 @@ setMethod("show", signature(object="readDistrs"), function(object) {
 }
 )
 
+
 setMethod("plot", signature(x="readDistrs",y="ANY"), function(x, y, ...) {
+    if (missing(y)) stop("Specify type of plot: 'fragLength' or 'readSt'")
+    args <- list(...)
+    if ('col' %in% names(args)) col <- args$col else col <- 1
+    if ('lty' %in% names(args)) lty <- args$lty else lty <- 1
+    if ('lwd' %in% names(args)) lwd <- args$lwd else lwd <- 1
+    if (y=='fragLength') {
+        n <- as.numeric(names(x@lenDis))
+        x2plot <- double(max(n)-min(n)+1); names(x2plot) <- min(n):max(n)
+        x2plot[names(x@lenDis)] <- x@lenDis
+        x <- as.numeric(names(x2plot))
+        if ('xlim' %in% names(args)) xlim <- args$xlim else xlim <- range(x)
+        y2plot <- x2plot/sum(x2plot)
+        if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(y2plot))
+        plot(x,y2plot,type='l',xlab='Fragment length',ylab='Proportion of reads',xlim=xlim,ylim=ylim,col=col,lty=lty,lwd=lwd)
+    } else if (y=='readSt') {
+        s <- seq(0,1,by=0.02)
+        probs <- diff(x@stDis(s))
+        if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(probs[!is.na(probs)]))
+        plot(NA,NA,xlim=c(0,1),ylim=ylim,xlab='Read start (relative to transcript length)',ylab='Density')
+        segments(s[-length(s)],probs,s[-1],col=col,lty=lty,lwd=lwd)
+        segments(s,c(0,probs),s,c(probs,0),col=col,lty=lty,lwd=lwd)
+    } else {
+        stop("Second argument must be either 'fragLength' or 'readSt'")
+    }
+}
+          )
+
+
+###############################################################
+
+setClass("readDistrsList", representation(lenDis = "list", stDis = "list"))
+
+setMethod("show", signature(object="readDistrsList"), function(object) {
+    cat("readDistrsList object of length", length(object@lenDis),"\n\n")
+    cat("Insert size distribution (only first few shown)\n")
+    show(lapply(object@lenDis, head, n=6))
+    cat("...\n")
+    cat("Read start cumulative distribution function list in slot stDis\n")
+}
+          )
+
+setMethod("plot", signature(x="readDistrsList",y="ANY"), function(x, y, ...) {
   if (missing(y)) stop("Specify type of plot: 'fragLength' or 'readSt'")
+  if("col" %in% names(args) & length(col)!=length(x@lenDis)) stop("Color must be of same length as list")
   args <- list(...)
-  if ('col' %in% names(args)) col <- args$col else col <- 1
+  if ('col' %in% names(args)) col <- args$col else col <- 1:length(x@lenDis)
   if ('lty' %in% names(args)) lty <- args$lty else lty <- 1
   if ('lwd' %in% names(args)) lwd <- args$lwd else lwd <- 1
+  if ('mfrow' %in% names(args)) mfrow <- args$mfrow else mfrow <- c(ceiling(length(x@lenDis)/2),2)
   if (y=='fragLength') {
-    n <- as.numeric(names(x@lenDis))
-    x2plot <- double(max(n)-min(n)+1); names(x2plot) <- min(n):max(n)
-    x2plot[names(x@lenDis)] <- x@lenDis
-    x <- as.numeric(names(x2plot))
-    if ('xlim' %in% names(args)) xlim <- args$xlim else xlim <- range(x)
-    y2plot <- x2plot/sum(x2plot)
-    if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(y2plot))
-    plot(x,y2plot,type='l',xlab='Fragment length',ylab='Proportion of reads',xlim=xlim,ylim=ylim,col=col,lty=lty,lwd=lwd)
+      par(mfrow=mfrow)
+      for(i in 1:length(x@lenDis)){
+          z <- x@lenDis[[i]]
+          n <- as.numeric(names(z))
+          x2plot <- double(max(n)-min(n)+1); names(x2plot) <- min(n):max(n)
+          x2plot[names(z)] <- z
+          r <- as.numeric(names(x2plot))
+          if ('xlim' %in% names(args)) xlim <- args$xlim else xlim <- range(r)
+          y2plot <- x2plot/sum(x2plot)
+          if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(y2plot))
+          plot(r,y2plot,type='l',xlab='Fragment length',ylab='Proportion of reads',xlim=xlim,ylim=ylim,col=col[i],lty=lty,lwd=lwd, main=names(x@lenDis)[i])
+      }
   } else if (y=='readSt') {
-    s <- seq(0,1,by=0.02)
-    probs <- diff(x@stDis(s))
-    if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(probs[!is.na(probs)]))
-    plot(NA,NA,xlim=c(0,1),ylim=ylim,xlab='Read start (relative to transcript length)',ylab='Density')
-    segments(s[-length(s)],probs,s[-1],col=col,lty=lty,lwd=lwd)
-    segments(s,c(0,probs),s,c(probs,0),col=col,lty=lty,lwd=lwd)
-  } else {
-    stop("Second argument must be either 'fragLength' or 'readSt'")
-  }
+      par(mfrow=mfrow)
+        for(i in 1:length(x@stDis)){
+            z <- x@stDis[[i]]
+            s <- seq(0,1,by=0.02)
+            probs <- diff(z(s))
+            if ('ylim' %in% names(args)) ylim <- args$ylim else ylim <- c(0,max(probs[!is.na(probs)]))
+            plot(NA,NA,xlim=c(0,1),ylim=ylim,xlab='Read start (relative to transcript length)',ylab='Density', main=names(x@stDis)[i])
+            segments(s[-length(s)],probs,s[-1],col=col[i],lty=lty,lwd=lwd)
+            segments(s,c(0,probs),s,c(probs,0),col=col[i],lty=lty,lwd=lwd)
+        }
+    } else {
+        stop("Second argument must be either 'fragLength' or 'readSt'")
+    }
 }
-)
+          )
 
 
 setMethod("lines", signature(x="readDistrs"), function(x, ...) {

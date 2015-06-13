@@ -166,7 +166,8 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
   pa = malloc((40 * var.nex) * sizeof(char));
   strcpy(pa, ".");
   //if ((2*rl) > var.len) rl= var.len/2; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
-  if ((rl) > var.len) rl= var.len-1; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
+  if (rl > var.len) rl= var.len-1; //trim read length if variant shorter. Local variable so doesn't affect subsequent calls
+  if(rl > len) rl=len;
   if(strand==1) {
     rst = st + len - rl;
     en = st + rl - 1;
@@ -256,7 +257,6 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
   else {hash_insert(path, pa, 1); starts[2]=1;}
   starts[0] = st;
   starts[1] = rst;
-
   free(pa);
   return(0);
 }
@@ -273,25 +273,30 @@ unsigned NextPow2( unsigned x ) {
 
 
 int *build_cigar(var_t var, int len, int st, int rl, char **cigars, int strand){
-  int i, rst, rltmp, *ans, sum=1, wis, done=0;
-  ans = malloc(3 * sizeof(int));
-
+  int i, rst, rltmp, *ans, sum=1, wis, done=0, correct=0, rlb; 
+  ans = malloc(4 * sizeof(int));
+  ans[2]=rl;
+  
+  if(rl > len) {
+    rl=len;
+    ans[2]=rl;
+  }
   
   if(strand==1){ rst = st + len - rl;} else {st = var.len - st - len + 2; rst = st + len - rl;}
-  
+
   for(i=0; i<var.nex; i++) {
-    wis = abs(var.exen[i] - var.exst[i]);
-    if((sum<=st) && (st<sum+wis)) {
-      st = var.exst[i] + st - sum;
-      done++;
+    wis = abs(var.exen[i] - var.exst[i]) + 1;
+    if((sum <= st) && (st < (sum+wis))) {
+        st = var.exst[i] + st - sum;
+        done++;
       if(done==2) break;
     }
-    if((sum<=rst) && (rst < sum+wis)) {
+    if((sum <= rst) && (rst < (sum+wis))) {
       rst = var.exst[i] + rst - sum;
       done++;
       if(done==2) break;
     }
-    sum += wis;
+    sum = sum + wis;
   }
 
   ans[0] = st;
@@ -302,7 +307,7 @@ int *build_cigar(var_t var, int len, int st, int rl, char **cigars, int strand){
   //Build left read
   sum=1;
   rltmp = rl;
-  if(var.len>=rl){
+  if( var.len >= rl ) {
     for(i=0; i<var.nex; i++) {
       if((var.exst[i] <= st) && (st <= var.exen[i])) {
 	if(st+rltmp <= var.exen[i]) { add_match(cigars[0], rltmp); rltmp=0; break;} 

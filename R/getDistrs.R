@@ -1,3 +1,25 @@
+transDistr <- function(distr, newmean, readLength){
+  lprobs <- distr@lenDis
+  totF <- sum(lprobs)
+  nmean <-  mean(rep(as.numeric(names(lprobs)), lprobs))
+  nmean <- newmean - nmean
+  names(lprobs) <- as.numeric(names(lprobs)) + round(nmean)
+  nprobs <- names(lprobs)
+  lprobs <- lprobs[as.numeric(nprobs)>0]
+  nprobs <- names(lprobs)
+  distr@lenDis <- as.array(lprobs)
+  if(min(as.numeric(names(lprobs)))>=readLength) {
+    probs <- as.integer(ceiling(dpois(readLength:(min(as.numeric(names(lprobs)))-1), lambda=newmean)*totF))
+    names(probs) <- as.character(readLength:(min(as.numeric(names(lprobs)))-1))
+   #Combine into new prob vector
+    nprobs <- c(names(probs), nprobs)
+    lprobs <- c(probs, lprobs)
+    distr@lenDis <- as.array(lprobs)
+    names(distr@lenDis) <- nprobs
+  }
+  distr
+}
+
 startDist <- function(st,fragLength,txLength, nreads=NULL) {
                                         # Estimate relative start distribution under left??truncation (st < 1 ?? fragLength/txLength)
                                         # ?? st: relative start (i.e. start/txLength)
@@ -55,29 +77,97 @@ getDistrsSplit <- function(DBsplit, pbamSplit) {
 }
 
 
-getDistrs <- function(DB, bam, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6, readLength){
-  if (missing(pbam)) {
-    ans <- getDistrsFromBam(DB=DB, bam=bam, islandid=islandid, verbose=verbose, nreads=nreads, readLength=readLength)
-  } else {
-    ans <- getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads)
-  }
-  #Truncate length distr to (median - 3*IQR, median + 6*IQR)
-  if(length(ans@lenDis)>1) {
-    w <- ans@lenDis/max(ans@lenDis)
-    wcum <- cumsum(w/sum(w))
-    q <- as.numeric(c(names(wcum)[which(wcum>.25)[1]],names(wcum)[which(wcum>.75)[1]]))
-    iqr <- q[2]-q[1]
-    sel <- (as.numeric(names(wcum))>= q[1]-3*iqr) & (as.numeric(names(wcum))<= q[2]+6*iqr)
-    ans@lenDis <- ans@lenDis[sel]
-  }
-  return(ans)
+getDistrs <- function(DB, bam, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6, readLength, min.gt.freq = NULL, tgroups=5, mc.cores=1){    
+
+    if('gene_type' %in% colnames(DB@aliases) & !'gene_type_merged' %in% colnames(DB@aliases)){
+        types <- table(DB@aliases$gene_type)
+        if(!is.null(min.gt.freq)){
+            freqs <- types/sum(types)
+            mer <- names(freqs[freqs < min.gt.freq])
+        } else {
+            freqs <- sort(types, decreasing=T)
+            mer <- names(freqs[tgroups:length(freqs)])
+        }
+        newgt <- DB@aliases$gene_type
+        newgt[newgt %in% mer] <- 'merged'
+        DB@aliases$gene_type_merged <- as.character(newgt) 
+    }
+    
+    if (missing(pbam)) {
+        if('gene_type_merged' %in% colnames(DB@aliases)){
+            types <- unique(DB@aliases$gene_type_merged)
+            if(mc.cores > 1) {
+                if ('parallel' %in% loadedNamespaces()) {
+                    ans <- mclapply(types, function(x) {
+                        isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
+                        getDistrsFromBam(DB=DB, bam=bam, islandid=islandid, verbose=verbose, nreads=nreads, readLength=readLength, selislands=isl)
+                    }, mc.cores=min(mc.cores, length(types)))
+                } else stop('parallel library has not been loaded!')
+            } else {
+                ans <- lapply(types, function(x) {
+                    isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
+                    getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
+                })
+            }
+            ld <- lapply(ans, truncLenDis)
+            names(ld) <- types
+            stDis <- lapply(ans, slot, "stDis")
+            names(stDis) <- types
+            ans <- new("readDistrsList",lenDis=ld,stDis=stDis)
+        } else {
+            ans <- getDistrsFromBam(DB=DB, bam=bam, islandid=islandid, verbose=verbose, nreads=nreads, readLength=readLength)
+            ans@lenDis <- truncLenDis(ans)
+        }
+    } else {
+        if('gene_type_merged' %in% colnames(DB@aliases)){
+            types <- unique(DB@aliases$gene_type_merged)
+            if(mc.cores > 1) {
+                if ('parallel' %in% loadedNamespaces()) {  
+                    ans <- mclapply(types, function(x) {
+                        isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
+                        getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
+                    }, mc.cores=min(mc.cores, length(types)))
+                } else stop('parallel library has not been loaded!')   
+            } else {
+                ans <- lapply(types, function(x) {
+                    isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
+                    getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
+                })
+            }                
+            ld <- lapply(ans, truncLenDis)
+            names(ld) <- types
+            stDis <- lapply(ans, slot, "stDis")
+            names(stDis) <- types
+            ans <- new("readDistrsList",lenDis=ld,stDis=stDis)
+        } else {
+            ans <- getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads)
+            ans@lenDis <- truncLenDis(ans)
+        }
+    }
+    return(ans)
+}
+
+truncLenDis <- function(ans){
+    #Truncate length distr to (median - 3*IQR, median + 6*IQR)
+    if(length(ans@lenDis)>1) {
+        w <- ans@lenDis/max(ans@lenDis)
+        wcum <- cumsum(w/sum(w))
+        q <- as.numeric(c(names(wcum)[which(wcum>.25)[1]],names(wcum)[which(wcum>.75)[1]]))
+        iqr <- q[2]-q[1]
+        sel <- (as.numeric(names(wcum))>= q[1]-3*iqr) & (as.numeric(names(wcum))<= q[2]+6*iqr)
+        ans@lenDis <- ans@lenDis[sel]
+    }
+    return(ans@lenDis)
 }
 
 
-getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6){
+getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6, selislands=NULL){
 
   if (class(pbam) != 'procBam') stop('Argument pbam must be of class procBam')
-  exonsRD <- DB@exonsNI
+  
+  if(!is.null(selislands)) {
+      exonsRD <- DB@exonsNI[names(DB@islands[selislands]@unlistData)]
+  } else exonsRD <- DB@exonsNI
   if(!any(unique(seqnames(pbam@pbam)) %in% levels(seqnames(exonsRD)))) stop('Different chromosome names in pbam and genome')
 
   #Find fragment length distribution for fragments aligning to exons larger than 1000 bases  
@@ -86,9 +176,12 @@ getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*1
   #Remove reads with >2 appearances
   sel <- c(TRUE, pbam@pbam$names[-1]!=pbam@pbam$names[-length(pbam@pbam)] | (pbam@pbam$rid[-1] != pbam@pbam$rid[-length(pbam@pbam)]))
   pbam@pbam <- pbam@pbam[sel,]
-  
+
   sel <- pbam@pbam$rid==1
-  frags <- GRanges(IRanges(start(pbam@pbam)[sel], end(pbam@pbam)[pbam@pbam$rid==2]), seqnames=seqnames(pbam@pbam)[sel])
+  sel1 <- pbam@pbam$rid==2
+  sel2 <- as.character(seqnames(pbam@pbam[sel])) == as.character(seqnames(pbam@pbam[sel1]))
+  
+  frags <- GRanges(IRanges(start(pbam@pbam)[sel][sel2], end(pbam@pbam)[sel1][sel2]), seqnames=seqnames(pbam@pbam)[sel][sel2])
   n <- levels(seqnames(frags))[levels(seqnames(frags)) %in% levels(seqnames(exonsRD))]
   fragsL<-frags[levels(seqnames(frags)) %in% n]
   over <- suppressWarnings(findOverlaps(fragsL, subset(exonsRD, width(exonsRD)>1000), type="within"))
@@ -100,11 +193,14 @@ getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*1
     ld <- ld[ld/sum(ld) > 0.0001]
   }
 
-  #Find fragment start distribution for fragments aligning to transcripts in genes with only one annotated tx
+  #Find fragment start distribution for fragments aligning to transcripts in genes with only one anno tated tx
   if(verbose) cat("Calculating fragment start distribution\n")
-  if(is.null(islandid)){
+  if(is.null(islandid) & is.null(selislands)){
     sel <- unlist(lapply(DB@transcripts, length))==1
   } else sel= islandid
+  if(!is.null(selislands)){
+      sel <- unlist(lapply(DB@transcripts, length))==1 & names(DB@transcripts) %in% selislands
+  }
   oneTx <- DB@transcripts[sel]
   oneTx <- unlist(oneTx, recursive=F)
   names(oneTx) <- sub("[0-9]+\\.", "", names(oneTx))
@@ -150,7 +246,7 @@ getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*1
 
 
 
-getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^6, readLength){
+getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^6, readLength, selislands=NULL){
 
   if (!all(c('qname','rname','pos','mpos') %in% names(bam))) stop('bam must contain elements qname, rname, pos, mpos')
 
@@ -164,7 +260,9 @@ getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^
   
   #Find fragment length distribution for fragments aligning to exons larger than 1000 bases  
   if(verbose) cat("Calculating fragment length distribution\n")
-  exonsRD <- DB@exonsNI
+  if(!is.null(selislands)) {
+      exonsRD <- DB@exonsNI[names(DB@islands[selislands]@unlistData)]
+  } else exonsRD <- DB@exonsNI
   d <- bam$mpos - bam$pos
   sel <- d<0; n <- bam$qname[sel]; sp <- bam$rname[sel]; names(sp) <- n
   en <- bam$pos[sel]+readLength-1; names(en) <- n  #faster than bam$pos[sel]+bam$qwidth[sel]-1

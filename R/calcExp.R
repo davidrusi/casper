@@ -1,4 +1,46 @@
-procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
+setMethod("procExp", signature(distrs='readDistrsList'), function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads, tgroups=5, min.gt.freq=NULL) {
+
+    if(!'gene_type' %in% colnames(genomeDB@aliases)) stop("gene_type column must be present in genomeDB")
+    types <- table(genomeDB@aliases$gene_type)
+    if(!is.null(min.gt.freq)){
+        freqs <- types/sum(types)
+        mer <- names(freqs[freqs < min.gt.freq])
+    } else {
+        freqs <- sort(types, decreasing=T)
+        mer <- names(freqs[tgroups:length(freqs)])
+    }
+    newgt <- genomeDB@aliases$gene_type
+    newgt[newgt %in% mer] <- 'merged'
+    newgt <- as.character(newgt)
+    names(newgt) <- rownames(genomeDB@aliases)
+    #genomeDB@aliases$gene_type_merged <- as.character(newgt)
+    
+    ord <- length(unique(newgt))-rank(table(newgt)) +1
+    types <- tapply(newgt, genomeDB@aliases$island_id, unique)
+    sel <- which(unlist(lapply(types, length))>1)
+    types[sel] <- lapply(types[sel], function(x) x[which.min(ord[x])])
+    types <- unlist(types)
+    
+#    genomeDB@aliases$type2use <- types[genomeDB@aliases$island_id]
+
+    types <- types[islandid]
+    ans <- lapply(unique(types), function(type){
+        dis <- new("readDistrs", lenDis=distrs@lenDis[[type]], stDis=distrs@stDis[[type]])
+        x <- procExp(dis, genomeDB, pc, readLength, islandid=intersect(islandid, names(types)[types==type]), rpkm, priorq, priorqGeneExpr, citype, niter, burnin, mc.cores, verbose, totReads)
+    })
+
+    x <- lapply(ans, exprs)
+    x <- do.call(rbind, x)
+
+    f <- lapply(ans, featureData)
+    f <- new("AnnotatedDataFrame", data.frame(do.call(rbind, lapply(f, slot, 'data')), distr=newgt[rownames(x)]))
+
+    new('ExpressionSet', exprs=x, featureData=f)
+    
+})
+
+setMethod("procExp", signature(distrs='readDistrs'), function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, priorq=2, priorqGeneExpr=2, citype='none', niter=10^3, burnin=100, mc.cores=1, verbose=FALSE, totReads) {
+    
   #Format input
   startcdf <- distrs@stDis(seq(0,1,.001))
   lendis <- as.double(distrs@lenDis/sum(distrs@lenDis))
@@ -188,7 +230,7 @@ procExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
   fdata <- new("AnnotatedDataFrame",fdata)
   ans <- new("ExpressionSet",exprs=exprsx,featureData=fdata)
   ans
-}
+})
 
 mergeExp <- function(minus, plus){
   exp <- rbind(exprs(plus), exprs(minus))

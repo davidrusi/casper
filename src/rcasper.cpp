@@ -54,9 +54,9 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
       //Set counts
       int count = pathCounts[i];
       
-      
+ 
       //Set nb of left & right visited exons
-      
+       
       const char* pname = CHAR(STRING_ELT(pnames, i));
 
       char* varname = new char[strlen(pname) + 1];
@@ -149,7 +149,14 @@ void importFragments(int np, SEXP pnames, int *pathCounts, int strand, int inv, 
 
 	}
 
-
+	/*	printf("path %s\t", pname);
+	printf("st %d\t", strand);
+	printf("l0 %d\t", f->left[0]);
+	printf("r0 %d\t", f->right[0]);
+	printf("le %d\t", f->left[f->leftc - 1]);
+	printf("re %d\n", f->right[f->rightc -1]);
+	
+	*/
 	
 	bool c1= (strand==1) && (f->left[0] <= f->right[0]) && (f->left[f->leftc -1] <= f->right[f->rightc -1]);
 

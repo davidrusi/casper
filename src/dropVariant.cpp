@@ -39,10 +39,10 @@ void dropVariant::add(int *varsin) {
 
   //Turn varsin into string
 
-  zerochar = (char *) calloc(nvars, sizeof(char));
+  zerochar = (char *) calloc(nvars + 1, sizeof(char));
 
   for (i=0; i < this->nvars; i++) if (varsin[i]==1) zerochar[i]= '1'; else zerochar[i]= '0';
-
+  printf("%d %d %s\n", nvars, this->nvars, zerochar);
   std::string s (zerochar);
 
   //Add varsin to submodels. If already there, free memory

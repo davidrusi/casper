@@ -7,7 +7,7 @@ logrpkm2thpi <- function(txids, lrpkm, genomeDB) {
   txids <- txids[rownames(lrpkm),]
   len <- genomeDB@txLength[rownames(lrpkm)]
   thpi <- data.frame(txids[,c('transcript','island_id')], exp(lrpkm) * len / 10^9)
-  thpi[,-1:-2] <- t(t(thpi[,-1:-2,drop=FALSE])/colSums(thpi[,-1:-2,drop=FALSE]))
+    thpi[,-1:-2] <- t(t(thpi[,-1:-2,drop=FALSE])/colSums(thpi[,-1:-2,drop=FALSE]))
   th <- aggregate(thpi[,-1:-ncol(txids),drop=FALSE], by=list(thpi$island_id), FUN=sum)
   names(th)[1] <- 'island_id'
   thpi <- merge(thpi, th, by='island_id')

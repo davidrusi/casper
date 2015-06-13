@@ -2,8 +2,7 @@ simReads <- function(islandid, nSimReads, pis, rl, seed, writeBam, distrs, genom
   ##### Simulate reads
   if(writeBam==1) {
     chrlen <- seqlengths(genomeDB@exonsNI)
-    tmp <- sub(" ", ".", Sys.time())
-    if(is.null(chr)) lr_file <- paste(bamFile, tmp, ".sam", sep="")
+    if(is.null(chr)) lr_file <- paste(bamFile, ".sam", sep="")
   }
   if(!is.null(chr)){
     isl2chr <- genomeDB@exon2island$seqname
@@ -11,7 +10,7 @@ simReads <- function(islandid, nSimReads, pis, rl, seed, writeBam, distrs, genom
     lr_file=NULL
     sims <- lapply(chr, function(x){
       if(verbose) cat("Simulating ", x, "\n")
-      if(writeBam) lr_file <- paste(bamFile, tmp, ".", x, ".sam", sep="")
+      if(writeBam) lr_file <- paste(bamFile, ".", x, ".sam", sep="")
       islandid <- islandid[islandid %in% names(isl2chr)[isl2chr %in% x]]
       if(writeBam) sims <- casperSim(genomeDB=genomeDB, distrs=distrs, nSimReads=nSimReads, pis=pis, islandid=islandid, lr_file=lr_file, rl=rl, chrlen=chrlen, seed=seed, bam=writeBam, chr=x, verbose=verbose)
     if(!writeBam) sims <- casperSim(genomeDB=genomeDB, distrs=distrs, nSimReads=nSimReads, pis=pis, islandid=islandid, rl=rl, seed=seed, bam=writeBam, chr=x, verbose=verbose)
@@ -25,7 +24,6 @@ simReads <- function(islandid, nSimReads, pis, rl, seed, writeBam, distrs, genom
     if (verbose) cat("Splitting counts\n")
     counts <- splitPaths(sims$pc, genomeDB, mc.cores=mc.cores, stranded=stranded, geneid=islandid)
     pc <- new("pathCounts", counts=counts, denovo=FALSE, stranded=stranded)
-   
   if(repSims==1) {
     sims$pc <- NULL
     sims$Nsim <- NULL

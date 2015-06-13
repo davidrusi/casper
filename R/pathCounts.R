@@ -25,8 +25,11 @@ mergePC <- function(pc, DB){
 procPaths <- function(reads, DB, mc.cores, verbose){
     if(verbose) cat("Finding overlaps between reads and exons\n")
     chrs <- as.character(unique(seqnames(reads)@values))
-    DB <- subsetGenome(genomeDB=DB, chr=chrs)    
-    over<-findOverlaps(reads, DB@exonsNI)    
+    DB <- subsetGenome(genomeDB=DB, chr=chrs)
+    sel <- findOverlaps(reads, reduce(DB@exonsNI), type='within')
+    sel <- which(!(1:length(reads) %in% unique(queryHits(sel))))
+    if(length(sel)>0) reads <- reads[-sel,]
+    over <- findOverlaps(reads, DB@exonsNI)
     if("id" %in% colnames(values(reads))) {
       readid<-values(reads)$id[queryHits(over)]
     } else if("names" %in% colnames(values(reads))) {

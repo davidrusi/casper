@@ -10,7 +10,7 @@
 #include "functions.h"
 
 
-SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP strand, SEXP totFrags, SEXP totReads, SEXP flag, SEXP totJunx, SEXP len, SEXP strs, SEXP key, SEXP chrom, SEXP rid, SEXP rstrand, SEXP jchrom, SEXP jstrs, SEXP jlen, SEXP rflag){
+SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP strand, SEXP totFrags, SEXP totReads, SEXP flag, SEXP totJunx, SEXP len, SEXP strs, SEXP key, SEXP chrom, SEXP rid, SEXP rstrand, SEXP jchrom, SEXP jstrs, SEXP jlen, SEXP rflag, SEXP ispaired){
 	read_t *frags;
 	int totF, j, l, hashSize, i, frags_size, *qname_p;
 	hash_t *fragsHashPtr, fragsHash;
@@ -38,6 +38,7 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 	PROTECT(strand);
 	int *p_strand=INTEGER(strand);
 	int *p_flag=INTEGER(flag);
+	int *p_ispaired=INTEGER(ispaired);
 	//int reads_size = INTEGER(totReads)[0];
 	char *str;
 	str=malloc(100 * sizeof(char));
@@ -88,7 +89,7 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
             while(bucket) {
 	      tmp=bucket->data;
 	      cigs=malloc(100 * sizeof(int));
-	      if(frags[tmp].nreads==2) {
+	      if(frags[tmp].nreads==2 || p_ispaired[0]==0) {
 		cigs = procCigar(m_strdup(CHAR(STRING_ELT(cigar, frags[tmp].strand_1))), cigs);
 		frags[tmp].len_1 = p_start[frags[tmp].strand_1];
 		ini=1;
@@ -116,33 +117,35 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 		    }
 		  }
 		}
-		cigs = procCigar(m_strdup(CHAR(STRING_ELT(cigar, frags[tmp].strand_2))), cigs);
-		ini=1;
-                if(cigs[1]<0) {
-		  frags[tmp].len_2=p_start[frags[tmp].strand_2] + cigs[1]*-1;
-		  ini=2;
-		} else frags[tmp].len_2=p_start[frags[tmp].strand_2];
-		for(j=ini; j<cigs[0]+1;j++) {        
-		  if(cigs[j]>0){
-		    SET_STRING_ELT(key, counter, mkChar(bucket->key));
-		    if(length(chr)>1) SET_STRING_ELT(chrom, counter, mkChar(CHAR(STRING_ELT(chr, frags[tmp].strand_2))));
-		    if(length(rflag)>1) p_rflag[counter] = p_flag[frags[tmp].strand_2];
-		    p_strs[counter] = frags[tmp].len_2;
-		    p_len[counter] = frags[tmp].len_2+(cigs[j]-1);
-		    p_rid[counter] = 2;
-		    p_rstrand[counter] = p_strand[frags[tmp].strand_2];
-		    frags[tmp].len_2+=cigs[j];
-		    counter++;
-		  } else {
-		    if((cigs[0]>1)&&(j<cigs[0])) {
-		      if(INTEGER(totJunx)[0]>1){
-			if(length(chr)>1) SET_STRING_ELT(jchrom, jcounter, mkChar(CHAR(STRING_ELT(chr, frags[tmp].strand_2))));
-			p_jstrs[jcounter] = frags[tmp].len_2;
-			p_jlen[jcounter] = frags[tmp].len_2-1;
-			jcounter++;
-		      }
+		if(p_ispaired[0]==1){
+		  cigs = procCigar(m_strdup(CHAR(STRING_ELT(cigar, frags[tmp].strand_2))), cigs);
+		  ini=1;
+		  if(cigs[1]<0) {
+		    frags[tmp].len_2=p_start[frags[tmp].strand_2] + cigs[1]*-1;
+		    ini=2;
+		  } else frags[tmp].len_2=p_start[frags[tmp].strand_2];
+		  for(j=ini; j<cigs[0]+1;j++) {        
+		    if(cigs[j]>0){
+		      SET_STRING_ELT(key, counter, mkChar(bucket->key));
+		      if(length(chr)>1) SET_STRING_ELT(chrom, counter, mkChar(CHAR(STRING_ELT(chr, frags[tmp].strand_2))));
+		      if(length(rflag)>1) p_rflag[counter] = p_flag[frags[tmp].strand_2];
+		      p_strs[counter] = frags[tmp].len_2;
+		      p_len[counter] = frags[tmp].len_2+(cigs[j]-1);
+		      p_rid[counter] = 2;
+		      p_rstrand[counter] = p_strand[frags[tmp].strand_2];
+		      frags[tmp].len_2+=cigs[j];
+		      counter++;
+		    } else {
+		      if((cigs[0]>1)&&(j<cigs[0])) {
+			if(INTEGER(totJunx)[0]>1){
+			  if(length(chr)>1) SET_STRING_ELT(jchrom, jcounter, mkChar(CHAR(STRING_ELT(chr, frags[tmp].strand_2))));
+			  p_jstrs[jcounter] = frags[tmp].len_2;
+			  p_jlen[jcounter] = frags[tmp].len_2-1;
+			  jcounter++;
+			}
 		      //printf("inside %d %d %d %d %d %d\n", frags[tmp].len_2, counter, p_strs[counter], p_len[counter], cigs[j], j);
-		      frags[tmp].len_2 -= cigs[j];
+			frags[tmp].len_2 -= cigs[j];
+		      }
 		    }
 		  }
 		}

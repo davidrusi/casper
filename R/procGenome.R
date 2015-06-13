@@ -331,19 +331,25 @@ createGenome <- function(txs, Exons, genome, mc.cores, verbose=TRUE) {
 
 
 setMethod("procGenome", signature(genDB="TxDb"), function(genDB, genome, mc.cores=1, verbose=TRUE) {
-#  genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename="refGene")
+  #  genDB<-makeTranscriptDbFromUCSC(genome=genome, tablename="refGene")
   if (verbose) cat("Processing Exons and Transcrips\n")
   txs <- GenomicFeatures::transcripts(genDB,columns=c("tx_id","tx_name","gene_id","exon_id"))
   Exons <- exonsBy(genDB, by="tx")
   createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores, verbose=verbose)
- } 
+} 
 )
 
-
 setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.cores=1, verbose=TRUE) {
+ ## Store gene type to add to aliases
+
+    if('gene_type' %in% colnames(values(genDB))){
+        gt <- as.character(genDB$gene <- type)
+        names(gt) <- genDB$transcript <- id
+    }
+    
   if (verbose) cat("Formatting GTF table with GenomicFeatures tools...\n")
   if (all(c("gene_id", "transcript_id") %in% colnames(mcols(genDB)))) {
-    tables <- .prepareGTFTables(genDB, exonRankAttributeName=NA) #function copied from GenomicFeatures
+    tables <- GenomicFeatures:::.prepareGTFTables(genDB, exonRankAttributeName=NA) #function copied from GenomicFeatures
   } else {
     stop("Columns named 'gene_id' and 'transcript_id' not found")
   }
@@ -351,11 +357,14 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
   if (any(is.na(genDB$transcript_id))) stop("Missing values in geneDB$transcript_id are not allowed")
   chroms <- unique(tables[["transcripts"]][["tx_chrom"]])
   chrominfo <- data.frame(chrom = chroms, length = rep(NA,length(chroms)))
+
+  
   #Eliminate transcripts with unknown strands (usually transcripts with 1 exon)
-  sel <- (tables$transcripts$tx_strand %in% c('+','-'))
-  tables$transcripts <- tables$transcripts[sel,]
-  sel <- (tables$splicings$exon_strand %in% c('+','-'))
-  tables$splicings <- tables$splicings[sel,]
+  #sel <- (tables$transcripts$tx_strand %in% c('+','-'))
+  #tables$transcripts <- tables$transcripts[sel,]
+  #sel <- (tables$splicings$exon_strand %in% c('+','-'))  
+  #tables$splicings <- tables$splicings[sel,]
+  
   tables$genes <- tables$genes[tables$genes$tx_name %in% tables$transcripts$tx_name,]
   if (verbose) cat("Making TranscriptDb object...\n")
   txdb <- GenomicFeatures::makeTxDb(transcripts=tables[["transcripts"]], splicings=tables[["splicings"]], genes=tables[["genes"]], chrominfo=chrominfo, reassign.ids=TRUE, )
@@ -367,9 +376,72 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
   if (any(noexons)) {  
     warning('Some of the specified transcripts had no exons. They were removed')
     txs <- txs[!noexons,]
-  }
-  ans <- createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores, verbose=verbose)
-  return(ans)
 }
-)
+  ans <- createGenome(txs=txs, Exons=Exons, genome=genome, mc.cores=mc.cores, verbose=verbose)
+  if(length(tx_unknownStrand)>0) ans <- restoreUnknownStrand(ans, tx_unknownStrand, genDB_org, mc.cores)
+  if('gene_type' %in% colnames(values(genDB)))  ans@aliases$gene_type <- gt[rownames(ans@aliases)]
+  ans
+})
+
+restoreUnknownStrand <- function(ans, tx_unknownStrand, genDB, mc.cores)
+{
+
+      # get the island ids for every transcript with unknown strand   
+#  islWithTxUnknownStrand <- unlist(mclapply(tx_unknownStrand, function(x) { getIsland(txid=x, genomeDB=ans)}, mc.cores=mc.cores))
+
+    islWithTxUnknownStrand <- unique(as.character(ans@aliases[tx_unknownStrand,]$island_id))
+  
+  # if the transcript is in an island on its own then change the strand of the island to *
+
+    txPerIsl <- unlist(lapply(ans@islands[islWithTxUnknownStrand], length))
+                              
+    islSingleTx <- islWithTxUnknownStrand[txPerIsl==1]
+  
+    if(length(islSingleTx)>0) strand(ans@islands[islSingleTx]@unlistData) <- "*"
+  
+  islWithTxUnknownStrand <- islWithTxUnknownStrand[!islWithTxUnknownStrand %in% islSingleTx]
+  
+  # if there are only transcripts with an unknown strand in an island according to the original annotation, then change back to "*"
+
+    if(length(islWithTxUnknownStrand)>0){
+    
+    islAllStarStrand <- unlist(mclapply(islWithTxUnknownStrand, function(x){
+        if(all(strand(genDB[which(genDB$transcript_id %in% names(ans@transcripts[[x]]))]) == "*"))
+            return(x)
+    }, mc.cores=mc.cores))
+  
+    strand(ans@islands[islAllStarStrand]@unlistData) <- "*"
+    islWithTxUnknownStrand <- islWithTxUnknownStrand[!islWithTxUnknownStrand %in% islAllStarStrand]
+}
+    
+
+  # if the strand of the island is +, then leave it like that
+
+    if(length(islWithTxUnknownStrand)>0){        
+        islAllPlusStrand <- tapply(islAllStarStrand, rep(islWithTxUnknownStrand, unlist(lapply(ans@islands[islWithTxUnknownStrand], length))), unique)
+        islAllPlusStrand <- names(islAllPlusStrand[islAllPlusStrand=='+'])
+  
+        islWithTxUnknownStrand <- islWithTxUnknownStrand[!islWithTxUnknownStrand %in% islAllPlusStrand]
+    }
+  
+  # if the strand of the island is *, then check if all other transcripts in this island are (1) - or (2) not                  
+  
+  
+  # (1) if all others are on the - strand, then change to - 
+  # or in other words if none of the transcripts in the original annotation is on the '+' strand, then they were all either '-' or '*'
+    if(length(islWithTxUnknownStrand)>0){
+        islAllMinusStrand <- tapply(islAllStarStrand, rep(islWithTxUnknownStrand, unlist(lapply(ans@islands[islWithTxUnknownStrand], length))), unique)
+        islAllMinusStrand <- names(islAllMinusStrand[islAllMinusStrand=='-'])
+        
+        strand(ans@islands[islAllMinusStrand]@unlistData) <- "-"
+  
+        islWithTxUnknownStrand <- islWithTxUnknownStrand[!islWithTxUnknownStrand %in% islAllMinusStrand]
+    }
+       
+  # (2) all remaining cases should be: the island has transcripts on both strands, even when excluding the transcript with unknown strand
+  # --> change to *
+    if(length(islWithTxUnknownStrand)>0)  strand(ans@islands[islWithTxUnknownStrand]@unlistData) <- "*"
+  
+  return (ans)
+}
 

@@ -26,6 +26,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
    U <- NULL
    txe <- list()
    pcs <- list()
+   sim.exps <- list()
    disArray <- vector("list", length(f))
    for (i in 1:length(disArray)) disArray[[i]] <- setfragLength(distr, fragLength=f[i])
 #   disArray <- mapply(function(x, y) casper:::transDistr(distr.pilot, x, y), f, r)
@@ -33,7 +34,8 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
      if (retTxsError) stop("Option retTxsError==TRUE is only available when argument pc is specified")
      if (verbose) cat("Simulating pilot data...\n")
      #Draw gene expression from eset.pilot
-     th <- exprs(eset.pilot)[sample(1:nrow(eset.pilot),length(islandid),replace=TRUE),sample(1:ncol(eset.pilot),1)]
+     #th <- exprs(eset.pilot)[sample(1:nrow(eset.pilot),length(islandid),replace=TRUE),sample(1:ncol(eset.pilot),1)]
+     th <- exprs(eset.pilot)
      th <- 2^(th-max(th)); th <- th/sum(th)
      nSimReads <- rmultinom(n=1, size=10^7, prob=th)[,1]
      names(nSimReads) <- islandid
@@ -60,9 +62,9 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
-         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
-       }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
-     } else {
+         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp=sim.exp[colnames(pis),])
+     }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
+   } else {
        res <- lapply(1:nsim, function(i){
          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
@@ -70,23 +72,25 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE))
-         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc)
+         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp = sim.exp[colnames(pis),])
        })
      }
-          Un <- do.call(cbind, lapply(res, "[[", "maes"))
+     Un <- do.call(cbind, lapply(res, "[[", "maes"))
      df <- data.frame(MAE= colMeans(Un), Nreads=rep(n[j], nsim), ReadLength=rep(r[j], nsim), frLength=rep(f[j], nsim))
      U <- rbind(U, df)
      if(retTxsError) {
        rownames(Un) <- colnames(pis)
        txe[[j]] <- Un
       # pcs[[j]] <- lapply(res[sel], "[[", "pc")
-         pcs[[j]] <- lapply(res, '[[', 'pc')
-     }
+       pcs[[j]] <- lapply(res, '[[', 'pc')
+       sim.exps[[j]] <- lapply(res, '[[', 'sim.exp')
+   }
    }
    if(retTxsError){
      names(txe) <- paste(n, r, f, sep='-')
      names(pcs) <- paste(n, r, f, sep='-')
-     return(list(txe=txe, U=U, pcs=pcs, pis=pis))
+     names(sim.exps) <- paste(n, r, f, sep='-')
+     return(list(txe=txe, U=U, pcs=pcs, pis=pis, sim.exps=sim.exps))
    }
    return(U)
 }
