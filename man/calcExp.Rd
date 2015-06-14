@@ -81,6 +81,7 @@ eset <- relexprByGene(eset)
 
 #Add fake sample by permuting and combine
 eset2 <- eset[sample(1:nrow(eset),replace=FALSE),]
+sampleNames(eset2) <- '2' #must have a different name
 esetall <- mergeExp(eset,eset2)
 
 #After merge samples are correctly matched

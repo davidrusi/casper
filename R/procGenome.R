@@ -386,9 +386,7 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
 restoreUnknownStrand <- function(ans, tx_unknownStrand, genDB, mc.cores)
 {
 
-      # get the island ids for every transcript with unknown strand   
-#  islWithTxUnknownStrand <- unlist(mclapply(tx_unknownStrand, function(x) { getIsland(txid=x, genomeDB=ans)}, mc.cores=mc.cores))
-
+  # get the island ids for every transcript with unknown strand   
     islWithTxUnknownStrand <- unique(as.character(ans@aliases[tx_unknownStrand,]$island_id))
   
   # if the transcript is in an island on its own then change the strand of the island to *
@@ -404,11 +402,18 @@ restoreUnknownStrand <- function(ans, tx_unknownStrand, genDB, mc.cores)
   # if there are only transcripts with an unknown strand in an island according to the original annotation, then change back to "*"
 
     if(length(islWithTxUnknownStrand)>0){
-    
-    islAllStarStrand <- unlist(mclapply(islWithTxUnknownStrand, function(x){
-        if(all(strand(genDB[which(genDB$transcript_id %in% names(ans@transcripts[[x]]))]) == "*"))
-            return(x)
-    }, mc.cores=mc.cores))
+
+    if ('parallel' %in% loadedNamespaces()) {  
+      islAllStarStrand <- unlist(parallel::mclapply(islWithTxUnknownStrand, function(x){
+          if(all(strand(genDB[which(genDB$transcript_id %in% names(ans@transcripts[[x]]))]) == "*"))
+              return(x)
+      }, mc.cores=mc.cores))
+    } else {
+      islAllStarStrand <- unlist(lapply(islWithTxUnknownStrand, function(x){
+          if(all(strand(genDB[which(genDB$transcript_id %in% names(ans@transcripts[[x]]))]) == "*"))
+              return(x)
+      }))
+    }
   
     strand(ans@islands[islAllStarStrand]@unlistData) <- "*"
     islWithTxUnknownStrand <- islWithTxUnknownStrand[!islWithTxUnknownStrand %in% islAllStarStrand]

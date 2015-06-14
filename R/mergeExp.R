@@ -1,6 +1,6 @@
 mergeExp <- function(..., sampleNames, keep=c('transcript','gene_id','island_id')) {
   esets <- list(...)
-  if(class(esets[[1]])=='list') esets <- unlist(esets)
+  if (class(esets[[1]])=='list') esets <- unlist(esets)
   if (length(unique(sapply(esets,nrow))) != 1) stop('Number of rows do not match')
   if (any(sapply(esets,ncol) != 1)) {
     sampleNames <- unlist(lapply(esets, Biobase::sampleNames))
@@ -29,6 +29,7 @@ mergeExp <- function(..., sampleNames, keep=c('transcript','gene_id','island_id'
 #      sampleNames(esets[[i]]) <- sampleNames[i]
     }
     ans <- do.call("combine",esets)
+    if (ncol(ans) != length(sampleNames)) stop("Length of sampleNames does not match output. Check that all input sampleNames are different")
     sampleNames(ans) <- sampleNames
   } else {
     readCount <- fData(esets[[1]])[,'explCnts']

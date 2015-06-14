@@ -98,7 +98,7 @@ getDistrs <- function(DB, bam, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6
             types <- unique(DB@aliases$gene_type_merged)
             if(mc.cores > 1) {
                 if ('parallel' %in% loadedNamespaces()) {
-                    ans <- mclapply(types, function(x) {
+                    ans <- parallel::mclapply(types, function(x) {
                         isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
                         getDistrsFromBam(DB=DB, bam=bam, islandid=islandid, verbose=verbose, nreads=nreads, readLength=readLength, selislands=isl)
                     }, mc.cores=min(mc.cores, length(types)))
@@ -123,7 +123,7 @@ getDistrs <- function(DB, bam, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6
             types <- unique(DB@aliases$gene_type_merged)
             if(mc.cores > 1) {
                 if ('parallel' %in% loadedNamespaces()) {  
-                    ans <- mclapply(types, function(x) {
+                    ans <- parallel::mclapply(types, function(x) {
                         isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
                         getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
                     }, mc.cores=min(mc.cores, length(types)))
