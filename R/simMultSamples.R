@@ -78,8 +78,8 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength, x, gr
     if (model=='LNNMV') {
       xnew <- simnewsamplesNoisyObs(nnfit, groupsnew=groupsnew, x=x, groups=groups, sigma2ErrorObs=sigma2ErrorObs)
     } else {
-      xnew <- simnewsamples(ggfit, groupsnew=groupsnew, x=x, groups=groups)
-      exprs(xnew) <- as.matrix(exprs(xnew))
+      xnew <- simnewsamplesGGcommonpar(ggfit, groupsnew=groupsnew, x=x, groups=groups)
+      #exprs(xnew) <- as.matrix(exprs(xnew))
       #Avoid outliers (simulated exprs within 10*IQR of mean expression in corresponding group)
       g <- as.character(unique(xnew[[groups]]))
       z <- vector("list",length(g))
@@ -92,7 +92,7 @@ simMultSamples <- function(nsim, nsamples, nreads, readLength, fragLength, x, gr
         z[[i]][sel] <- matrix(rep(m,ncol(z[[i]])),ncol=ncol(z[[i]]))[sel] + q[2] + 10*(q[3]-q[1])
         sel <- d< (q[2] - 10*(q[3]-q[1]))
         z[[i]][sel] <- matrix(rep(m,ncol(z[[i]])),ncol=ncol(z[[i]]))[sel] - q[2] - 10*(q[3]-q[1])
-        exprs(xnew)[,x[[groups]]==g[i]] <- z[[i]]
+        exprs(xnew)[,xnew[[groups]]==g[i]] <- z[[i]]
       }
       if (offset<0) exprs(xnew) <- exprs(xnew) + offset - .01
     }
@@ -174,6 +174,20 @@ simOneExp <- function(i, distrs, N, pis, readLength, genomeDB, featnames, seed, 
 
 rowVar <- function (x, ...) { return((rowMeans(x^2, ...) - rowMeans(x, ...)^2) * ncol(x)/(ncol(x) - 1)) }
 
+
+
+simnewsamplesGGcommonpar <- function(fit, groupsnew, x, groups) {
+  #Posterior predictive draws from GaGa model based on single posterior draw of parameter values
+  pars <- fData(simnewsamples(fit, groupsnew=unique(groupsnew), x=x, groups=groups))
+  a0 <- fit$parest['alpha0']; nu <- fit$parest['nu']; balpha <- fit$parest['balpha']; nualpha <- fit$parest['nualpha']
+  a <- pars[,grep('alpha',names(pars))]
+  l <- pars[,grep('mean',names(pars))]
+  m <- table(groupsnew); m <- m[unique(groupsnew)]
+  xnew <- simGG(n=nrow(x),m=m,p.de=1,a0=a0,nu=nu,balpha=balpha,nualpha=nualpha,equalcv=TRUE,a=a,l=l,useal=TRUE)
+  xnew[[groups]] <- factor(rep(names(m),m))
+  featureNames(xnew) <- featureNames(x)
+  return(xnew) 
+}
 
 
 simnewsamplesNoisyObs <- function(fit,groupsnew,sel,x,groups,sigma2ErrorObs) {
