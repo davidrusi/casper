@@ -57,9 +57,10 @@ void build_genes(gene_t *genes, double *ve, int *vn, int *vl, int *en, int *es, 
 
 int choose_gene(double *exp, int ngenes){
   int i;
-  double ran, tmp=0;
+  double tmp=0;
 
-  ran = unif_rand();
+  double ran = (double) unif_rand();
+  //ran = rand() / ( RAND_MAX + 1.0 );
    for(i=0; i<ngenes; i++){
      if((tmp<=ran) && (ran<tmp+exp[i])) return(i);
     tmp+=exp[i];
@@ -74,8 +75,8 @@ int choose_gene(double *exp, int ngenes){
 
 int choose_var(gene_t gene){
   int i;
-  double ran, tmp=0;
-  ran = (double)unif_rand();  //rand() / (double)( RAND_MAX - 1);
+  double tmp=0;
+  double ran = (double) unif_rand();  //rand() / (double)( RAND_MAX - 1);
   for(i=0; i<gene.nvar; i++){
     if((tmp<=ran) && (ran<tmp+gene.vars[i].exp)) return(i);
     tmp+=gene.vars[i].exp;
@@ -119,7 +120,8 @@ int choose_len(int varlen, double *ldv, double *ldd, int ldlen) {
     }
   }
   
-  ran = (unif_rand() / ( RAND_MAX + 1.0 )) *maxp;
+  ran = ((double) unif_rand()) *maxp;
+  //ran = rand() / ( RAND_MAX + 1.0 );
   if(ran<ldv[0]) return(ldd[0]);
   for(i=1; i<ldlen; i++) if((ldv[i-1]<=ran) && (ran < ldv[i])) return(ldd[i]);
   Rprintf("Error: no length chosen %f %f\n", ran, maxp);
@@ -137,7 +139,8 @@ int choose_st(int fraglen, int varlen, double *sdv, double *sdd, int sdlen, int 
   if(stdlen < 0) return(-1);
   if(stdlen==0) return(1);
   double maxp=cumu_fragsta((double)stdlen/(double)varlen, sdd, sdlen);  
-  double ran = ((double)unif_rand() / (double) RAND_MAX)*maxp;
+  double ran = ((double) unif_rand())*maxp;
+  //double ran =  (rand() / ( RAND_MAX + 1.0 ))*maxp;
   return(((int)(cumu_fragsta(ran, sdv, sdlen)*varlen))+1);
 }
 
