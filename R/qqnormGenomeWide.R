@@ -21,7 +21,18 @@ setMethod(qqnormGenomeWide, signature(x="matrix"), function(x, ngenes=min(1000,n
 }
 )
 
-qqgammaGenomeWide <- function(x, ngenes=min(1000,nrow(x)), ...) {
+
+setMethod(qqgammaGenomeWide, signature(x="ExpressionSet"), function(x, ngenes=min(1000,nrow(x)), ...) {
+  qqgammaGenomeWide(exprs(x))
+}
+)
+
+setMethod(qqgammaGenomeWide, signature(x="data.frame"), function(x, ngenes=min(1000,nrow(x)), ...) {
+  qqgammaGenomeWide(as.matrix(x))
+}
+)
+
+setMethod(qqgammaGenomeWide, signature(x="matrix"), function(x, ngenes=min(1000,nrow(x)), ...) {
   x <- x[1:ngenes,,drop=FALSE]
   m <- rowMeans(x); v <- rowVar(x)
   lest <- m/v; aest <- m^2/v
@@ -32,3 +43,4 @@ qqgammaGenomeWide <- function(x, ngenes=min(1000,nrow(x)), ...) {
   for (i in 2:ngenes) points(q[i,],xsort[i,],pch='.')
   abline(0,1)
 }
+)

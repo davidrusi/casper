@@ -10,6 +10,7 @@ setGeneric("procBam", function(bam, stranded=FALSE, seed=as.integer(1), verbose=
 setGeneric("procGenome", function(genDB, genome, mc.cores=1, verbose=TRUE) standardGeneric("procGenome"))
 setGeneric("probNonEquiv", function(x, groups, logfc=log(2), minCount, method="plugin", mc.cores=1) standardGeneric("probNonEquiv"))
 setGeneric("pvalTreat", function(x, groups, logfc=log(2), minCount, p.adjust.method='none', mc.cores=1) standardGeneric("pvalTreat"))
+setGeneric("qqgammaGenomeWide", function(x, ngenes=min(1000,nrow(x)), ...) standardGeneric("qqgammaGenomeWide"))
 setGeneric("qqnormGenomeWide", function(x, ngenes=min(1000,nrow(x)), ...) standardGeneric("qqnormGenomeWide"))
 setGeneric("quantileNorm", function(x) standardGeneric("quantileNorm"))
 setGeneric("rangesPlot",function(x, gene, exonProfile=TRUE, maxFragLength=500, xlab='', ylab='', xlim, ...) standardGeneric("rangesPlot"))
