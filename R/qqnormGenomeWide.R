@@ -15,9 +15,11 @@ setMethod(qqnormGenomeWide, signature(x="matrix"), function(x, ngenes=min(1000,n
   zsort <- t(apply(z,1,function(z) z[order(z)]))
   q <- qnorm(ppoints(1:ncol(z))) #theoretical quantiles
   plot(q,zsort[1,], xlab='Theoretical quantile', ylab='Observed quantile', ylim= range(z), pch='.',...)
-  for (i in 2:ngenes) points(q,zsort[i,],pch='.')
-  abline(0,1)
-  points(q,colMeans(zsort),col=1,pch=16,cex=1.5)
+  if (ngenes>1) {
+    for (i in 2:ngenes) points(q,zsort[i,],pch='.')
+    abline(0,1)
+    points(q,colMeans(zsort),col=1,pch=16,cex=1.5)
+  }
 }
 )
 
@@ -40,7 +42,7 @@ setMethod(qqgammaGenomeWide, signature(x="matrix"), function(x, ngenes=min(1000,
   pp <- ppoints(1:ncol(xsort))
   q <- do.call(rbind,lapply(1:nrow(x), function(i) qgamma(pp, aest[i], lest[i]))) #theoretical quantiles
   plot(q[1,],xsort[1,], xlab='Theoretical quantile', ylab='Observed quantile', ylim= range(xsort), xlim=range(xsort), pch='.', ...)
-  for (i in 2:ngenes) points(q[i,],xsort[i,],pch='.')
+  if (ngenes>1) { for (i in 2:ngenes) points(q[i,],xsort[i,],pch='.') }
   abline(0,1)
 }
 )
