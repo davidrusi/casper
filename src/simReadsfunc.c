@@ -85,7 +85,7 @@ int choose_var(gene_t gene){
   Rprintf("Error: no variant chosen: %d\n", gene.nvar);
   for(i=0; i<gene.nvar; i++){
     tmp+=gene.vars[i].exp;    
-    Rprintf("%f %f\n", gene.vars[i].exp, tmp);
+    //Rprintf("%f %f\n", gene.vars[i].exp, tmp);
   }
   //  exit(0);
   return(0);
@@ -176,12 +176,12 @@ int *build_path(var_t var, int len, int st, int rl, hash_t *path, int strand, in
     en = st + rl - 1;
     ren = rst + rl;
   } else {
-    if((var.len - st - len + 2)<0) Rprintf("%d %d %d %d %d %d\n", st, en, rst, ren, var.len, len);    
+    //    if((var.len - st - len + 2)<0) Rprintf("%d %d %d %d %d %d\n", st, en, rst, ren, var.len, len);    
     st = var.len - st - len + 2;
     rst = st + len - rl; 
     en = st + rl - 1;
     ren = rst + rl - 1;
-    if(st<0) Rprintf("%d %d %d %d %d %d\n", st, en, rst, ren, var.len, len);	
+    //if(st<0) Rprintf("%d %d %d %d %d %d\n", st, en, rst, ren, var.len, len);	
   }
 
   here=0;
