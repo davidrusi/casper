@@ -343,9 +343,19 @@ setMethod("procGenome", signature(genDB="GRanges"), function(genDB, genome, mc.c
  ## Store gene type to add to aliases
 
     if('gene_type' %in% colnames(values(genDB))){
-        gt <- as.character(genDB$gene <- type)
-        names(gt) <- genDB$transcript <- id
+        gt <- as.character(genDB$gene_type)
+        names(gt) <- genDB$transcript_id
     }
+
+      #keep original strand information to revert strand information
+    genDB_org <- genDB
+    
+  #store the tx ids of those transcripts for which the strand information is missing
+    tx_unknownStrand <- unique(as.character(as.data.frame(genDB[strand(genDB) == "*" & genDB$type=='transcript'])[,"transcript_id"]))
+    
+      # set all unknown strands to '+'
+    strand(genDB[which(strand(genDB) == "*")]) <- "+"
+    
     
   if (verbose) cat("Formatting GTF table with GenomicFeatures tools...\n")
   if (all(c("gene_id", "transcript_id") %in% colnames(mcols(genDB)))) {
