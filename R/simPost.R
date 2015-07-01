@@ -27,6 +27,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
    txe <- list()
    pcs <- list()
    sim.exps <- list()
+   thetas <- list()
    disArray <- vector("list", length(f))
    for (i in 1:length(disArray)) disArray[[i]] <- setfragLength(distr, fragLength=f[i])
 #   disArray <- mapply(function(x, y) casper:::transDistr(distr.pilot, x, y), f, r)
@@ -62,7 +63,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i))
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
-         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp=sim.exp[colnames(pis),])
+         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp=sim.exp[colnames(pis),], thetas=sim.pc$thetas)
      }, mc.cores=mc.cores.int, mc.preschedule=FALSE)
    } else {
        res <- lapply(1:nsim, function(i){
@@ -72,7 +73,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i))
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE))
-         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp = sim.exp[colnames(pis),])
+         list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp = sim.exp[colnames(pis),], thetas=sim.pc$thetas)
        })
      }
      Un <- do.call(cbind, lapply(res, "[[", "maes"))
@@ -84,13 +85,14 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
       # pcs[[j]] <- lapply(res[sel], "[[", "pc")
        pcs[[j]] <- lapply(res, '[[', 'pc')
        sim.exps[[j]] <- lapply(res, '[[', 'sim.exp')
+       thetas[[j]] <- lapply(res, '[[', 'thetas')
    }
    }
    if(retTxsError){
      names(txe) <- paste(n, r, f, sep='-')
      names(pcs) <- paste(n, r, f, sep='-')
      names(sim.exps) <- paste(n, r, f, sep='-')
-     return(list(txe=txe, U=U, pcs=pcs, pis=pis, sim.exps=sim.exps))
+     return(list(txe=txe, U=U, pcs=pcs, pis=pis, sim.exps=sim.exps, thetas=thetas))
    }
    return(U)
 }
@@ -272,5 +274,5 @@ simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, se
   names(pcs) <- c(names(pc@counts[[1]]), notinpc)
   pcs[names(pc@counts[[1]])] <- pc@counts[[1]]
   pc@counts[[1]] <- pcs
-  list(pc=pc, pis=pis, distrsim=distrs)#, len=ans$sims[[3]])
+  list(pc=pc, pis=pis, distrsim=distrs, thetas=thetas)#, len=ans$sims[[3]])
 }
