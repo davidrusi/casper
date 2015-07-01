@@ -59,7 +59,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
          N <- round(n[j]*readYield*pmapped)
-         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i)
+         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i))
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp=sim.exp[colnames(pis),])
