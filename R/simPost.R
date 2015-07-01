@@ -15,7 +15,7 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1){
       new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
   }
 
-simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, pc, distr, readLength.pilot=readLength, eset.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE) {
+simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, pc, distr, readLength.pilot=readLength, eset.pilot, usePilot=FALSE, retTxsError=FALSE, genomeDB, mc.cores=1, mc.cores.int=1, verbose=FALSE, writeBam=FALSE, bamFile=NULL) {
    n <- nreads; r <- readLength; f <- fragLength
    distr.pilot <- distr
    if (length(r)==1) r <- rep(r,length(n))
@@ -43,8 +43,8 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
      simpisDirichlet <- function(z) { if (length(z)==1) { z <- 1 } else { z <- rgamma(length(z), shape=1/length(z)); z <- z/sum(z) }; return(z) }
      txs <- unlist(lapply(genomeDB@transcripts[islandid], names))
      pis <- unlist(lapply(genomeDB@transcripts[islandid], simpisDirichlet))
-     names(pis) <- txs
-     pc <- simReads(islandid,nSimReads=nSimReads,pis=pis,rl=readLength.pilot,distrs=distr.pilot,genomeDB=genomeDB,writeBam=FALSE,verbose=FALSE,mc.cores=mc.cores,seed=1)
+     names(pis) <- txs 
+     pc <- simReads(islandid,nSimReads=nSimReads,pis=pis,rl=readLength.pilot,distrs=distr.pilot,genomeDB=genomeDB,verbose=FALSE,mc.cores=mc.cores,seed=1)
    }
    for (j in 1:length(n)) {
      if (length(disArray[[j]])==1) { distrs <- disArray[[j]] } else { distrs <- disArray[[j]][[sample(1:length(disArray[[j]]),1)]] }
@@ -59,7 +59,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
          N <- round(n[j]*readYield*pmapped)
-         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i)
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE, mc.cores=mc.cores))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp=sim.exp[colnames(pis),])
@@ -69,7 +69,7 @@ simMAE <- function(nsim, islandid, nreads, readLength, fragLength, burnin=1000, 
          readYield <- runif(1,0.8,1.2) #actual reads +/- 20% within target
          pmapped <- (1-probNonMappable(readLength)) * runif(1,0.6,0.9)  #mapped reads 60%-90% of mappable reads
          N <- round(n[j]*readYield*pmapped)
-         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose)
+         sim.pc <-  simPostPred(islandid=islandid, nreads=N, pis=pis[i,], pc=pc, distrs=distrs, rl=r[j], genomeDB=genomeDB, verbose=verbose, writeBam=writeBam, bamFile=paste0(bamFile, ".", i))
          if(usePilot) sim.pc$pc <- mergePCs(pcs=list(sim.pc$pc,pc), genomeDB=genomeDB)
          sim.exp <- exprs(calcExp(islandid=islandid, distrs=distrs, genomeDB=genomeDB, pc=sim.pc$pc, readLength=r[j], rpkm=FALSE))
          list(maes=abs(sim.exp[colnames(pis),]-pis[i,]), pc=sim.pc$pc, sim.exp = sim.exp[colnames(pis),])
@@ -225,7 +225,7 @@ else {
 #  return(ans)
 #}
 
-simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, seed=1, mc.cores=1, verbose=FALSE) {
+simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, seed=1, mc.cores=1, verbose=FALSE, writeBam=FALSE, bamFile=NULL) {
   a <- tapply(pis, getIsland(txid=names(pis), genomeDB=genomeDB), sum)
   def <- names(a)[a==0]
   pc@counts[[1]][def] <- NULL
@@ -263,7 +263,7 @@ simPostPred <- function(nreads, islandid=NULL, pis, pc, distrs, rl, genomeDB, se
     pis <- append(unlist(pi.miss), pis)
     }
   }
-  pc <- simReads(nonzero, nSimReads=nreadsPerGeneSim, pis=pis, rl=rl, seed=seed, distrs=distrs, genomeDB=genomeDB, mc.cores=mc.cores, repSims=FALSE, writeBam=FALSE, verbose=verbose)
+  pc <- simReads(nonzero, nSimReads=nreadsPerGeneSim, pis=pis, rl=rl, seed=seed, distrs=distrs, genomeDB=genomeDB, mc.cores=mc.cores, repSims=FALSE, verbose=verbose, writeBam=writeBam, bamFile=bamFile)
   #pc <- ans$pc
   gc()
   if(verbose) cat("Finished simulations\n")
