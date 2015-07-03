@@ -142,7 +142,7 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     strand <- as.list(as.integer(strand))
     pc <- pc[z]
     ans <- calcKnownMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc,startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,priorq=priorq, strand=strand, citype=citype, niter=niter, burnin=burnin, verbose=verbose)
-    
+
     if(length(ans)==1) {
       trans <-  ans[[1]][[2]]
       ntrans <- length(trans)
@@ -184,7 +184,16 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
       ans <- f(islandid)
     }
     if (verbose) cat("Formatting output...\n")
-  ans
+
+  miss <- lapply(genomeDB@transcripts[all[!sel]], names)
+  ntx.miss <- sapply(miss,length)
+  misse <- rep(1/ntx.miss,ntx.miss)
+  a0 <- rep(priorq*ntx.miss,ntx.miss)
+  missSE <- sqrt(priorq * (a0-priorq) / (a0^2 * (a0+1)))
+  names(misse) <- unlist(miss)
+  exprsx <- matrix(c(ans, misse), nrow=1)
+  colnames(exprsx) <- c(colnames(ans), names(misse))
+  exprsx
 }
 
 simPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initvals, relativeExpr=TRUE, priorq=2, burnin=1000, mc.cores=1, verbose=FALSE) {
