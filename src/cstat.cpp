@@ -1765,9 +1765,10 @@ void choldc_inv(double **a, int n, double **aout, bool *posdef) {
 void cholS_inv(double **cholS, int n, double **cholSinv) {
   /*Given the Cholesky decomposition of a matrix S, which we denote cholS, returns the inverse of cholS */
   int i,j;
-  for (i=1;i<=n;i++) for (j=i+1;j<=n;j++) cholSinv[i][j]= cholS[i][j];
+  for (i=1;i<=n;i++) for (j=1;j<=i;j++) cholSinv[i][j]= cholS[i][j];
   choldc_inv_internal(cholSinv,n);
 }
+
 
 void choldc_inv_internal(double **cholS, int n) {
   /*Computes inverse of Cholesky matrix cholS and stores the result in cholS*/
