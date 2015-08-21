@@ -111,7 +111,6 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
   useinit <- as.integer(useinit)
   if (niter<=burnin) stop("Too many burnin iterations specified. Decrease burnin or increase niter")
   if (missing(islandid)) islandid <- names(genomeDB@islands)[sapply(genomeDB@islands,length)>1]
-
   exons <- as.integer(names(genomeDB@islands@unlistData))
   names(exons) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
   exons <- split(unname(exons), names(exons))
@@ -120,11 +119,9 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
   exonwidth <- split(unname(exonwidth), names(exonwidth))
   strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
   names(strand) <- names(genomeDB@islands)
-
   if (!all(islandid %in% names(exons))) stop('islandid not found in genomeDB@islands')
   if (!all(islandid %in% names(pc))) stop('islandid not found in pc')
   if (!all(islandid %in% names(genomeDB@transcripts))) stop('islandid not found in genomeDB@transcripts')
-  
       #Define basic function
   f <- function(z) {
     islandid <- as.integer(z)
@@ -142,7 +139,6 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     strand <- as.list(as.integer(strand))
     pc <- pc[z]
     ans <- calcKnownMultiple(exons=exons,exonwidth=exonwidth,transcripts=transcripts,islandid=as.list(islandid),pc=pc,startcdf=startcdf,lendis=lendis,lenvals=lenvals,readLength=readLength,priorq=priorq, strand=strand, citype=citype, niter=niter, burnin=burnin, verbose=verbose)
-
     if(length(ans)==1) {
       trans <-  ans[[1]][[2]]
       ntrans <- length(trans)
@@ -162,12 +158,9 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     ans <- do.call(cbind,ans)
     colnames(ans) <- trans
     #sel <- elementLengths(genomeDB@islands[islandid])==1
-    
-    
     ans[, colnames(ans) %in% sv] <- 1
     ans
 }
-
     #Run
     sel <- !sapply(pc[islandid], is.null)
     all <- islandid
@@ -184,7 +177,6 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
       ans <- f(islandid)
     }
     if (verbose) cat("Formatting output...\n")
-
   miss <- lapply(genomeDB@transcripts[all[!sel]], names)
   ntx.miss <- sapply(miss,length)
   misse <- rep(1/ntx.miss,ntx.miss)
