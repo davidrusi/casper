@@ -639,8 +639,7 @@ matchCircularity <- function(seqnames, circ_seqs)
 # 
 #  ## start by importing the relevant features from the specified file
 #  feature.type <- c("gene", "mRNA", "exon", "CDS")
-#  gff <- import(file, format=format, feature.type=feature.type,
-#                asRangedData=FALSE)
+#  gff <- import(file, format=format, feature.type=feature.type)
 # 
 #  if(format=="gff3"){
 #    ## check that we have ID, Parent
