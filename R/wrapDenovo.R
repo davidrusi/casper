@@ -23,8 +23,8 @@ wrapDenovo <- function(bamFile, output_wrapKnown, knownGenomeDB, targetGenomeDB,
       stop("targetGenomeDB must be of class 'annotatedGenome'")
     if (!(searchMethod %in% c('auto','rwmcmc','priormcmc','allmodels','submodels'))) 
         stop("searchMethod must be auto, rwmcmc, priormcmc, allmodels or submodels")
-    if(missing(niter)) niter <- NULL
-    if(missing(islandid)) islandid <- NULL
+    #if(missing(niter)) niter <- NULL
+    #if(missing(islandid)) islandid <- NULL
     if (keep.pbam) keepPbamInMemory <- TRUE
     if (length(bamFile)>1) cat(">1 input files were specified. Running calcDenovo on combined .bam.")
     
@@ -103,11 +103,11 @@ wrapDenovo <- function(bamFile, output_wrapKnown, knownGenomeDB, targetGenomeDB,
     out_calcDenovo <- calcDenovo(distrs=mergedDistr_allSamples, targetGenomeDB=targetGenomeDB, knownGenomeDB=knownGenomeDB, pc=mergedPCs_allSamples, 
                                    readLength=readLength, priorq=priorq, mprior=mprior, minpp=0, selectBest=FALSE, 
                                    searchMethod=searchMethod, exactMarginal=exactMarginal, verbose=verbose, integrateMethod=integrateMethod, niter=niter,
-                                   mc.cores=mc.cores, islandid= islandid)
+                                   mc.cores=mc.cores.int, islandid= islandid)
 
     # Build denovo genome based on the output of calcDenovo
-    if(verbose) cat("Constructing denovo genome object\n")
-    denovoGenomeDB <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=max(c(mc.cores.int, mc.cores)))
+    if(verbose) cat("Building denovo genome object\n")
+    denovoGenomeDB <- constructDenovoGenomeObj(vars_info=variants(out_calcDenovo), genomeDB=targetGenomeDB, mc.cores=mc.cores)
     denovoGenomeDB <- transferIslandid(variants(out_calcDenovo), genDB1=targetGenomeDB, genDB2=denovoGenomeDB)
     
     if(verbose) cat("Obtaining posterior probabilities and expression estimates\n")
@@ -163,61 +163,130 @@ mergePCs <- function(pcs, genomeDB, mc.cores=1)
   new("pathCounts", counts=counts, denovo=pcs[[1]]@denovo, stranded=pcs[[1]]@stranded)
 }
 
-# Construct genomeDB object based on the denovo predictions
-constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
-{
-    # build genome GRanges object to be used by procGenome    
-    genomeDB_denovo_GRanges <- parallel::mclapply(1:nrow(vars_info),function(x)
-                      {
-                            cur_island <- as.character(vars_info[x,"islandid"])
-                            
-                            # get exons
-                            cur_exons <- unlist(strsplit(x=as.character(vars_info[x,"exons"]), split=","))
-                            
-                            # get coordinates of each of the exons
-                            exonCoor <- genomeDB@islands[[cur_island]][which(names(genomeDB@islands[[cur_island]]) %in% cur_exons),]
-                              
-                            # get strand information
-                            strand(exonCoor) <- determineStrand(cur_exons, unique(as.character(strand(genomeDB@islands[[cur_island]]))))
-                            
-                            # get gene id
-                            if(vars_info[x,"varName"] %in% genomeDB@aliases[,"tx_name"])
-                            {
-                                gene_id <- unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"tx_name"] == vars_info[x,"varName"]),"gene_id"]))
-                                
-                                #### NOTE: not passed through in procGenome function and therefore not useful to include ####
-                                #sourceTx <- "orgAnnotation" 
-                            }
-                            else
-                            {
-                                gene_id <- paste(unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"island_id"] == cur_island),"gene_id"])), collapse="__")
-                                
-                                #### NOTE: not passed through in procGenome function and therefore not useful to include ####
-                                #sourceTx <- "denovo_transcript" 
-                            }
-                                              
-                            mcols(exonCoor)[,"gene_id"] <- gene_id
-                            mcols(exonCoor)[,"transcript_id"] <- vars_info[x,"varName"] 
-                            
-                            #### NOTE: not passed through in procGenome ####
-                            #mcols(exonCoor)[,"source"] <- as.factor(sourceTx)
-                            mcols(exonCoor)[,"type"] <- as.factor("exon")
+constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores=1){
 
-                            return(exonCoor)
-                        }, mc.cores=mc.cores)
-  
-    genomeDB_denovo_GRanges <- do.call(c, genomeDB_denovo_GRanges)
-             
-    genomeDB_denovo_GRanges <- deduceStrandSingleExonTx(genomeDB_denovo_GRanges, vars_info)
+    exons <- strsplit(as.character(vars_info[,'exons']), split=',')
+    isl <- rep(as.character(vars_info[,'islandid']), unlist(lapply(exons, length)))
+    vn <- rep(as.character(vars_info[,'varName']), unlist(lapply(exons, length)))
+    exons <- unlist(exons)
+    start <- start(genomeDB@islands@unlistData[exons])
+    end <- end(genomeDB@islands@unlistData[exons])
+    seqn <- as.character(seqnames(genomeDB@islands@unlistData[exons]))
     
+    geid <- genomeDB@aliases$gene_id
+    names(geid) <- genomeDB@aliases$tx_name
+    gg <- rep("", nrow(vars_info))
+    names(gg) <- as.character(vars_info$varName)
+    sel <- as.character(vars_info$varName)[as.character(vars_info$varName) %in% names(geid)]
+    gg[sel] <- geid[sel]
+    sel <- as.character(vars_info$islandid)[! as.character(vars_info$varName) %in% names(geid)]
+    sel1 <- as.character(vars_info$varName)[! as.character(vars_info$varName) %in% names(geid)]
+    geid <- tapply(genomeDB@aliases$gene_id, genomeDB@aliases$island_id, function(x) paste(unique(x), collapse="__"))
+    gg[sel1] <- geid[sel]
+    
+    tmp <- exons
+    names(tmp) <- isl
+
+#strnd <- tapply(tmp, vn, function(x) {
+#        y <- determineStrand(x, unique(names(x)))
+#        y <- rep(y, length(x))
+#        names(y) <- x
+#        y
+#    })
+
+#pp <- lapply(strnd, function(x) length(unique(x)))
+    
+    strnd <- tapply(tmp, vn, function(x) {
+        y <- unique(determineStrand(x, unique(names(x))))
+        if(!y %in% c("+", "-")) y <- "*"
+      #  y <- rep(y, length(x))
+       # names(y) <- x
+        y
+    })
+
+    #strnd[!strnd %in% c("-", "+")] <- "*"
+    strnd <- strnd[vn]
+    gdb <- GRanges(IRanges(start, end), seqnames=seqn)
+    mcols(gdb)[,"gene_id"] <- gg[vn]
+    mcols(gdb)[,"transcript_id"] <- vn
+    mcols(gdb)[,"type"] <- as.factor("exon")
+    strand(gdb) <- strnd
+
+#pp <- tapply(strnd, vn, function(x) length(unique(x)))
+#    pp <- tapply(as.character(strand(gdb)), gdb$transcript_id, function(x) length(unique(x)))
+
+#    head(pp)
+#    table(pp)
+#    gdb[gdb$transcript_id == names(which(pp==3)),]
+    
+#    ll <- table(as.character(seqnames(gdb)), as.character(gdb$gene_id))
+#    table(colSums(ll>1)>1)
+#    head(which(colSums(ll>1)>1))
+
+    genomeDB_denovo_GRanges <- deduceStrandSingleExonTx(gdb, vars_info)
+
     names(genomeDB_denovo_GRanges) <- NULL
 
+    tt <- rownames(genomeDB@aliases[genomeDB@aliases$gene_id == "ABCF1",])
+    ii <- as.character(genomeDB@aliases[tt,]$island_id)
+    cc <- genomeDB@islands[ii]
+    cc <- lapply(cc, function(x) unique(as.character(seqnames(x))))
+    
     genomeDB_denovo<- suppressWarnings(procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores, verbose=FALSE))
 
     #vars_info[,1:2] contains c('island_id','transcript')
 
     return(genomeDB_denovo)
 }
+
+# Construct genomeDB object based on the denovo predictions
+#constructDenovoGenomeObj <- function(vars_info, genomeDB, mc.cores)
+#{
+    
+    # build genome GRanges object to be used by procGenome    
+#    genomeDB_denovo_GRanges <- parallel::mclapply(1:nrow(vars_info[1:1000,]),function(x)
+#                      {
+#                            cur_island <- as.character(vars_info[x,"islandid"])
+                            # get exons
+#                            cur_exons <- unlist(strsplit(x=as.character(vars_info[x,"exons"]), split=","))
+                            # get coordinates of each of the exons
+#                            exonCoor <- genomeDB@islands[[cur_island]][which(names(genomeDB@islands[[cur_island]]) %in% cur_exons),]
+                                        # get strand information
+#                            strand(exonCoor) <- determineStrand(cur_exons, unique(as.character(strand(genomeDB@islands[[cur_island]]))))
+                                                        # get gene id
+#                            if(vars_info[x,"varName"] %in% genomeDB@aliases[,"tx_name"])
+#                            {
+#                                gene_id <- unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"tx_name"] == vars_info[x,"varName"]),"gene_id"]))
+#### NOTE: not passed through in procGenome function and therefore not useful to include ####
+                                #sourceTx <- "orgAnnotation" 
+#                            }
+#                            else
+#                            {
+#                                gene_id <- paste(unique(as.character(genomeDB@aliases[which(genomeDB@aliases[,"island_id"] == cur_island),"gene_id"])), collapse="__")
+                                #### NOTE: not passed through in procGenome function and therefore not useful to include ####
+                                #sourceTx <- "denovo_transcript" 
+#                            }
+#                            mcols(exonCoor)[,"gene_id"] <- gene_id
+#                            mcols(exonCoor)[,"transcript_id"] <- vars_info[x,"varName"] 
+                            #### NOTE: not passed through in procGenome ####
+                            #mcols(exonCoor)[,"source"] <- as.factor(sourceTx)
+#                            mcols(exonCoor)[,"type"] <- as.factor("exon")
+#                            print(length(exonCoor))
+#                            return(exonCoor)
+#                        }, mc.cores=10)
+
+#    genomeDB_denovo_GRanges <- do.call(c, genomeDB_denovo_GRanges)
+             
+#    genomeDB_denovo_GRanges <- deduceStrandSingleExonTx(genomeDB_denovo_GRanges, vars_info)
+    
+#    names(genomeDB_denovo_GRanges) <- NULL
+
+ #   genomeDB_denovo <- suppressWarnings(procGenome(genDB=genomeDB_denovo_GRanges, genome="casper_denovo", mc.cores=mc.cores, verbose=FALSE))
+
+    #vars_info[,1:2] contains c('island_id','transcript')
+
+ #   return(genomeDB_denovo)
+#}
 
 
 transferIslandid <- function(vars_info, genDB1, genDB2) {

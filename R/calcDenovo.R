@@ -140,7 +140,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   names(strand) <- names(targetGenomeDB@islands)
   
   if (missing(niter)) {
-     niter <- as.list(as.integer(ifelse(sapply(exons,length)>20,10^3,10^4)))
+     niter <- as.list(as.integer(ifelse(sapply(exons[islandid],length)>20,10^3,10^4)))
   } else {
      niter <- as.list(as.integer(rep(niter[1],length(islandid))))
   }
