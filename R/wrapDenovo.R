@@ -371,6 +371,10 @@ getDistrsAndPCs <- function(bamFile, verbose, seed, mc.cores.int, mc.cores, geno
 
   if(!keep.multihits) what <- c(what, 'mapq')
   t <- scanBamHeader(bamFile)[[1]][["targets"]]
+  if(any(t==0)) {
+      chrlen <- seqlengths(knownGenomeDB@exonsNI)    
+      t=chrlen[names(t)]
+  }
   which <- GRanges(names(t), IRanges(1, unname(t)))
   if(!is.null(chroms)) {
     which <- which[as.character(seqnames(which)) %in% chroms]
