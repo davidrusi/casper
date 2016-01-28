@@ -219,7 +219,7 @@ generateNOexons<-function(exByTx, startId=1, mc.cores){
 }
 
 genomeBystrand <- function(DB, strand){
-  is <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementLengths(DB@islands)[-length(DB@islands)]))]
+  is <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementNROWS(DB@islands)[-length(DB@islands)]))]
   sel <- names(DB@islands)[is==strand]
   islands <- DB@islands[sel]
   transcripts <- DB@transcripts[sel]
@@ -401,7 +401,7 @@ restoreUnknownStrand <- function(ans, tx_unknownStrand, genDB, mc.cores)
   
   # if the transcript is in an island on its own then change the strand of the island to *
 
-    txPerIsl <- elementLengths(ans@islands[islWithTxUnknownStrand])
+    txPerIsl <- elementNROWS(ans@islands[islWithTxUnknownStrand])
     
     islSingleTx <- islWithTxUnknownStrand[txPerIsl==1]
   

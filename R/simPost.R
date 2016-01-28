@@ -112,12 +112,12 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
   if (niter<=burnin) stop("Too many burnin iterations specified. Decrease burnin or increase niter")
   if (missing(islandid)) islandid <- names(genomeDB@islands)[sapply(genomeDB@islands,length)>1]
   exons <- as.integer(names(genomeDB@islands@unlistData))
-  names(exons) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
+  names(exons) <- rep(names(genomeDB@islands), elementNROWS(genomeDB@islands))
   exons <- split(unname(exons), names(exons))
   exonwidth <- width(genomeDB@islands@unlistData)
-  names(exonwidth) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
+  names(exonwidth) <- rep(names(genomeDB@islands), elementNROWS(genomeDB@islands))
   exonwidth <- split(unname(exonwidth), names(exonwidth))
-  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
+  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementNROWS(genomeDB@islands)[-length(genomeDB@islands)]))]
   names(strand) <- names(genomeDB@islands)
   if (!all(islandid %in% names(exons))) stop('islandid not found in genomeDB@islands')
   if (!all(islandid %in% names(pc))) stop('islandid not found in pc')
@@ -157,7 +157,7 @@ procsimPost <- function(nsim, distrs, genomeDB, pc, readLength, islandid, initva
     ans <- lapply(ans, function(z) { res = matrix(z[[4]],nrow=nsim); res })
     ans <- do.call(cbind,ans)
     colnames(ans) <- trans
-    #sel <- elementLengths(genomeDB@islands[islandid])==1
+    #sel <- elementNROWS(genomeDB@islands[islandid])==1
     ans[, colnames(ans) %in% sv] <- 1
     ans
 }

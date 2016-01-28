@@ -41,7 +41,7 @@ splitPaths <- function(paths, DB, mc.cores, stranded, geneid){
     sel1 <- lapply(sel, "[", 2)
     sel1 <- unlist(sel1)
     islands <- DB@islands[geneid]
-    nislEx <- elementLengths(islands)
+    nislEx <- elementNROWS(islands)
     nislEx <- rep(names(islands), nislEx)
     islEx <- names(islands@unlistData)
     names(islEx) <- nislEx
@@ -79,7 +79,7 @@ splitPaths <- function(paths, DB, mc.cores, stranded, geneid){
   ans[names(splCounts)] <- splCounts
   if(!stranded) ans <- list(ans)
   else {
-    is <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementLengths(DB@islands)[-length(DB@islands)]))]
+    is <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementNROWS(DB@islands)[-length(DB@islands)]))]
     names(is) <- names(DB@islands)    
     plus <- ans[names(ans) %in% names(DB@islands)[is=='+']]
     minus <- ans[names(ans) %in% names(DB@islandStrand)[is=='-']]

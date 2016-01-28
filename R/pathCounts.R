@@ -52,7 +52,7 @@ procPaths <- function(reads, DB, mc.cores, verbose){
     sel1 <- lapply(sel, "[", 2)
     sel1 <- unlist(sel1)
     
-    nislEx <- elementLengths(DB@islands)
+    nislEx <- elementNROWS(DB@islands)
     nislEx <- rep(names(DB@islands), unlist(nislEx))
     islEx <- names(unlist(DB@islands))
     islEx <- sub(".*\\.","", islEx)

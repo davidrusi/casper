@@ -119,24 +119,24 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
   verbose <- as.integer(verbose)
   exactMarginal <- as.integer(exactMarginal)
   if (missing(islandid)) {
-    islandid <- names(targetGenomeDB@islands)[elementLengths(targetGenomeDB@islands)>1]
+    islandid <- names(targetGenomeDB@islands)[elementNROWS(targetGenomeDB@islands)>1]
     islandid <- islandid[islandid %in% names(pc@counts[[1]])]
   }
   else if(is.null(islandid))
   {
-    islandid <- names(targetGenomeDB@islands)[elementLengths(targetGenomeDB@islands)>1]
+    islandid <- names(targetGenomeDB@islands)[elementNROWS(targetGenomeDB@islands)>1]
     islandid <- islandid[islandid %in% names(pc@counts[[1]])]
   }
   if (!all(islandid %in% names(targetGenomeDB@islands))) stop('islandid not found in targetGenomeDB@islands')
   if (!all(islandid %in% unlist(lapply(pc@counts, names)))) stop('islandid not found in pc')
   if (!all(islandid %in% names(targetGenomeDB@transcripts))) stop('islandid not found in targetGenomeDB@transcripts')
   exons <- as.integer(names(targetGenomeDB@islands@unlistData))
-  names(exons) <- rep(names(targetGenomeDB@islands), elementLengths(targetGenomeDB@islands))
+  names(exons) <- rep(names(targetGenomeDB@islands), elementNROWS(targetGenomeDB@islands))
   exons <- split(unname(exons), names(exons))
   exonwidth <- width(targetGenomeDB@islands@unlistData)
-  names(exonwidth) <- rep(names(targetGenomeDB@islands), elementLengths(targetGenomeDB@islands))
+  names(exonwidth) <- rep(names(targetGenomeDB@islands), elementNROWS(targetGenomeDB@islands))
   exonwidth <- split(unname(exonwidth), names(exonwidth))
-  strand <- as.character(strand(targetGenomeDB@islands@unlistData))[cumsum(c(1, elementLengths(targetGenomeDB@islands)[-length(targetGenomeDB@islands)]))]
+  strand <- as.character(strand(targetGenomeDB@islands@unlistData))[cumsum(c(1, elementNROWS(targetGenomeDB@islands)[-length(targetGenomeDB@islands)]))]
   names(strand) <- names(targetGenomeDB@islands)
   
   if (missing(niter)) {
@@ -211,7 +211,7 @@ calcDenovo <- function(distrs, targetGenomeDB, knownGenomeDB=targetGenomeDB, pc,
 
   #Initialize transcripts for new islands with known orientation
   sel <- names(targetGenomeDB@transcripts)[sapply(targetGenomeDB@transcripts,is.null) & strand=='*']
-  if (length(sel)>0) targetGenomeDB@transcripts[sel] <- tapply(as.integer(names(targetGenomeDB@islands[sel]@unlistData)), rep(names(targetGenomeDB@islands[sel]), elementLengths(targetGenomeDB@islands[sel])), function(x) list(as.numeric(x))) 
+  if (length(sel)>0) targetGenomeDB@transcripts[sel] <- tapply(as.integer(names(targetGenomeDB@islands[sel]@unlistData)), rep(names(targetGenomeDB@islands[sel]), elementNROWS(targetGenomeDB@islands[sel])), function(x) list(as.numeric(x))) 
   islandidUnknown <- islandid[islandid %in% names(targetGenomeDB@transcripts)[sapply(targetGenomeDB@transcripts,is.null)]]
   if (length(islandidUnknown)>0) { islandidini <- islandid; islandid <- islandid[!(islandid %in% islandidUnknown)] }
 

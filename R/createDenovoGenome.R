@@ -251,18 +251,18 @@ assignExons2GeneF <- function(exons, DB, reads, chrs, maxDist=1000, minLinks=3, 
   aliases <- aliases[,!(colnames(aliases) %in% 'exid')]
   values(exons)$island <- NULL
   ans <- new("annotatedGenome", islands=islands, transcripts=transcripts, exon2island=exon2island, exonsNI=exons, aliases=aliases, genomeVersion=DB@genomeVersion, dateCreated=Sys.Date(), denovo=TRUE)
-  ans <- subsetGenome(islands=names(ans@islands)[!(elementLengths(ans@islands)==1 & sapply(ans@transcripts, is.null))], genomeDB=ans)
+  ans <- subsetGenome(islands=names(ans@islands)[!(elementNROWS(ans@islands)==1 & sapply(ans@transcripts, is.null))], genomeDB=ans)
   ans
 }
 
 mergeStrDenovo <- function(plus, minus){  
   nullplus <- sapply(plus@transcripts, is.null)
   if(sum(nullplus)>0) {
-    newplus <- tapply(names(plus@islands[nullplus]@unlistData), rep(names(plus@islands)[nullplus], elementLengths(plus@islands[nullplus])), function(x) paste(x, collapse='.'))
+    newplus <- tapply(names(plus@islands[nullplus]@unlistData), rep(names(plus@islands)[nullplus], elementNROWS(plus@islands[nullplus])), function(x) paste(x, collapse='.'))
   } else newplus <- NULL
   nullminus <- unlist(lapply(minus@transcripts, is.null))
   if(sum(nullminus)>0) {
-    newminus <- tapply(names(minus@islands[nullminus]@unlistData), rep(names(minus@islands)[nullminus], elementLengths(minus@islands[nullminus])), function(x) paste(sort(x), collapse='.'))
+    newminus <- tapply(names(minus@islands[nullminus]@unlistData), rep(names(minus@islands)[nullminus], elementNROWS(minus@islands[nullminus])), function(x) paste(sort(x), collapse='.'))
   } else newminus <- NULL
   common <- NULL
   if(!is.null(newplus) & !is.null(newminus)) common <- names(newminus)[!(newminus %in% newplus)]

@@ -207,7 +207,7 @@ getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*1
   oneExons <- exonsRD[names(exonsRD) %in% unlist(oneTx)]
   oneExons <- oneExons[as.character(unlist(oneTx))]
   
-  islandStrand <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementLengths(DB@islands)[-length(DB@islands)]))]
+  islandStrand <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementNROWS(DB@islands)[-length(DB@islands)]))]
   names(islandStrand) <- names(DB@islands)
   
 
@@ -308,7 +308,7 @@ getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^
   oneExons <- exonsRD[names(exonsRD) %in% unlist(oneTx)]
   oneExons <- oneExons[as.character(unlist(oneTx))]
   
-  islandStrand <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementLengths(DB@islands)[-length(DB@islands)]))]
+  islandStrand <- as.character(strand(DB@islands@unlistData))[cumsum(c(1, elementNROWS(DB@islands)[-length(DB@islands)]))]
   names(islandStrand) <- names(DB@islands)
   
 

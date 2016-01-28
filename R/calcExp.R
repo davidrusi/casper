@@ -53,16 +53,16 @@ setMethod("procExp", signature(distrs='readDistrs'), function(distrs, genomeDB, 
   burnin <- as.integer(burnin)
   verbose <- as.integer(verbose)
   if ((niter<=burnin) & citype==2) stop("Too many burnin iterations specified. Decrease burnin or increase niter")
-  #if (missing(islandid)) islandid <- names(genomeDB@islands)[elementLengths(genomeDB@islands)>1]
+  #if (missing(islandid)) islandid <- names(genomeDB@islands)[elementNROWS(genomeDB@islands)>1]
   if (missing(islandid)) islandid <- names(genomeDB@islands)
 
   exons <- as.integer(names(genomeDB@islands@unlistData))
-  names(exons) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
+  names(exons) <- rep(names(genomeDB@islands), elementNROWS(genomeDB@islands))
   exons <- split(unname(exons), names(exons))
   exonwidth <- width(genomeDB@islands@unlistData)
-  names(exonwidth) <- rep(names(genomeDB@islands), elementLengths(genomeDB@islands))
+  names(exonwidth) <- rep(names(genomeDB@islands), elementNROWS(genomeDB@islands))
   exonwidth <- split(unname(exonwidth), names(exonwidth))
-  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
+  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementNROWS(genomeDB@islands)[-length(genomeDB@islands)]))]
   names(strand) <- names(genomeDB@islands)
   
   if (!all(islandid %in% names(exons))) stop('islandid not found in genomeDB@islands')
@@ -101,7 +101,7 @@ setMethod("procExp", signature(distrs='readDistrs'), function(distrs, genomeDB, 
   sel <- !sapply(pc[islandid], is.null)
   all <- islandid
   islandid <- islandid[sel]
-  sel <- elementLengths(genomeDB@islands[islandid])>1
+  sel <- elementNROWS(genomeDB@islands[islandid])>1
   islandid <- islandid[sel]
   if(length(islandid)>0){
     if (verbose) cat("Obtaining expression estimates...\n")
@@ -247,7 +247,7 @@ calcExp <- function(distrs, genomeDB, pc, readLength, islandid, rpkm=TRUE, prior
   if (pc@denovo) stop("pc must be a pathCounts object from known genome")
   if(pc@stranded){
     if(missing(islandid)) islandid <- c(names(pc@counts$plus), names(pc@counts$minus))
-    is <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
+    is <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementNROWS(genomeDB@islands)[-length(genomeDB@islands)]))]
     names(is) <- names(genomeDB@islands)
     plusGI <- islandid[is[islandid]=="+"]
     plus <- NULL
@@ -294,7 +294,7 @@ lhoodGrid <- function(pc, distrs, genomeDB, readLength, islandid, grid, priorq=2
 
   exons <- as.integer(names(genomeDB@islands[[islandid]]))
   exonwidth <- width(genomeDB@islands[[islandid]])
-  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementLengths(genomeDB@islands)[-length(genomeDB@islands)]))]
+  strand <- as.character(strand(genomeDB@islands@unlistData))[cumsum(c(1, elementNROWS(genomeDB@islands)[-length(genomeDB@islands)]))]
   names(strand) <- names(genomeDB@islands)
   strand   <- strand[islandid]
   transcripts <- genomeDB@transcripts[[islandid]]
