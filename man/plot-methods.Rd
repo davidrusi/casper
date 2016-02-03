@@ -2,6 +2,7 @@
 \docType{methods}
 \alias{plot}
 \alias{plot,readDistrs,ANY-method}
+\alias{plot,readDistrsList,ANY-method}
 \alias{lines}
 \alias{lines,readDistrs-method}
 \title{
@@ -29,15 +30,26 @@ Plot estimated read start and fragment length distributions.
 
   \item{\code{signature(x = "readDistrs", y = "ANY")}}{
     \code{x} is an object of type \code{readDistrs}, as returned by
-    \code{getDistrs}. The plot function allows to visualize the fragment
-    length and read start distributions.
+    \code{getDistrs}. The plot allows to visualize the fragment
+    length and read start distributions in a given sample.
   }
 
   \item{\code{signature(x = "readDistrs")}}{
     \code{x} is an object of type \code{readDistrs}, as returned by
-    \code{getDistrs}. The plot function allows to visualize the fragment
-    length and read start distributions.
+    \code{getDistrs}. The plot allows to visualize the fragment
+    length and read start distributions in a given sample.
   }
+
+  \item{\code{signature(x = "readDistrsList", y = "ANY")}}{
+    \code{x} is an object of type \code{readDistrsList} storing fragment
+    length and read start distributions for multiple samples.
+  }
+
+  \item{\code{signature(x = "readDistrsList")}}{
+    \code{x} is an object of type \code{readDistrsList} storing fragment
+    length and read start distributions for multiple samples.
+  }
+
 }}
 \examples{
 #See getDistrs examples
