@@ -276,7 +276,8 @@ unsigned NextPow2( unsigned x ) {
 
 
 int *build_cigar(var_t var, int len, int st, int rl, char **cigars, int strand){
-  int i, rst, rltmp, *ans, sum=1, wis, done=0, correct=0, rlb; 
+  int i, rst, rltmp, *ans, sum=1, wis, done=0;
+  //int correct=0, rlb;  //commented out to avoid warnings
   ans = malloc(4 * sizeof(int));
   ans[2]=rl;
   

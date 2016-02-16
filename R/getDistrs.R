@@ -106,7 +106,7 @@ getDistrs <- function(DB, bam, pbam, islandid=NULL, verbose=FALSE, nreads=4*10^6
             } else {
                 ans <- lapply(types, function(x) {
                     isl <- unique(as.character(DB@aliases$island_id[DB@aliases$gene_type_merged==x]))
-                    getDistrsFrompBam(DB=DB, pbam=pbam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
+                    getDistrsFromBam(DB=DB, bam=bam, islandid=islandid, verbose=verbose, nreads=nreads, selislands=isl)
                 })
             }
             ld <- lapply(ans, truncLenDis)
@@ -337,7 +337,7 @@ getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^
   sel <- str=='+';  stDis[sel] <- (exstnogap[sel]+readst[sel]-exst[sel])/txlength[sel]
   sel <- str=='-'; stDis[sel] <- (exstnogap[sel]+exen[sel]-readen[sel])/txlength[sel]
 
-   stDis <- startDist(stDis, frlen, txlength)
-  new("readDistrs",lenDis=ld,stDis=stDis)
+  stDis <- startDist(stDis, frlen, txlength)
+  new("readDistrs",lenDis=new("array",ld),stDis=stDis)
 }
 

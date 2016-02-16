@@ -111,7 +111,7 @@ maxLinkDist=1e+05, maxDist=1000, minConn=2, minJunx=3, minLen=12, mc.cores=1)
 \examples{
 ## Known transcripts from Bioconductor annotations
 ## library(TxDb.Hsapiens.UCSC.hg19.knownGene)
-## hg19DB <- procGenome(TxDb.Hsapiens.UCSC.hg19.knownGene), genome='hg19')
+## hg19DB <- procGenome(TxDb.Hsapiens.UCSC.hg19.knownGene, genome='hg19')
 
 ## Alternative using makeTxDbFromUCSC
 ## genDB<-makeTxDbFromUCSC(genome="hg19", tablename="refGene")

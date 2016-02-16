@@ -39,18 +39,17 @@ keep.junx=FALSE, keep.flag=FALSE, ispaired=TRUE,...)
   \item{verbose}{Set to \code{TRUE} to print progress information.
   }
   \item{rname}{
-   Chromosome to process be combined with the \'which\'
-argument in the scanBam function)
-}
-\item{keep.junx}{
+   Chromosome to process be combined with the \code{which} argument in the scanBam function
+  }
+  \item{keep.junx}{
    Option to store junction information. Only useful for finding denovo
-exons and transcripts.
-}
-\item{keep.flag}{
-    Option to store aligment flag information.
-}
- \item{ispaired}{Set to \code{TRUE} is reads are paired.
- \item{...}{Other arguments}}
+  exons and transcripts.
+  }
+  \item{keep.flag}{
+      Option to store aligment flag information.
+  }
+  \item{ispaired}{Set to \code{TRUE} is reads are paired.}
+  \item{...}{Other arguments}
 }
 
 

@@ -3,6 +3,7 @@ useDynLib(casper)
 import(Biobase, EBarrays, IRanges, graphics, GenomicRanges, methods)
 importFrom(BiocGenerics, strand, "strand<-")
 importFrom(coda, as.mcmc)
+importFrom("grDevices", "rainbow")
 importFrom(gaga, fitGG, fitNNSingleHyp, getpar, parest, simnewsamples, simGG)
 importFrom(GenomeInfoDb, seqlengths)
 importFrom(GenomicFeatures, transcripts, exonsBy, makeTxDb)
@@ -13,9 +14,14 @@ importFrom(mgcv,gam,predict.gam,s)
 importMethodsFrom(Rsamtools, scanBam, scanBamHeader, ScanBamParam)
 importFrom(Rsamtools, scanBamFlag)
 importFrom(rtracklayer, import)
-importFrom(S4Vectors, Rle, DataFrame, isSingleStringOrNA, isTRUEorFALSE)
+importFrom(stats, aggregate, approxfun, coef, dmultinom, dnbinom,
+             dpois, gaussian, integrate, nlminb, p.adjust,
+             pexp, pgamma, pnorm, ppoints, qexp, qgamma,
+             qnorm, rgamma, rmultinom, rnorm, runif, uniroot)
+importFrom(S4Vectors, expand, Rle, DataFrame, isSingleStringOrNA, isTRUEorFALSE)
 importFrom(sqldf, sqldf)
 importFrom(survival,Surv,survfit)
+importFrom(utils, data, head, tail)
 importMethodsFrom(VGAM, Coef, model.matrix, predict)
 importFrom(VGAM,vglm,betabinomial)
 
