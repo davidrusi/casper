@@ -189,8 +189,11 @@ getDistrsFrompBam <- function(DB, pbam, islandid=NULL, verbose=FALSE, nreads=4*1
     #over <- suppressWarnings(findOverlaps(fragsL, subset(exonsRD, width(exonsRD)>500), type="within"))
     ld <- array(0); names(ld) <- '300'
   } else {
-    ld<-table(width(fragsL)[queryHits(over)])
+    ld <- table(width(fragsL)[queryHits(over)])
     ld <- ld[ld/sum(ld) > 0.0001]
+    ns <- names(ld)
+    ld <- array(ld)
+    names(ld) <- ns
   }
 
   #Find fragment start distribution for fragments aligning to transcripts in genes with only one anno tated tx
@@ -292,8 +295,9 @@ getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^
   if(length(subjectHits(over))==0) over <- suppressWarnings(findOverlaps(fragsL, subset(exonsRD, width(exonsRD)>500), type="within"))
   ld<-table(width(fragsL)[queryHits(over)])
   ld <- ld[ld/sum(ld) > 0.0001]
- 
-    
+  ns <- names(ld)
+  ld <- array(ld)
+  names(ld) <- ns
   
 
   #Find fragment start distribution for fragments aligning to transcripts in genes with only one annotated tx
