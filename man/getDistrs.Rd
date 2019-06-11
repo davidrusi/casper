@@ -43,7 +43,8 @@ readLength, min.gt.freq = NULL, tgroups=5, mc.cores=1)
   }
   \item{readLength}{
     Read length in bp, e.g. in a paired-end experiment where
-  75bp are sequenced on each end one would set \code{readLength=75}.
+    75bp are sequenced on each end one would set \code{readLength=75}.}
+  
   \item{min.gt.freq}{The target distributions cannot be estimated with
   precision for gene types that are very unfrequent.
   Gene types with relative frequency below \code{min.gt.freq} are merged,
@@ -56,19 +57,6 @@ readLength, min.gt.freq = NULL, tgroups=5, mc.cores=1)
   A separate estimate will be obtained for the \code{tgroups} with
   highest frequency, all others will be combined.}
   \item{mc.cores}{Number of cores to use for parallel processing}
-}
-\item{min.gt.freq}{
-  (Only for genomes with information of gene type) Minimum frequency
-  of gene type to define a new class. All types with lower frequencies
-  are collapsed.
-}
-\item{tgroups}{
-  (Only for genomes with information of gene type) Maximum number of
-  gene types. Types with low frequencies are collapsed.
-}
-\item{mc.cores}{
-  Number of cores to use in parallel computation.
-}
 }
 \value{
   An object of class readDistrs with slots:
