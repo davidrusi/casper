@@ -1,7 +1,7 @@
 useDynLib(casper)
 
 import(Biobase, EBarrays, IRanges, graphics, GenomicRanges, methods)
-importFrom(BiocGenerics, strand, "strand<-")
+importFrom(BiocGenerics, "%in%", strand, "strand<-")
 importFrom(coda, as.mcmc)
 importFrom("grDevices", "rainbow")
 importFrom(gaga, fitGG, fitNNSingleHyp, getpar, parest, simnewsamples, simGG)
