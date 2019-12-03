@@ -41,7 +41,7 @@ static void _cstatfatal(void)
 }
 
 
-/* Writes error message and aborts */
+/* Writes error message and exits */
 static void _cstaterror(const char *proc,
                         const char *act,
                         const char *what)
@@ -4837,7 +4837,7 @@ extern long Xm1,Xm2,Xa1w,Xa2w,Xig1[32],Xig2[32],Xlg1[32],Xlg2[32],Xcg1[32],Xcg2[
 static long g;
 static long qrgnin;
 /*
-     Abort unless random number generator initialized
+     Exit unless random number generator initialized
 */
     gsrgs(0L,&qrgnin);
     if (qrgnin) goto S10;

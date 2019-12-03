@@ -53,7 +53,8 @@ setMethod("transcripts", signature(genomeDB='annotatedGenome', txid='missing',is
   tx <- data.frame(tx=rep(names(tx),sapply(tx,length)), exon=unlist(tx))
   txranges <- genomeDB@exonsNI[as.character(tx$exon)]
   names(txranges) <- NULL
-  ans <- RangedData(IRanges(start(txranges),end(txranges)), space=as.character(tx$tx), chr=as.character(seqnames(txranges)))
+  ans <- GRanges(ranges=IRanges(start(txranges),end(txranges)), space=as.character(tx$tx), seqnames= seqnames(txranges))
+  #ans <- RangedData(IRanges(start(txranges),end(txranges)), space=as.character(tx$tx), chr=as.character(seqnames(txranges)))  #old version, superceeded
   return(ans)
 }
 )
@@ -126,15 +127,16 @@ txLengthBase <- function(tx, genomeDB) {
 matchTranscripts <- function(queryDB, subjectDB, maxbp=10) {
   #Find transcripts in queryDB matching a transcript in subjectDB. The best match for each transcript in newDB is returned, unless difference is >maxbp
   # Ouput is data.frame with tx1, len1, tx2, len2, bpintersect. (tx2 minimizes len2-bpintersect)
-  #Format as RangedData objects
+  #Format as GRanges objects
   txnew <- transcripts(queryDB)
   chrnew <- txnew[['chr']]; txname <- space(txnew)
-  txnew <- RangedData(IRanges(start(txnew),end(txnew)), space=chrnew, tx_id=txname)
+  txnew <- GRanges(ranges=IRanges(start(txnew),end(txnew)), seqnames=chrnew, tx_id=txname) 
+  #txnew <- RangedData(IRanges(start(txnew),end(txnew)), space=chrnew, tx_id=txname) #old version, superceeded
   #
   txknown <- transcripts(subjectDB)
   chrknown <- txknown[['chr']]; txname <- space(txknown)
-  txknown <- RangedData(IRanges(start(txknown),end(txknown)), space=chrknown, tx_id=txname)
-  #n <- as.character(txknown[['tx_id']]); txknown[which(n=='NM_001003919'),] #debug line
+  txknown <- GRanges(ranges=IRanges(start(txknown),end(txknown)), seqnames=chrknown, tx_id=txname)
+  #txknown <- RangedData(IRanges(start(txknown),end(txknown)), space=chrknown, tx_id=txname) #old version, superceeded
   #Find overlaps
   o <- as.matrix(findOverlaps(txnew, txknown))
   match1 <- txnew[o[,'queryHits'],]

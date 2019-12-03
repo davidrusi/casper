@@ -109,11 +109,13 @@ map<Fragment*, double> DataFrame::probabilities(Variant* v) {
 
 }
 
+
 double DataFrame::probability(Variant* v, Fragment *f) {
 
   return probability(v, f, false);
 
 }
+
 
 double DataFrame::probability(Variant* v, Fragment* f, bool checkFragSense) {
 
@@ -194,18 +196,20 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
     double rb = min(min(b1, b2 - l) / T, mb);
     double lb = min((max(a1, a2 - l) - 1.0) / T, mb);
 
-    if (lb >= rb) { continue; } 
+    if (lb >= rb) { 
       
-    double punc = (fragsta_cumu(rb) - fragsta_cumu(lb)) / fragsta_cumu(mb);
-    double factor = 0;
+      double punc = (fragsta_cumu(rb) - fragsta_cumu(lb)) / fragsta_cumu(mb);
+      double factor = 0;
 
-    if (l <= T && punc > 0) {
-      factor = lengthDist->probability(i);
-      if ((T < fraglen_maxx) && (T > fraglen_minx)) { factor /= lengthDist->cumulativeProbability((int)(T-fraglen_minx)); }
+      if (l <= T && punc > 0) {
+        factor = lengthDist->probability(i);
+        if ((T < fraglen_maxx) && (T > fraglen_minx)) { factor /= lengthDist->cumulativeProbability((int)(T-fraglen_minx)); }
+      }
+      //printf(" %0.12f %0.12f %d\n", factor, psum, i);
+
+      psum += punc * factor;
+
     }
-    //printf(" %0.12f %0.12f %d\n", factor, psum, i);
-
-    psum += punc * factor;
 
   }
 
@@ -221,6 +225,7 @@ double DataFrame::prob(int fs, int fe, int bs, int be, int* pos, double T) {
 
 int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
 
+  bool mybreak;
   int fragid;
 
 	// copy all fragments
@@ -248,10 +253,11 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 		    queue->erase(ri);  //delete fragment from queue
 
 		    set<Fragment*>::iterator fi= queueM->begin();
-		    while (fi != queueM->end()) {
+		    mybreak= false;
+		    while ((!mybreak) && (fi != queueM->end())) {
 		      if (fragid == ((*fi)->id)) {
 			queueM->erase(*fi); //delete corresponding fragment in queueM
-			break;
+			mybreak= true;
 		      }
 		      fi++;
 		    }
@@ -266,10 +272,11 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 		      queueM->erase(ri);  //delete fragment from queueM
 
 		      set<Fragment*>::iterator fi= queue->begin();
-		      while (fi != queue->end()) {
+		      mybreak= false;
+		      while ((!mybreak) && (fi != queue->end())) {
 		        if (fragid == ((*fi)->id)) {
 		     	  queue->erase(*fi); //delete corresponding fragment in queue
-			  break;
+			  mybreak= true;
 		        }
 			fi++;
 		      }
@@ -308,11 +315,12 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 	    //Repeat operation for fragment in dataM
 	    fragid= frag->id;
 	    set<Fragment*>::iterator fi= queueM->begin();
-	    while (fi != queueM->end()) {
+	    mybreak= false;
+	    while ((!mybreak) && (fi != queueM->end())) {
 	      if (fragid == ((*fi)->id)) {
 		path2Variants(&newvaris, &bestvaris, &allvarnames, &explained, initvars, (*fi)); //propose new variants, add their names to allvarnames
 		if (!explained) { dataM.remove((*fi)); }
-		break;
+		mybreak= false;
 	      }
 	      fi++;
 	    }
@@ -377,116 +385,6 @@ int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Vari
 
 }
 
-
-/* Old version: it only proposed one variant per fragment
-int DataFrame::fixUnexplFrags(set<Variant*, VariantCmp>* initvars, std::map<Variant*,std::string>* varshortnames, int* geneid, int denovo) {
-
-	// copy all fragments
-
-	set<Fragment*>* queue = new set<Fragment*>(data.begin(), data.end());
-
-
-	// remove the fragments from the queue we can explain with our variants
-
-	set<Variant*, VariantCmp>::iterator vi;
-
-	for (vi = initvars->begin(); vi != initvars->end(); vi++) {
-
-		map<Fragment*, double> probs = probabilities(*vi);
-
-		map<Fragment*, double>::iterator si;
-
-		for (si = probs.begin(); si != probs.end(); si++) {
-
-		  set<Fragment*>::iterator ri = queue->find(si->first);
-
-		  if (ri != queue->end()) queue->erase(ri);
-
-		}
-
-	}
-
-
-
-	int discarded = 0;
-
-	if(denovo){
-
-	  while (queue->size() > 0) {  // while we still have unexplained fragments
-
-	      // Pop the first fragment and propose variants
-
-	      Fragment* frag = *queue->begin();
-
-	      queue->erase(queue->begin());
-     
-	      Variant* nv = path2Variant(frag);
-
-
-	      // Check if the new variant can explain the fragment
-
-	      map<Fragment*, double> probs = probabilities(nv);
-
-	      if (probs.count(frag) > 0) {
-
-		  initvars->insert(nv);
-
-		  std::ostringstream out;
-		  out << "CASP.";
-		  out << geneid[0];
-		  out << ".";
-		  out << (varshortnames->size()+1);
-		  (*varshortnames)[nv] += out.str();
-
-
-			// delete all fragments that this variant can explain
-
-		  map<Fragment*, double>::iterator si;
-
-		  for (si = probs.begin(); si != probs.end(); si++) {
-
-		      set<Fragment*>::iterator ri = queue->find(si->first);
-
-		      if (ri != queue->end()) queue->erase(ri);
-
-		    }
-
-		} else {
-
-			// this fragment cant be explained
-
-		  discarded++;
-
-		  data.remove(frag);
-
-		}
-
-	  }
-
-	} else {  //not denovo
-
-	    // discard all unexplained fragments by know variants in known case
-
-	    while (queue->size() > 0) {
-
-	      Fragment* frag = *queue->begin();
-
-              queue->erase(queue->begin());
-
-	      data.remove(frag);
-
-	      discarded++;
-
-	    }
-
-	  }
-
-	delete queue;
-
-	return discarded;
-
-}
-*/
 
 
 
@@ -739,6 +637,9 @@ void DataFrame::allModelsRec(vector<Variant*>* stack, unsigned int level, vector
 
 }
 
+
+
+
 void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, set<Variant*, VariantCmp> *initvaris) {
 
   set<string> inithash;
@@ -769,6 +670,8 @@ void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, set<V
   delete vstack; 
 
 }
+
+
 
 
 void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, vector<Variant*> *initvaris) {
@@ -803,27 +706,6 @@ void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models, vecto
 
 }
 
-
-//Old version not considering initial variant names
-//void DataFrame::allModels(vector<Variant*> *varis, vector<Model*> *models) {
-// 
-//  vector<Exon*>* estack = new vector<Exon*>();
-// 
-//  allVariantsRec(estack, 0, varis);
-// 
-// 	
-// 
-//  vector<Variant*>* vstack = new vector<Variant*>();
-// 
-//  allModelsRec(vstack, 0, varis, models);
-// 
-// 
-// 
-//  delete estack; 
-// 
-//  delete vstack; 
-// 
-//}
 
 
 void DataFrame::allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* varis, set<string>* inithash) {
@@ -883,6 +765,7 @@ void DataFrame::allVariants(vector<Variant*> *varis, set<Variant*, VariantCmp> *
 
 }
 
+
 void DataFrame::allVariants(vector<Variant*> *varis, vector<Variant*> *initvaris) {
 
   set<string> inithash;
@@ -904,71 +787,6 @@ void DataFrame::allVariants(vector<Variant*> *varis, vector<Variant*> *initvaris
 
 }
 
-//Old version, does not respect already existing variants
-
-//void DataFrame::allVariantsRec(vector<Exon*>* stack, unsigned int level, vector<Variant*>* varis) {
-// 
-//  if (exons.size() == level) {
-// 
-//    if (stack->size() > 0)	{
-// 
-//      Variant* v = new Variant(stack);
-// 
-//      varis->push_back(v);
-// 
-//    }
-// 
-//    return;
-// 
-//  }
-// 
-//  stack->push_back(exons.at(level));
-// 
-//  allVariantsRec(stack, level + 1, varis);
-// 
-//  stack->pop_back();
-// 
-//  allVariantsRec(stack, level + 1, varis);
-// 
-//}
-
-//void DataFrame::allVariants(vector<Variant*> *varis) {
-// 
-//  vector<Exon*>* estack = new vector<Exon*>();
-// 
-//  allVariantsRec(estack, 0, varis);
-// 
-//  delete estack;
-// 
-//}
-
-
-/*
-void DataFrame::debugprint() {		
-	// Exons
-	Rprintf("Exons:\n");
-	vector<Exon*>::const_iterator ei;
-	for (ei = exons.begin(); ei != exons.end(); ei++) {
-		Exon* e = *ei;
-		Rprintf("%i\t%i\n", e->id, e->length);
-	}
-	Rprintf("\n");
-
-	// Fragments
-	Rprintf("Fragments:\n");
-	list<Fragment*>::const_iterator fi;
-	for (fi = data.begin(); fi != data.end(); fi++)	{
-		Fragment* f = *fi;
-		Rprintf("%i\t%i\t%i\n", f->leftc, f->rightc, f->count);
-		for (int l = 0; l < f->leftc; l++) Rprintf("%i\n", f->left[l]);
-		for (int r = 0; r < f->rightc; r++) Rprintf("%i\n", f->right[r]);
-	}
-
-	Rprintf("\n");
-
-}
-*/
-
 
 bool compareF(Fragment* first, Fragment* second)
 
@@ -980,6 +798,39 @@ bool orderF(Fragment* first, Fragment* second)
 { return( first->id < second->id  ); }
 
 
+
+int DataFrame::totCounts() {
+
+  int totC = 0;
+  Fragment* f;
+  list<Fragment*>::const_iterator fi;
+      
+  if(this->dataM.size() > 0)  {
+
+    //data.insert(data.end(), this->dataM.begin(), this->dataM.end());
+    //this->data.sort(orderF);
+    //(this->data).unique(compareF);
+    for (fi = (this->dataM).begin(); fi != (this->dataM).end(); fi++) {
+      f = *fi;
+      totC += f->count;
+    }
+
+  } 
+
+  for (fi = (this->data).begin(); fi != (this->data).end(); fi++) {
+
+    f = *fi;
+    totC += f->count;
+
+  }
+
+  return(totC);
+
+}
+
+
+//OLD VERSION, GIVING COMPILER WARNING
+/*
 int DataFrame::totCounts()
 
 {
@@ -1008,14 +859,12 @@ int DataFrame::totCounts()
   list<Fragment*>::const_iterator fi;                                                                                                                                                                                             
 
   for (fi = data.begin(); fi != data.end(); fi++) {                                                                                                                                                                               
-
-
-    f = *fi;                                                                                                                                                                                                      
-    
+    f = *fi;                                                                                                                                                                                                  
     totC += f->count;
 
   }
-
   return(totC);
 
 }
+
+*/

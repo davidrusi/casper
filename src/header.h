@@ -33,7 +33,7 @@ typedef struct path_t {
   int island;
 } path_t;
 
-int verbose;
+//int verbose;
 typedef struct var_t {
   int nex;
   double exp;

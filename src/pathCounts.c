@@ -24,7 +24,6 @@ SEXP pathCounts(SEXP reid, SEXP rid, SEXP exst, SEXP exid){
     pathsHashPtr=&pathsHash;
     fragsHashPtr=&fragsHash;
     hashSize=pow(2,25);	
-    verbose=0;
 	
     PROTECT(rid);// = coerceVector(rid, INTSXP));
     PROTECT(exst);// = coerceVector(exst, INTSXP));
@@ -139,7 +138,6 @@ void addPath(int *unex, int *unrid, hash_t *hash, int totEx){
     char *pastr, *tmp;
     tmp=malloc(50 * sizeof(char));
     pastr=malloc((totEx+1)*50 * sizeof(char));
-    verbose=0;
     //Check for overlapping ends
     int nleft=0, nright=0, *lread, *rread;
     lread=malloc((totEx+1) * sizeof(int));

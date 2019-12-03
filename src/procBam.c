@@ -16,7 +16,6 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 	hash_t *fragsHashPtr, fragsHash;
 	hash_node_t *bucket;
 	char *echrom="\0";
-	verbose=0;
 	
 	// Alloc memory for fragments
 	PROTECT(totFrags);

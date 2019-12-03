@@ -26,7 +26,8 @@ setMethod("genePlot", signature(generanges='missing',islandid='character',genome
   gene<-buildGene(txs=txs, genomeDB=genomeDB, islandid=islandid)
   names(gene) <- paste(names(gene),' (expr=',round(txexp[names(gene)],3),')',sep='')
   chr <- getChr(islandid=islandid, genomeDB=genomeDB)
-  reads@pbam <- reads@pbam[seqnames(reads@pbam) %in% chr]
+  reads@pbam <- reads@pbam[as.vector(seqnames(reads@pbam)) %in% chr]
+  #reads@pbam <- reads@pbam[seqnames(reads@pbam) %in% chr] #old version
   rangesPlot(x=reads, gene, exonProfile=FALSE)
 }
 )
