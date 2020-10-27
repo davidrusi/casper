@@ -155,7 +155,7 @@ truncLenDis <- function(ans){
         q <- as.numeric(c(names(wcum)[which(wcum>.25)[1]],names(wcum)[which(wcum>.75)[1]]))
         iqr <- q[2]-q[1]
         sel <- (as.numeric(names(wcum))>= q[1]-3*iqr) & (as.numeric(names(wcum))<= q[2]+6*iqr)
-        ans@lenDis <- ans@lenDis[sel]
+        ans@lenDis <- as.array(ans@lenDis[sel])
     }
     return(ans@lenDis)
 }
