@@ -1,8 +1,6 @@
 Package: casper
-Version: 2.23.1
-Date: 2020-11-12
 Version: 2.25.0
-Date: 2019-12-02
+Date: 2020-11-25
 Title: Characterization of Alternative Splicing based on Paired-End
         Reads
 Author: David Rossell, Camille Stephan-Otto, Manuel Kroiss, Miranda
