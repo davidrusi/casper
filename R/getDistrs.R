@@ -342,6 +342,7 @@ getDistrsFromBam <- function(DB, bam, islandid=NULL, verbose=FALSE, nreads=4*10^
   sel <- str=='-'; stDis[sel] <- (exstnogap[sel]+exen[sel]-readen[sel])/txlength[sel]
 
   stDis <- startDist(stDis, frlen, txlength)
-  new("readDistrs",lenDis=new("array",ld),stDis=stDis)
+  lenDis <- new("array", ld); names(lenDis)= names(ld)
+  new("readDistrs",lenDis=lenDis,stDis=stDis)
 }
 
