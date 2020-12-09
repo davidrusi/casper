@@ -1,8 +1,11 @@
 Package: casper
 <<<<<<< HEAD
+<<<<<<< HEAD
 Version: 2.24.0
 Date: 2019-12-02
 =======
+=======
+>>>>>>> b7e7823... Set version number
 Version: 2.24.1
 Date: 2020-12-09
 >>>>>>> b7e7823... Set version number
