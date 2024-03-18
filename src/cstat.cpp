@@ -9,9 +9,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "cstat.h"
+
 #include <R.h>
 #include <Rinternals.h>
-#include "cstat.h"
 
 static const char interface_c_sccs_id[] = "%W%";
 static const char mess_c_sccs_id[] = "%W%";
