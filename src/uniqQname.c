@@ -44,7 +44,7 @@ SEXP uniqQname(SEXP qname, SEXP totReadsR, SEXP pos, SEXP mpos, SEXP names){
     if(p_pos[i]<p_mpos[i]) sprintf(idtmp, "%d",  p_mpos[i]);
     else sprintf(idtmp, "%d",  p_pos[i]);
     strcat(tmp, idtmp);
-    SET_STRING_ELT(names, i, mkChar(tmp));
+    SET_STRING_ELT(names, i, Rf_mkChar(tmp));
     l=hash_lookup(hashP, tmp);
     if(l!=HASH_FAIL) {
       hash_update(hashP, tmp, l+1);
@@ -61,7 +61,7 @@ SEXP uniqQname(SEXP qname, SEXP totReadsR, SEXP pos, SEXP mpos, SEXP names){
   SEXP res;
   PROTECT(res = Rf_allocVector(STRSXP, count));
   for (i=0; i<count; i++) {
-    SET_STRING_ELT(res, i, mkChar(tmpres[i]));
+    SET_STRING_ELT(res, i, Rf_mkChar(tmpres[i]));
   }
 
   SEXP ans;

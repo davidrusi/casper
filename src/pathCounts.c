@@ -71,7 +71,7 @@ SEXP pathCounts(SEXP reid, SEXP rid, SEXP exst, SEXP exid){
         if(pathsHash.bucket[i]!=NULL)  {
             bucket=pathsHash.bucket[i];
             while(bucket) {
-                SET_STRING_ELT(key, count, mkChar(bucket->key));
+                SET_STRING_ELT(key, count, Rf_mkChar(bucket->key));
                 p_pathc[count] = bucket->data;
                 bucket=bucket->next;
                 count++;

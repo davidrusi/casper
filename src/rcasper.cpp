@@ -452,7 +452,7 @@ extern "C"
 
       const char *cname= (v->name).c_str();
 
-      SET_STRING_ELT(varnamesR,j,mkChar(cname));  //variant name
+      SET_STRING_ELT(varnamesR,j,Rf_mkChar(cname));  //variant name
 
     }
 
@@ -460,7 +460,7 @@ extern "C"
 
 
 
-    SET_VECTOR_ELT(ans, 4, allocMatrix(REALSXP,vc-1,vc-1)); //stores variance of estimated expression (logit scale)
+    SET_VECTOR_ELT(ans, 4, Rf_allocMatrix(REALSXP,vc-1,vc-1)); //stores variance of estimated expression (logit scale)
 
     double *Svec= REAL(VECTOR_ELT(ans,4));
 
@@ -488,7 +488,7 @@ extern "C"
 
     int np = (casp->frame->data).size();
 
-    SET_VECTOR_ELT(ans, 5, allocMatrix(REALSXP,vc,np));  //stores estimated expression
+    SET_VECTOR_ELT(ans, 5, Rf_allocMatrix(REALSXP,vc,np));  //stores estimated expression
 
     double *probmatrix = REAL(VECTOR_ELT(ans, 5));
 
@@ -550,7 +550,7 @@ extern "C"
 
       const char *cname= str1.c_str();
 
-      SET_STRING_ELT(rownames,j,mkChar(cname));  //path name
+      SET_STRING_ELT(rownames,j,Rf_mkChar(cname));  //path name
 
 
 
@@ -560,7 +560,7 @@ extern "C"
 
     SET_VECTOR_ELT(dimnames, 1, rownames);
 
-    setAttrib(VECTOR_ELT(ans,5), R_DimNamesSymbol, dimnames);
+    Rf_setAttrib(VECTOR_ELT(ans,5), R_DimNamesSymbol, dimnames);
 
 
 
@@ -722,7 +722,7 @@ extern "C"
 
 		  const char *cname= (v->name).c_str();
 
-		  SET_STRING_ELT(varnamesR,j,mkChar(cname));  //variant name
+		  SET_STRING_ELT(varnamesR,j,Rf_mkChar(cname));  //variant name
 
                 }
 
@@ -1034,7 +1034,7 @@ extern "C"
 
 	  if (selBest==0) { nx= resProbs.size(); } else { nx=1; }
 	   
-	  SET_VECTOR_ELT(ans, 0, allocMatrix(REALSXP,nx,3));
+	  SET_VECTOR_ELT(ans, 0, Rf_allocMatrix(REALSXP,nx,3));
 	   
 	  double *resProbsR= REAL(VECTOR_ELT(ans,0));
 	   
@@ -1075,7 +1075,7 @@ extern "C"
 
 	  //Report estimated expression
 
-	  SET_VECTOR_ELT(ans, 1, allocMatrix(REALSXP,nrowpi,2)); //stores model id and estimated expression
+	  SET_VECTOR_ELT(ans, 1, Rf_allocMatrix(REALSXP,nrowpi,2)); //stores model id and estimated expression
 	  SET_VECTOR_ELT(ans, 2, Rf_allocVector(STRSXP,nrowpi));  //stores variant names  	   
 	  double *expr= REAL(VECTOR_ELT(ans,1));
 	  SEXP exprvnamesR= VECTOR_ELT(ans,2);
@@ -1113,7 +1113,7 @@ extern "C"
 		}
 
 		sname= (varshortnames[v]).c_str();
-		SET_STRING_ELT(exprvnamesR,rowid,mkChar(sname));
+		SET_STRING_ELT(exprvnamesR,rowid,Rf_mkChar(sname));
 
 		if (allvariants.count(v)==0) {
 
@@ -1155,7 +1155,7 @@ extern "C"
 	      }
 
 	      sname= (varshortnames[v]).c_str();
-	      SET_STRING_ELT(exprvnamesR,rowid,mkChar(sname));
+	      SET_STRING_ELT(exprvnamesR,rowid,Rf_mkChar(sname));
 
 	      if (allvariants.count(v)==0) {
 
@@ -1173,7 +1173,7 @@ extern "C"
 
 
 	  //Report short & long variant names
-	  SET_VECTOR_ELT(ans, 3, allocMatrix(STRSXP,varshortnames.size(),2));  //stores variant names
+	  SET_VECTOR_ELT(ans, 3, Rf_allocMatrix(STRSXP,varshortnames.size(),2));  //stores variant names
 	  SEXP varnamesR= VECTOR_ELT(ans,3);
 
 	  int idxvarmap=0;
@@ -1183,8 +1183,8 @@ extern "C"
             sname= (itvarmap->second).c_str();
             cname= (itvarmap->first->exoncomb).c_str();
            
-            SET_STRING_ELT(varnamesR,idxvarmap,mkChar(sname));  //short variant name
-            SET_STRING_ELT(varnamesR,idxvarmap+varshortnames.size(),mkChar(cname));  //long variant name (exons in the variant)
+            SET_STRING_ELT(varnamesR,idxvarmap,Rf_mkChar(sname));  //short variant name
+            SET_STRING_ELT(varnamesR,idxvarmap+varshortnames.size(),Rf_mkChar(cname));  //long variant name (exons in the variant)
 
 	    idxvarmap++;
            

@@ -173,12 +173,12 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
         else vansS[i] = starts[1];
 	
 	if(insideBam==1){
-	  sprintf(tmpchar, "%d.%d", i, var+1); SET_STRING_ELT(qname, i*2, mkChar(tmpchar)); SET_STRING_ELT(qname, i*2+1, mkChar(tmpchar));
-	  SET_STRING_ELT(rname, i*2, mkChar(genes[gene].chr)); SET_STRING_ELT(rname, i*2+1, mkChar(genes[gene].chr));
-	  if(genes[gene].vars[var].strand==0) { SET_STRING_ELT(strand, i*2, mkChar("-")); SET_STRING_ELT(strand, i*2+1, mkChar("-")); }
-	  else { SET_STRING_ELT(strand, i*2, mkChar("+")); SET_STRING_ELT(strand, i*2+1, mkChar("+")); }
+	  sprintf(tmpchar, "%d.%d", i, var+1); SET_STRING_ELT(qname, i*2, Rf_mkChar(tmpchar)); SET_STRING_ELT(qname, i*2+1, Rf_mkChar(tmpchar));
+	  SET_STRING_ELT(rname, i*2, Rf_mkChar(genes[gene].chr)); SET_STRING_ELT(rname, i*2+1, Rf_mkChar(genes[gene].chr));
+	  if(genes[gene].vars[var].strand==0) { SET_STRING_ELT(strand, i*2, Rf_mkChar("-")); SET_STRING_ELT(strand, i*2+1, Rf_mkChar("-")); }
+	  else { SET_STRING_ELT(strand, i*2, Rf_mkChar("+")); SET_STRING_ELT(strand, i*2+1, Rf_mkChar("+")); }
 	  pos[i*2] = starts[3]; pos[i*2+1] = starts[4];
-	  SET_STRING_ELT(cigar, i*2, mkChar(cigars[0])); SET_STRING_ELT(cigar, i*2+1, mkChar(cigars[1]));
+	  SET_STRING_ELT(cigar, i*2, Rf_mkChar(cigars[0])); SET_STRING_ELT(cigar, i*2+1, Rf_mkChar(cigars[1]));
 	}
 	totp+=starts[2];
 	//free(starts);
@@ -212,7 +212,7 @@ SEXP casperSimC(SEXP gene_exp, SEXP var_exp, SEXP var_num, SEXP var_len, SEXP ex
     if(paths_pted.bucket[i]!=NULL) {
       bucket=paths_pted.bucket[i];
       while(bucket) {
-	SET_STRING_ELT(key, count, mkChar(bucket->key));
+	SET_STRING_ELT(key, count, Rf_mkChar(bucket->key));
 	p_pathc[count] = bucket->data;
 	bucket=bucket->next;
 	count++;
