@@ -156,7 +156,7 @@ SEXP procBam(SEXP qname, SEXP chr, SEXP start, SEXP mpos, SEXP cigar, SEXP stran
 	}
 
 	SEXP reads;
-	PROTECT(reads = allocVector(VECSXP, 10));
+	PROTECT(reads = Rf_allocVector(VECSXP, 10));
 	SET_VECTOR_ELT(reads, 0, len);
 	SET_VECTOR_ELT(reads, 1, strs);
 	SET_VECTOR_ELT(reads, 2, key);
